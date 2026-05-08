@@ -54,6 +54,30 @@ const TRAINER_ASSIGN = {
   fun: 'BILLY',
 }
 
+const DEFAULT_EXERCISES = [
+  { name: 'ベンチプレス', weight_min: 1, reps_step: 1, reps_max: 20 },
+  { name: 'スクワット', weight_min: 1, reps_step: 1, reps_max: 20 },
+  { name: 'サイドレイズ', weight_min: 1, reps_step: 1, reps_max: 20 },
+  { name: 'ラットプルダウン', weight_min: 1, reps_step: 1, reps_max: 20 },
+  { name: 'マシンベンチプレス', weight_min: 1, reps_step: 1, reps_max: 20 },
+  { name: 'ラテラルレイズ', weight_min: 1, reps_step: 1, reps_max: 20 },
+  { name: '自重スクワット', weight_min: 0, reps_step: 5, reps_max: 50 },
+  { name: 'プッシュアップ', weight_min: 0, reps_step: 5, reps_max: 50 },
+  { name: 'デッドリフト', weight_min: 1, reps_step: 1, reps_max: 20 },
+  { name: 'ショルダープレス', weight_min: 1, reps_step: 1, reps_max: 20 },
+  { name: 'レッグプレス', weight_min: 1, reps_step: 1, reps_max: 20 },
+  { name: 'ダンベルカール', weight_min: 1, reps_step: 1, reps_max: 20 },
+  { name: 'ベントオーバーロウ', weight_min: 1, reps_step: 1, reps_max: 20 },
+  { name: 'トライセプスプレス', weight_min: 1, reps_step: 1, reps_max: 20 },
+  { name: 'ケーブルクロス', weight_min: 1, reps_step: 1, reps_max: 20 },
+  { name: 'レッグカール', weight_min: 1, reps_step: 1, reps_max: 20 },
+  { name: 'チェストフライ', weight_min: 1, reps_step: 1, reps_max: 20 },
+  { name: 'インクラインプレス', weight_min: 1, reps_step: 1, reps_max: 20 },
+  { name: 'ディップス', weight_min: 1, reps_step: 1, reps_max: 20 },
+  { name: 'チンニング', weight_min: 1, reps_step: 1, reps_max: 20 },
+  { name: 'レッグエクステンション', weight_min: 1, reps_step: 1, reps_max: 20 },
+]
+
 export default function OnboardingChat() {
   const { user, refreshProfile } = useAuth()
   const navigate = useNavigate()
@@ -135,6 +159,17 @@ export default function OnboardingChat() {
         onboarding_done: true,
         updated_at: new Date().toISOString(),
       }).eq('id', user.id)
+
+      await supabase.from('user_exercises').insert(
+        DEFAULT_EXERCISES.map((ex, i) => ({
+          user_id: user.id,
+          name: ex.name,
+          weight_min: ex.weight_min,
+          reps_step: ex.reps_step,
+          reps_max: ex.reps_max,
+          order: i,
+        }))
+      )
 
       await refreshProfile()
     }
