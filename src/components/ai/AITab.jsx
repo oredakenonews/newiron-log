@@ -30,12 +30,18 @@ const IcoCrown = ({ s = 14, c = 'currentColor' }) => (
   </svg>
 )
 
+const TRAINER_IMAGES = {
+  RYOTA: '/gazou/ryota_bu.png', DAIKI: '/gazou/daiki_bu.png',
+  YUKI: '/gazou/yuki_bu.png', KENJI: '/gazou/kenji_bu.png',
+  NANA: '/gazou/nana_bu.png', HANA: '/gazou/hana_bu.png',
+  RACHELL: '/gazou/rachell_bu.png', TORU: '/gazou/toru_bu.png',
+  BILLY: '/gazou/billybu.png',
+}
+
 // ── Static coach content ──────────────────────────────────────────────────────
 const COACH_CONTENT = {
   spartan: {
-    name: 'コーチ・カイザー',
     tag: 'スパルタモード',
-    initial: 'K',
     tone: '#FF6A1A',
     greeting: '今日の追い込みが甘い。胸の最終セット、まだ2レップ余ってただろ。',
     cards: {
@@ -52,9 +58,7 @@ const COACH_CONTENT = {
     },
   },
   gentle: {
-    name: 'コーチ・ハル',
     tag: 'やさしいモード',
-    initial: 'H',
     tone: '#5BC25B',
     greeting: 'お疲れさまでした。今日も継続できているの、本当に立派ですよ。',
     cards: {
@@ -127,7 +131,7 @@ function CoachToggle({ mode, onChange }) {
   )
 }
 
-function CharacterPanel({ coach, mode }) {
+function CharacterPanel({ coach, trainerName, trainerImg }) {
   const tone = coach.tone
   return (
     <div style={{
@@ -135,21 +139,11 @@ function CharacterPanel({ coach, mode }) {
       borderLeft: `3px solid ${tone}`,
       padding: 16, display: 'flex', gap: 14, marginBottom: 14,
     }}>
-      {/* geometric avatar — diagonal stripe + initial letter */}
       <div style={{
         width: 60, height: 60, flexShrink: 0,
-        background: '#0E1118', border: '1px solid #1F242E',
-        position: 'relative', overflow: 'hidden',
+        background: '#0E1118', border: '1px solid #1F242E', overflow: 'hidden',
       }}>
-        <div style={{
-          position: 'absolute', inset: 0,
-          background: `repeating-linear-gradient(45deg, transparent 0 8px, ${tone}22 8px 9px)`,
-        }} />
-        <div style={{
-          position: 'absolute', inset: 0,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontFamily: 'Oswald', fontWeight: 700, fontSize: 28, color: tone,
-        }}>{coach.initial}</div>
+        <img src={trainerImg} alt={trainerName} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
@@ -159,7 +153,7 @@ function CharacterPanel({ coach, mode }) {
             background: `${tone}22`, color: tone, padding: '1px 4px',
           }}>{coach.tag}</div>
         </div>
-        <div style={{ fontWeight: 700, fontSize: 16, color: '#fff', marginBottom: 4 }}>{coach.name}</div>
+        <div style={{ fontWeight: 700, fontSize: 16, color: '#fff', marginBottom: 4 }}>{trainerName}</div>
         <div style={{ fontSize: 12, color: '#B5BECF', lineHeight: 1.6 }}>{coach.greeting}</div>
       </div>
     </div>
@@ -420,6 +414,8 @@ export default function AITab() {
   const [chatOpen, setChatOpen] = useState(false)
   const [chatPrompt, setChatPrompt] = useState('')
 
+  const trainer = profile?.trainer_character || 'RYOTA'
+  const trainerImg = TRAINER_IMAGES[trainer] || TRAINER_IMAGES.RYOTA
   const coach = COACH_CONTENT[mode]
   const accent = coach.tone
 
@@ -491,7 +487,7 @@ export default function AITab() {
       </div>
 
       <div style={{ padding: '14px' }}>
-        <CharacterPanel coach={coach} mode={mode} />
+        <CharacterPanel coach={coach} trainerName={trainer} trainerImg={trainerImg} />
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           <InsightCard data={cardData.growth}  icon={<IcoTrend   s={16} c="#5BC25B" />} accent="#5BC25B" />
