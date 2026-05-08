@@ -1,40 +1,179 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
+import { getCategory } from '../../lib/categories'
 
-const TRAINER_IMAGES = {
-  RYOTA: '/gazou/ryota_bu.png', DAIKI: '/gazou/daiki_bu.png',
-  YUKI: '/gazou/yuki_bu.png', KENJI: '/gazou/kenji_bu.png',
-  NANA: '/gazou/nana_bu.png', HANA: '/gazou/hana_bu.png',
-  RACHELL: '/gazou/rachell_bu.png', TORU: '/gazou/toru_bu.png',
-  BILLY: '/gazou/billybu.png',
+// ── Icons ────────────────────────────────────────────────────────────────────
+const IcoTrend = ({ s = 16, c = 'currentColor' }) => (
+  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter">
+    <path d="M3 17l6-6 4 4 8-9" /><path d="M14 6h7v7" />
+  </svg>
+)
+const IcoFlame = ({ s = 16, c = 'currentColor' }) => (
+  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter">
+    <path d="M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4-1 3 1 5 3 4 1 0 0-3 0-5 0-2 0-3 0-5z" />
+  </svg>
+)
+const IcoTarget = ({ s = 16, c = 'currentColor' }) => (
+  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="square">
+    <circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.5" fill={c} />
+  </svg>
+)
+const IcoBalance = ({ s = 16, c = 'currentColor' }) => (
+  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="square">
+    <path d="M12 3v18" /><path d="M3 7h18" /><path d="M7 7l-3 6h6z" /><path d="M17 7l-3 6h6z" />
+  </svg>
+)
+const IcoCrown = ({ s = 14, c = 'currentColor' }) => (
+  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter">
+    <path d="M3 7l4 4 5-7 5 7 4-4-2 12H5z" />
+  </svg>
+)
+
+// ── Static coach content ──────────────────────────────────────────────────────
+const COACH_CONTENT = {
+  spartan: {
+    name: 'コーチ・カイザー',
+    tag: 'スパルタモード',
+    initial: 'K',
+    tone: '#FF6A1A',
+    greeting: '今日の追い込みが甘い。胸の最終セット、まだ2レップ余ってただろ。',
+    cards: {
+      growth: { title: '成長', fallbackMetric: '—', fallbackUnit: 'KG / 前週比', fallbackMsg: '記録を続けると成長グラフが表示されます。' },
+      issue:  { title: '課題', fallbackMetric: '—', fallbackUnit: '% PULL',    fallbackMsg: '直近のセッションからプッシュ/プル比率を分析します。' },
+      goal:   { title: '次の目標', fallbackMetric: '—', fallbackUnit: '',           fallbackMsg: 'プロフィールで目標を設定しましょう。' },
+      balance:{ title: 'バランス', fallbackMetric: '—', fallbackUnit: '% 左右差',  fallbackMsg: 'セッションを重ねるとバランス分析が解放されます。' },
+    },
+    cardMsg: {
+      growth: (v) => `${v >= 0 ? '+' : ''}${v}%の変化。だが満足するな、これは通過点だ。`,
+      issue:  (v) => `プッシュ系${v}%。プル系のボリュームを増やせ。背中を組め。`,
+      goal:   (v) => `${v}を目標に設定。全力で取りにいけ。`,
+      balance:(v) => `直近${v}セッション。もっと継続して精度を上げろ。`,
+    },
+  },
+  gentle: {
+    name: 'コーチ・ハル',
+    tag: 'やさしいモード',
+    initial: 'H',
+    tone: '#5BC25B',
+    greeting: 'お疲れさまでした。今日も継続できているの、本当に立派ですよ。',
+    cards: {
+      growth: { title: '成長', fallbackMetric: '—', fallbackUnit: 'KG / 前週比', fallbackMsg: '記録を続けると成長グラフが表示されますよ。' },
+      issue:  { title: '課題', fallbackMetric: '—', fallbackUnit: '% PULL',    fallbackMsg: '直近のセッションからトレーニングバランスを確認します。' },
+      goal:   { title: '次の目標', fallbackMetric: '—', fallbackUnit: '',           fallbackMsg: 'プロフィールで目標を設定してみましょう。' },
+      balance:{ title: 'バランス', fallbackMetric: '—', fallbackUnit: '% 左右差',  fallbackMsg: 'セッションを重ねると詳細分析ができますよ。' },
+    },
+    cardMsg: {
+      growth: (v) => `${v >= 0 ? '+' : ''}${v}%の変化。素晴らしい伸びです、自信を持って。`,
+      issue:  (v) => `プッシュ系${v}%。背中の日を1日入れてみましょうか。`,
+      goal:   (v) => `${v}を目標に。一緒に目指しましょう。`,
+      balance:(v) => `直近${v}セッションを分析中。継続していきましょう。`,
+    },
+  },
 }
 
-const MODE_GREETING = {
-  spartan: '今日の追い込みが甘いぞ。限界まで追い込め。それが成長への唯一の道だ。',
-  gentle: 'お疲れさまでした。継続できていること、本当に素晴らしいですよ。',
-}
-
-const CHAT_PROMPTS = [
-  '今日のフォーム、どうだった？',
-  '来週のメニューを組んで',
-  '伸び悩み、どう打開する？',
-]
-
+// ── Helpers ───────────────────────────────────────────────────────────────────
 function calcVolume(session) {
-  return (session.exercises || []).reduce((t, ex) =>
+  return (session?.exercises || []).reduce((t, ex) =>
     t + (ex.sets || []).reduce((s, set) =>
       s + (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0), 0), 0)
 }
 
-function InsightCard({ title, metric, unit, msg, icon, accent, wide }) {
+function calcPushRatio(sessions) {
+  let push = 0, pull = 0
+  sessions.forEach(s => {
+    (s.exercises || []).forEach(ex => {
+      const cat = getCategory(ex.name)
+      if (['CHEST', 'SHOULDERS', 'ARMS'].includes(cat)) push++
+      if (cat === 'BACK') pull++
+    })
+  })
+  const total = push + pull
+  if (total === 0) return null
+  return Math.round((push / total) * 100)
+}
+
+// ── Components ────────────────────────────────────────────────────────────────
+function CoachToggle({ mode, onChange }) {
+  return (
+    <div style={{ display: 'flex', background: '#0E1118', border: '1px solid #1F242E', padding: 3 }}>
+      {[
+        { id: 'spartan', label: 'スパルタ', sub: 'HARD' },
+        { id: 'gentle',  label: 'やさしい', sub: 'SOFT' },
+      ].map(opt => {
+        const active = mode === opt.id
+        const color = opt.id === 'spartan' ? '#FF6A1A' : '#5BC25B'
+        return (
+          <button
+            key={opt.id}
+            onClick={() => onChange(opt.id)}
+            style={{
+              flex: 1,
+              background: active ? color : 'transparent',
+              border: 'none',
+              color: active ? '#0B0D10' : '#8693AA',
+              fontFamily: '"Noto Sans JP", system-ui',
+              fontWeight: 700, fontSize: 13,
+              padding: '10px 0', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+            }}
+          >
+            {opt.label}
+            <span style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1, opacity: 0.7 }}>{opt.sub}</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function CharacterPanel({ coach, mode }) {
+  const tone = coach.tone
   return (
     <div style={{
       background: '#13171F', border: '1px solid #1F242E',
-      padding: 14, gridColumn: wide ? 'span 2' : 'auto',
-      position: 'relative', overflow: 'hidden', minHeight: 140,
-      display: 'flex', flexDirection: 'column',
+      borderLeft: `3px solid ${tone}`,
+      padding: 16, display: 'flex', gap: 14, marginBottom: 14,
     }}>
+      {/* geometric avatar — diagonal stripe + initial letter */}
+      <div style={{
+        width: 60, height: 60, flexShrink: 0,
+        background: '#0E1118', border: '1px solid #1F242E',
+        position: 'relative', overflow: 'hidden',
+      }}>
+        <div style={{
+          position: 'absolute', inset: 0,
+          background: `repeating-linear-gradient(45deg, transparent 0 8px, ${tone}22 8px 9px)`,
+        }} />
+        <div style={{
+          position: 'absolute', inset: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontFamily: 'Oswald', fontWeight: 700, fontSize: 28, color: tone,
+        }}>{coach.initial}</div>
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+          <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1.5, color: tone }}>AI COACH</div>
+          <div style={{
+            fontFamily: 'Bebas Neue', fontSize: 9, letterSpacing: 1,
+            background: `${tone}22`, color: tone, padding: '1px 4px',
+          }}>{coach.tag}</div>
+        </div>
+        <div style={{ fontWeight: 700, fontSize: 16, color: '#fff', marginBottom: 4 }}>{coach.name}</div>
+        <div style={{ fontSize: 12, color: '#B5BECF', lineHeight: 1.6 }}>{coach.greeting}</div>
+      </div>
+    </div>
+  )
+}
+
+function InsightCard({ data, icon, accent }) {
+  return (
+    <div style={{
+      background: '#13171F', border: '1px solid #1F242E',
+      padding: 14, position: 'relative', overflow: 'hidden',
+      minHeight: 150, display: 'flex', flexDirection: 'column',
+    }}>
+      {/* accent corner */}
       <div style={{
         position: 'absolute', top: 0, right: 0,
         width: 0, height: 0,
@@ -43,34 +182,105 @@ function InsightCard({ title, metric, unit, msg, icon, accent, wide }) {
       }} />
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
         <div style={{ color: accent }}>{icon}</div>
-        <div style={{ fontFamily: '"Noto Sans JP", system-ui', fontWeight: 700, fontSize: 13, color: '#fff' }}>{title}</div>
+        <div style={{ fontFamily: '"Noto Sans JP", system-ui', fontWeight: 700, fontSize: 13, color: '#fff' }}>{data.title}</div>
       </div>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 8 }}>
-        <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 32, lineHeight: 1, color: accent, letterSpacing: -0.5 }}>
-          {metric}
-        </div>
-        <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1, color: '#5A6477' }}>{unit}</div>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 10 }}>
+        <div style={{
+          fontFamily: 'Oswald', fontWeight: 700,
+          fontSize: 36, lineHeight: 1, color: accent, letterSpacing: -0.5,
+        }}>{data.metric}</div>
+        <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1, color: '#5A6477' }}>{data.unit}</div>
       </div>
-      <div style={{ fontSize: 11, lineHeight: 1.6, color: '#B5BECF', flex: 1 }}>{msg}</div>
+      <div style={{ fontSize: 11, lineHeight: 1.6, color: '#B5BECF', flex: 1 }}>{data.msg}</div>
     </div>
   )
 }
 
-function ChatSheet({ open, prompt, profile, recentWorkouts, onClose }) {
+function ChatComposer({ accent, onAsk }) {
+  return (
+    <div style={{ marginTop: 14, background: '#13171F', border: '1px solid #1F242E', padding: 12 }}>
+      <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1.5, color: '#8693AA', marginBottom: 8 }}>
+        AI に質問する
+      </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {[
+          '今日のフォーム、どうだった？',
+          '来週のメニューを組んで',
+          '伸び悩み、どう打開する？',
+        ].map((q, i) => (
+          <div
+            key={i}
+            onClick={() => onAsk(q)}
+            style={{
+              padding: '10px 12px', border: '1px solid #1F242E',
+              background: '#0E1118', fontSize: 12, color: '#B5BECF',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+              cursor: 'pointer',
+            }}
+          >
+            <span>{q}</span>
+            <span style={{ color: accent, fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1 }}>ASK →</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function ProUpsell() {
+  return (
+    <div style={{
+      marginTop: 14,
+      background: 'linear-gradient(135deg, #1A1410 0%, #0E1118 60%)',
+      border: '1px solid #2D1F12', borderLeft: '3px solid #FF6A1A',
+      padding: 14, position: 'relative', overflow: 'hidden',
+    }}>
+      <div style={{
+        position: 'absolute', top: -20, right: -10,
+        fontFamily: 'Oswald', fontWeight: 700, fontSize: 90,
+        color: 'rgba(255,106,26,0.06)', lineHeight: 1, pointerEvents: 'none',
+      }}>PRO</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+        <IcoCrown s={14} c="#FF6A1A" />
+        <div style={{ fontFamily: 'Bebas Neue', fontSize: 12, letterSpacing: 2, color: '#FF6A1A' }}>UPGRADE TO PRO</div>
+      </div>
+      <div style={{ fontFamily: '"Noto Sans JP", system-ui', fontWeight: 700, fontSize: 15, color: '#fff', marginBottom: 6, position: 'relative' }}>
+        無制限の AI 質問・週次プラン自動生成
+      </div>
+      <div style={{ fontSize: 11, color: '#8693AA', lineHeight: 1.6, marginBottom: 12, position: 'relative' }}>
+        無料版は週3回まで。Pro はフォーム動画解析・PR予測・パーソナルメニューが使い放題。
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
+        <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 22, color: '#fff' }}>
+          ¥980<span style={{ fontSize: 11, color: '#8693AA', fontFamily: 'JetBrains Mono', marginLeft: 4 }}>/月</span>
+        </div>
+        <button style={{
+          background: '#FF6A1A', color: '#0B0D10', border: 'none',
+          padding: '8px 18px', fontFamily: 'Oswald', fontWeight: 700, fontSize: 14, letterSpacing: 1.5,
+          cursor: 'pointer',
+        }}>始める →</button>
+      </div>
+    </div>
+  )
+}
+
+// Full chat sheet (opened from question chips)
+function ChatSheet({ open, initialPrompt, profile, recentWorkouts, onClose }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const bottomRef = useRef(null)
-  const sentInitial = useRef(false)
+  const didSendInitial = useRef(false)
 
   useEffect(() => {
-    if (open && prompt && !sentInitial.current) {
-      sentInitial.current = true
-      sendMessage(prompt, [])
+    if (open && initialPrompt && !didSendInitial.current) {
+      didSendInitial.current = true
+      doSend(initialPrompt, [])
     }
     if (!open) {
       setMessages([])
-      sentInitial.current = false
+      setInput('')
+      didSendInitial.current = false
     }
   }, [open])
 
@@ -78,14 +288,13 @@ function ChatSheet({ open, prompt, profile, recentWorkouts, onClose }) {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isLoading])
 
-  async function sendMessage(text, history) {
-    const msg = (text || input).trim()
+  async function doSend(text, history) {
+    const msg = (text ?? input).trim()
     if (!msg || isLoading) return
     setInput('')
-    const userMsg = { role: 'user', content: msg }
-    setMessages(prev => [...prev, userMsg])
+    setMessages(prev => [...prev, { role: 'user', content: msg }])
     setIsLoading(true)
-    const hist = (history || messages).slice(-10).map(m => ({ role: m.role, content: m.content }))
+    const hist = (history ?? messages).slice(-10)
     try {
       const { data, error } = await supabase.functions.invoke('ai-chat', {
         body: { message: msg, history: hist, profile, recentWorkouts },
@@ -108,8 +317,10 @@ function ChatSheet({ open, prompt, profile, recentWorkouts, onClose }) {
       left: '50%', transform: 'translateX(-50%)',
       width: '100%', maxWidth: 430,
     }}>
+      {/* header */}
       <div style={{
-        padding: 'calc(env(safe-area-inset-top) + 10px) 18px 12px',
+        paddingTop: 'calc(env(safe-area-inset-top) + 10px)',
+        paddingBottom: 12, paddingLeft: 18, paddingRight: 18,
         borderBottom: '1px solid #1F242E', background: '#0B0D10',
         display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0,
       }}>
@@ -124,9 +335,14 @@ function ChatSheet({ open, prompt, profile, recentWorkouts, onClose }) {
         </div>
       </div>
 
+      {/* messages */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
         {messages.map((msg, i) => (
-          <div key={i} style={{ display: 'flex', justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start', marginBottom: 12 }}>
+          <div key={i} style={{
+            display: 'flex',
+            justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+            marginBottom: 12,
+          }}>
             <div style={{
               maxWidth: '78%', padding: '10px 14px', fontSize: 14, lineHeight: 1.6,
               background: msg.role === 'user' ? '#FF6A1A' : '#13171F',
@@ -139,10 +355,14 @@ function ChatSheet({ open, prompt, profile, recentWorkouts, onClose }) {
         ))}
         {isLoading && (
           <div style={{ display: 'flex', marginBottom: 12 }}>
-            <div style={{ padding: '10px 14px', background: '#13171F', borderRadius: '16px 16px 16px 4px' }}>
-              <div style={{ display: 'flex', gap: 4 }}>
+            <div style={{ padding: '12px 16px', background: '#13171F', borderRadius: '16px 16px 16px 4px' }}>
+              <div style={{ display: 'flex', gap: 5 }}>
                 {[0, 1, 2].map(i => (
-                  <div key={i} style={{ width: 8, height: 8, borderRadius: '50%', background: '#5A6477', animation: 'bounce 1.2s infinite', animationDelay: `${i * 0.2}s` }} />
+                  <div key={i} style={{
+                    width: 7, height: 7, borderRadius: '50%', background: '#5A6477',
+                    animation: 'bounce 1.2s ease-in-out infinite',
+                    animationDelay: `${i * 0.2}s`,
+                  }} />
                 ))}
               </div>
             </div>
@@ -151,26 +371,34 @@ function ChatSheet({ open, prompt, profile, recentWorkouts, onClose }) {
         <div ref={bottomRef} />
       </div>
 
-      <div style={{ flexShrink: 0, borderTop: '1px solid #1F242E', padding: '12px 16px', paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)', background: '#0B0D10' }}>
+      {/* input */}
+      <div style={{
+        flexShrink: 0, borderTop: '1px solid #1F242E',
+        padding: '12px 16px',
+        paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)',
+        background: '#0B0D10',
+      }}>
         <div style={{ display: 'flex', gap: 8 }}>
           <input
             type="text"
             value={input}
             onChange={e => setInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+            onKeyDown={e => e.key === 'Enter' && !e.shiftKey && doSend()}
             placeholder="メッセージを入力..."
             style={{
-              flex: 1, padding: '12px 14px', background: '#13171F',
-              border: '1px solid #1F242E', color: '#E5E9F0', outline: 'none',
+              flex: 1, padding: '12px 14px',
+              background: '#13171F', border: '1px solid #1F242E',
+              color: '#E5E9F0', outline: 'none',
             }}
           />
           <button
-            onClick={() => sendMessage()}
+            onClick={() => doSend()}
             disabled={!input.trim() || isLoading}
             style={{
               width: 48, height: 48, background: '#FF6A1A', border: 'none',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', opacity: (!input.trim() || isLoading) ? 0.4 : 1, flexShrink: 0,
+              cursor: 'pointer', flexShrink: 0,
+              opacity: (!input.trim() || isLoading) ? 0.4 : 1,
             }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5">
@@ -184,6 +412,7 @@ function ChatSheet({ open, prompt, profile, recentWorkouts, onClose }) {
   )
 }
 
+// ── Main screen ───────────────────────────────────────────────────────────────
 export default function AITab() {
   const { user, profile } = useAuth()
   const [mode, setMode] = useState('spartan')
@@ -191,193 +420,93 @@ export default function AITab() {
   const [chatOpen, setChatOpen] = useState(false)
   const [chatPrompt, setChatPrompt] = useState('')
 
-  const trainer = profile?.trainer_character || 'RYOTA'
-  const trainerImg = TRAINER_IMAGES[trainer] || TRAINER_IMAGES.RYOTA
-  const accent = mode === 'spartan' ? '#FF6A1A' : '#5BC25B'
+  const coach = COACH_CONTENT[mode]
+  const accent = coach.tone
 
   useEffect(() => {
-    if (user) loadRecentWorkouts()
+    if (user) {
+      supabase
+        .from('workout_sessions')
+        .select('date, exercises')
+        .eq('user_id', user.id)
+        .order('date', { ascending: false })
+        .limit(12)
+        .then(({ data }) => setRecentWorkouts(data || []))
+    }
   }, [user])
 
-  async function loadRecentWorkouts() {
-    const { data } = await supabase
-      .from('workout_sessions').select('date, exercises')
-      .eq('user_id', user.id).order('date', { ascending: false }).limit(6)
-    setRecentWorkouts(data || [])
-  }
+  // ── Derived metrics ─────────────────────────────────────────────────────────
+  const recent3 = recentWorkouts.slice(0, 3)
+  const prev3   = recentWorkouts.slice(3, 6)
+  const thisVol = recent3.reduce((t, s) => t + calcVolume(s), 0)
+  const prevVol = prev3.reduce((t, s)  => t + calcVolume(s), 0)
+  const volChangePct = prevVol > 0 ? Math.round(((thisVol - prevVol) / prevVol) * 100) : null
 
-  function openChat(prompt) {
-    setChatPrompt(prompt)
-    setChatOpen(true)
-  }
+  const pushRatio = calcPushRatio(recent3)
 
-  const thisWeekVol = recentWorkouts.slice(0, 3).reduce((t, s) => t + calcVolume(s), 0)
-  const prevWeekVol = recentWorkouts.slice(3, 6).reduce((t, s) => t + calcVolume(s), 0)
-  const volChange = prevWeekVol > 0 ? Math.round(((thisWeekVol - prevWeekVol) / prevWeekVol) * 100) : 0
+  const goalLabel = profile?.training_purpose
+    ? ({ muscle: '筋肥大', diet: '減量', strength: '筋力向上', health: '健康維持', sport: 'スポーツ強化' }[profile.training_purpose] ?? '—')
+    : '—'
+
+  const days30 = recentWorkouts.filter(s => {
+    const d = new Date(s.date + 'T00:00:00')
+    return Date.now() - d.valueOf() < 30 * 24 * 60 * 60 * 1000
+  }).length
+
+  // Build card data (real data if available, else fallback)
+  const cardData = {
+    growth: {
+      title: coach.cards.growth.title,
+      metric: volChangePct !== null ? `${volChangePct >= 0 ? '+' : ''}${volChangePct}` : coach.cards.growth.fallbackMetric,
+      unit:   volChangePct !== null ? '% 前週比' : coach.cards.growth.fallbackUnit,
+      msg:    volChangePct !== null ? coach.cardMsg.growth(volChangePct) : coach.cards.growth.fallbackMsg,
+    },
+    issue: {
+      title: coach.cards.issue.title,
+      metric: pushRatio !== null ? String(pushRatio) : coach.cards.issue.fallbackMetric,
+      unit:   pushRatio !== null ? '% PUSH' : coach.cards.issue.fallbackUnit,
+      msg:    pushRatio !== null ? coach.cardMsg.issue(pushRatio) : coach.cards.issue.fallbackMsg,
+    },
+    goal: {
+      title:  coach.cards.goal.title,
+      metric: goalLabel,
+      unit:   profile?.goal_weight_kg ? `目標 ${profile.goal_weight_kg}kg` : '',
+      msg:    goalLabel !== '—'
+        ? coach.cardMsg.goal(goalLabel)
+        : coach.cards.goal.fallbackMsg,
+    },
+    balance: {
+      title:  coach.cards.balance.title,
+      metric: days30 > 0 ? String(days30) : coach.cards.balance.fallbackMetric,
+      unit:   days30 > 0 ? '日 / 30日' : coach.cards.balance.fallbackUnit,
+      msg:    days30 > 0 ? coach.cardMsg.balance(days30) : coach.cards.balance.fallbackMsg,
+    },
+  }
 
   return (
     <div style={{ background: '#0B0D10', minHeight: '100%', paddingBottom: 20 }}>
-      {/* mode toggle */}
+      {/* toggle */}
       <div style={{ padding: '14px 14px 12px', borderBottom: '1px solid #1A1F28' }}>
-        <div style={{ display: 'flex', background: '#0E1118', border: '1px solid #1F242E', padding: 3 }}>
-          {[{ id: 'spartan', label: 'スパルタ', sub: 'HARD', color: '#FF6A1A' }, { id: 'gentle', label: 'やさしい', sub: 'SOFT', color: '#5BC25B' }].map(opt => {
-            const active = mode === opt.id
-            return (
-              <button
-                key={opt.id}
-                onClick={() => setMode(opt.id)}
-                style={{
-                  flex: 1, background: active ? opt.color : 'transparent', border: 'none',
-                  color: active ? '#0B0D10' : '#8693AA',
-                  fontFamily: '"Noto Sans JP", system-ui', fontWeight: 700, fontSize: 13,
-                  padding: '10px 0', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-                }}
-              >
-                {opt.label}
-                <span style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1, opacity: 0.7 }}>{opt.sub}</span>
-              </button>
-            )
-          })}
-        </div>
+        <CoachToggle mode={mode} onChange={setMode} />
       </div>
 
       <div style={{ padding: '14px' }}>
-        {/* character panel */}
-        <div style={{
-          background: '#13171F', border: '1px solid #1F242E',
-          borderLeft: `3px solid ${accent}`,
-          padding: 16, display: 'flex', gap: 14, marginBottom: 14,
-        }}>
-          <div style={{
-            width: 60, height: 60, flexShrink: 0,
-            background: '#0E1118', border: '1px solid #1F242E',
-            overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <img src={trainerImg} alt={trainer} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-              <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1.5, color: accent }}>AI COACH</div>
-              <div style={{ fontFamily: 'Bebas Neue', fontSize: 9, letterSpacing: 1, background: `${accent}22`, color: accent, padding: '1px 4px' }}>
-                {mode === 'spartan' ? 'スパルタ' : 'やさしい'}
-              </div>
-            </div>
-            <div style={{ fontWeight: 700, fontSize: 16, color: '#fff', marginBottom: 4 }}>{trainer}</div>
-            <div style={{ fontSize: 12, color: '#B5BECF', lineHeight: 1.6 }}>{MODE_GREETING[mode]}</div>
-          </div>
-        </div>
+        <CharacterPanel coach={coach} mode={mode} />
 
-        {/* insight cards */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <InsightCard
-            title="今週のボリューム"
-            metric={thisWeekVol > 0 ? (thisWeekVol / 1000).toFixed(1) : '—'}
-            unit="TON"
-            msg={thisWeekVol > 0 ? `直近3セッションの合計。${volChange >= 0 ? '先週比 +' + volChange : '先週比 ' + volChange}%` : 'まだデータがありません。記録を始めましょう。'}
-            icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter"><path d="M3 17l6-6 4 4 8-9" /><path d="M14 6h7v7" /></svg>}
-            accent="#5BC25B"
-          />
-          <InsightCard
-            title="セッション数"
-            metric={recentWorkouts.length}
-            unit="回 / 最近"
-            msg="継続は力なり。週3回以上を目標にしましょう。"
-            icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></svg>}
-            accent="#FF6A1A"
-          />
-          <InsightCard
-            title="目標"
-            metric={profile?.training_purpose ? ({ muscle: '筋肥大', diet: '減量', strength: '筋力', health: '健康', sport: 'スポーツ' }[profile.training_purpose] || '—') : '—'}
-            unit=""
-            msg={profile?.goal_weight_kg ? `目標体重: ${profile.goal_weight_kg}kg` : 'プロフィールで目標を設定しましょう。'}
-            icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square"><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1.5" fill="currentColor" /></svg>}
-            accent="#FFB800"
-          />
-          <InsightCard
-            title="記録日数"
-            metric={recentWorkouts.filter(s => {
-              const d = new Date(s.date + 'T00:00:00')
-              const now = new Date()
-              return now - d < 30 * 24 * 60 * 60 * 1000
-            }).length}
-            unit="日 / 30日"
-            msg="30日以内のトレーニング日数。週3以上を維持しよう。"
-            icon={<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square"><path d="M12 3c1 4 5 5 5 10a5 5 0 0 1-10 0c0-2 1-3 2-4-1 3 1 5 3 4 1 0 0-3 0-5 0-2 0-3 0-5z" /></svg>}
-            accent="#5AA9FF"
-          />
+          <InsightCard data={cardData.growth}  icon={<IcoTrend   s={16} c="#5BC25B" />} accent="#5BC25B" />
+          <InsightCard data={cardData.issue}   icon={<IcoFlame   s={16} c="#FF6A1A" />} accent="#FF6A1A" />
+          <InsightCard data={cardData.goal}    icon={<IcoTarget  s={16} c="#FFB800" />} accent="#FFB800" />
+          <InsightCard data={cardData.balance} icon={<IcoBalance s={16} c="#5AA9FF" />} accent="#5AA9FF" />
         </div>
 
-        {/* chat composer */}
-        <div style={{ marginTop: 14, background: '#13171F', border: '1px solid #1F242E', padding: 12 }}>
-          <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1.5, color: '#8693AA', marginBottom: 8 }}>AI に質問する</div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {CHAT_PROMPTS.map((q, i) => (
-              <div
-                key={i}
-                onClick={() => openChat(q)}
-                style={{
-                  padding: '10px 12px', border: '1px solid #1F242E',
-                  background: '#0E1118', fontSize: 12, color: '#B5BECF',
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  cursor: 'pointer',
-                }}
-              >
-                <span>{q}</span>
-                <span style={{ color: accent, fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1 }}>ASK →</span>
-              </div>
-            ))}
-          </div>
-          <button
-            onClick={() => openChat('')}
-            style={{
-              width: '100%', marginTop: 10, padding: '10px 0',
-              background: '#FF6A1A', border: 'none', color: '#0B0D10',
-              fontFamily: 'Oswald', fontWeight: 700, fontSize: 14, letterSpacing: 1.5,
-              cursor: 'pointer',
-            }}
-          >チャットを開く →</button>
-        </div>
-
-        {/* pro upsell */}
-        <div style={{
-          marginTop: 14, background: 'linear-gradient(135deg, #1A1410 0%, #0E1118 60%)',
-          border: '1px solid #2D1F12', borderLeft: '3px solid #FF6A1A',
-          padding: 14, position: 'relative', overflow: 'hidden',
-        }}>
-          <div style={{
-            position: 'absolute', top: -20, right: -10,
-            fontFamily: 'Oswald', fontWeight: 700, fontSize: 90,
-            color: 'rgba(255,106,26,0.06)', lineHeight: 1, pointerEvents: 'none',
-          }}>PRO</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FF6A1A" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter">
-              <path d="M3 7l4 4 5-7 5 7 4-4-2 12H5z" />
-            </svg>
-            <div style={{ fontFamily: 'Bebas Neue', fontSize: 12, letterSpacing: 2, color: '#FF6A1A' }}>UPGRADE TO PRO</div>
-          </div>
-          <div style={{ fontFamily: '"Noto Sans JP", system-ui', fontWeight: 700, fontSize: 15, color: '#fff', marginBottom: 6, position: 'relative' }}>
-            無制限の AI 質問・週次プラン自動生成
-          </div>
-          <div style={{ fontSize: 11, color: '#8693AA', lineHeight: 1.6, marginBottom: 12, position: 'relative' }}>
-            無料版は週3回まで。Pro はフォーム動画解析・PR予測・パーソナルメニューが使い放題。
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
-            <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 22, color: '#fff' }}>
-              ¥980<span style={{ fontSize: 11, color: '#8693AA', fontFamily: 'JetBrains Mono', marginLeft: 4 }}>/月</span>
-            </div>
-            <button style={{
-              background: '#FF6A1A', color: '#0B0D10', border: 'none',
-              padding: '8px 18px', fontFamily: 'Oswald', fontWeight: 700, fontSize: 14, letterSpacing: 1.5,
-              cursor: 'pointer',
-            }}>始める →</button>
-          </div>
-        </div>
+        <ChatComposer accent={accent} onAsk={(q) => { setChatPrompt(q); setChatOpen(true) }} />
+        <ProUpsell />
       </div>
 
       <ChatSheet
         open={chatOpen}
-        prompt={chatPrompt}
+        initialPrompt={chatPrompt}
         profile={profile}
         recentWorkouts={recentWorkouts}
         onClose={() => setChatOpen(false)}
