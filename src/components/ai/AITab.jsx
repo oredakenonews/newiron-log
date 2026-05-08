@@ -258,13 +258,20 @@ function ProUpsell() {
   )
 }
 
-// Full chat sheet (opened from question chips)
-function ChatSheet({ open, initialPrompt, profile, recentWorkouts, onClose }) {
+const QUICK_PROMPTS = [
+  '今日のフォーム、どうだった？',
+  '来週のメニューを組んで',
+  '停滞期を打破したい',
+  '追い込み方を教えて',
+]
+
+function ChatSheet({ open, initialPrompt, profile, recentWorkouts, onClose, trainerName, trainerImg, coach }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const bottomRef = useRef(null)
   const didSendInitial = useRef(false)
+  const accent = coach?.tone || '#FF6A1A'
 
   useEffect(() => {
     if (open && initialPrompt && !didSendInitial.current) {
@@ -311,49 +318,135 @@ function ChatSheet({ open, initialPrompt, profile, recentWorkouts, onClose }) {
       left: '50%', transform: 'translateX(-50%)',
       width: '100%', maxWidth: 430,
     }}>
-      {/* header */}
+      {/* ── header ── */}
       <div style={{
         paddingTop: 'calc(env(safe-area-inset-top) + 10px)',
         paddingBottom: 12, paddingLeft: 18, paddingRight: 18,
         borderBottom: '1px solid #1F242E', background: '#0B0D10',
         display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0,
       }}>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#5A6477', cursor: 'pointer', padding: 0 }}>
+        <button
+          onClick={onClose}
+          style={{ background: 'none', border: 'none', color: '#5A6477', cursor: 'pointer', padding: 0, flexShrink: 0 }}
+        >
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="square">
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
-        <div>
-          <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 18, color: '#fff', letterSpacing: 1 }}>AI COACH</div>
-          <div style={{ fontSize: 10, color: '#5BC25B' }}>● オンライン</div>
+
+        {/* trainer avatar */}
+        <div style={{
+          width: 36, height: 36, flexShrink: 0,
+          background: '#0E1118', border: '1px solid #1F242E', overflow: 'hidden',
+        }}>
+          <img src={trainerImg} alt={trainerName} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 16, color: '#fff', letterSpacing: 0.5 }}>
+              {trainerName}
+            </div>
+            <div style={{
+              fontFamily: 'Bebas Neue', fontSize: 9, letterSpacing: 1,
+              background: `${accent}22`, color: accent, padding: '1px 5px',
+            }}>{coach?.tag}</div>
+          </div>
+          <div style={{ fontSize: 10, color: '#5BC25B', marginTop: 1 }}>● オンライン</div>
         </div>
       </div>
 
-      {/* messages */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
+      {/* ── messages ── */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 8px' }}>
+
+        {/* empty state — quick prompts */}
+        {messages.length === 0 && !isLoading && (
+          <div style={{ marginBottom: 20 }}>
+            <div style={{
+              fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2,
+              color: '#5A6477', marginBottom: 10,
+            }}>QUICK START</div>
+            {QUICK_PROMPTS.map((q, i) => (
+              <div
+                key={i}
+                onClick={() => doSend(q)}
+                style={{
+                  padding: '10px 12px', marginBottom: 6,
+                  border: '1px solid #1F242E', background: '#13171F',
+                  fontSize: 12, color: '#B5BECF',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  cursor: 'pointer',
+                }}
+              >
+                <span>{q}</span>
+                <span style={{ color: accent, fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1, flexShrink: 0 }}>
+                  ASK →
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+
         {messages.map((msg, i) => (
           <div key={i} style={{
             display: 'flex',
-            justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
-            marginBottom: 12,
+            flexDirection: msg.role === 'user' ? 'row-reverse' : 'row',
+            alignItems: 'flex-end',
+            gap: 8,
+            marginBottom: 10,
           }}>
+            {/* trainer avatar for AI messages */}
+            {msg.role === 'assistant' && (
+              <div style={{
+                width: 28, height: 28, flexShrink: 0,
+                background: '#0E1118', border: '1px solid #1F242E', overflow: 'hidden',
+              }}>
+                <img src={trainerImg} alt={trainerName} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              </div>
+            )}
+
             <div style={{
-              maxWidth: '78%', padding: '10px 14px', fontSize: 14, lineHeight: 1.6,
-              background: msg.role === 'user' ? '#FF6A1A' : '#13171F',
-              color: msg.role === 'user' ? '#0B0D10' : '#E5E9F0',
-              borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+              maxWidth: '75%',
+              padding: '10px 14px',
+              fontSize: 13, lineHeight: 1.7,
+              ...(msg.role === 'user'
+                ? {
+                    background: '#FF6A1A',
+                    color: '#0B0D10',
+                    fontWeight: 500,
+                  }
+                : {
+                    background: '#13171F',
+                    border: '1px solid #1F242E',
+                    borderLeft: `2px solid ${accent}`,
+                    color: '#E5E9F0',
+                  }
+              ),
             }}>
               {msg.content}
             </div>
           </div>
         ))}
+
+        {/* typing indicator */}
         {isLoading && (
-          <div style={{ display: 'flex', marginBottom: 12 }}>
-            <div style={{ padding: '12px 16px', background: '#13171F', borderRadius: '16px 16px 16px 4px' }}>
-              <div style={{ display: 'flex', gap: 5 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, marginBottom: 10 }}>
+            <div style={{
+              width: 28, height: 28, flexShrink: 0,
+              background: '#0E1118', border: '1px solid #1F242E', overflow: 'hidden',
+            }}>
+              <img src={trainerImg} alt={trainerName} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            </div>
+            <div style={{
+              padding: '12px 16px',
+              background: '#13171F', border: '1px solid #1F242E',
+              borderLeft: `2px solid ${accent}`,
+            }}>
+              <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
                 {[0, 1, 2].map(i => (
                   <div key={i} style={{
-                    width: 7, height: 7, borderRadius: '50%', background: '#5A6477',
+                    width: 6, height: 6,
+                    background: accent,
                     animation: 'bounce 1.2s ease-in-out infinite',
                     animationDelay: `${i * 0.2}s`,
                   }} />
@@ -362,12 +455,14 @@ function ChatSheet({ open, initialPrompt, profile, recentWorkouts, onClose }) {
             </div>
           </div>
         )}
+
         <div ref={bottomRef} />
       </div>
 
-      {/* input */}
+      {/* ── input ── */}
       <div style={{
-        flexShrink: 0, borderTop: '1px solid #1F242E',
+        flexShrink: 0,
+        borderTop: '1px solid #1F242E',
         padding: '12px 16px',
         paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)',
         background: '#0B0D10',
@@ -383,6 +478,7 @@ function ChatSheet({ open, initialPrompt, profile, recentWorkouts, onClose }) {
               flex: 1, padding: '12px 14px',
               background: '#13171F', border: '1px solid #1F242E',
               color: '#E5E9F0', outline: 'none',
+              fontFamily: '"Noto Sans JP", system-ui',
             }}
           />
           <button
