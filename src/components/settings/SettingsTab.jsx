@@ -28,6 +28,7 @@ export default function SettingsTab() {
     height_cm: '',
     age: '',
     gender: '',
+    current_weight_kg: '',
     goal_weight_kg: '',
     training_purpose: '',
     trainer_character: 'RYOTA',
@@ -44,6 +45,7 @@ export default function SettingsTab() {
         height_cm: profile.height_cm || '',
         age: profile.age || '',
         gender: profile.gender || '',
+        current_weight_kg: profile.current_weight_kg || '',
         goal_weight_kg: profile.goal_weight_kg || '',
         training_purpose: profile.training_purpose || '',
         trainer_character: profile.trainer_character || 'RYOTA',
@@ -70,6 +72,7 @@ export default function SettingsTab() {
       height_cm: form.height_cm ? parseFloat(form.height_cm) : null,
       age: form.age ? parseInt(form.age) : null,
       gender: form.gender || null,
+      current_weight_kg: form.current_weight_kg ? parseFloat(form.current_weight_kg) : null,
       goal_weight_kg: form.goal_weight_kg ? parseFloat(form.goal_weight_kg) : null,
       training_purpose: form.training_purpose || null,
       trainer_character: form.trainer_character,
@@ -168,6 +171,17 @@ export default function SettingsTab() {
               </select>
             </div>
             <div>
+              <label className="block text-xs mb-1" style={{ color: '#888' }}>現在の体重 (kg)</label>
+              <input
+                type="number"
+                value={form.current_weight_kg}
+                onChange={e => setForm(f => ({ ...f, current_weight_kg: e.target.value }))}
+                className="w-full px-3 py-2.5 rounded-xl text-sm outline-none border"
+                style={{ background: '#1a1a1a', borderColor: '#2a2a2a', color: '#f5f5f5' }}
+                placeholder="70"
+              />
+            </div>
+            <div>
               <label className="block text-xs mb-1" style={{ color: '#888' }}>目標体重 (kg)</label>
               <input
                 type="number"
@@ -175,7 +189,7 @@ export default function SettingsTab() {
                 onChange={e => setForm(f => ({ ...f, goal_weight_kg: e.target.value }))}
                 className="w-full px-3 py-2.5 rounded-xl text-sm outline-none border"
                 style={{ background: '#1a1a1a', borderColor: '#2a2a2a', color: '#f5f5f5' }}
-                placeholder="70"
+                placeholder="65"
               />
             </div>
           </div>
