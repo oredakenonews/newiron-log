@@ -102,7 +102,7 @@ export default function AITab() {
   }
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 20, display: 'flex', flexDirection: 'column', background: '#0f0f0f' }}>
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 'calc(env(safe-area-inset-bottom) + 64px)', zIndex: 20, display: 'flex', flexDirection: 'column', background: '#0f0f0f' }}>
       {/* ヘッダー */}
       <div className="px-4 pb-3 flex items-center gap-3" style={{ flexShrink: 0, borderBottom: '1px solid #2a2a2a', paddingTop: 'calc(env(safe-area-inset-top) + 24px)', background: '#0f0f0f' }}>
         <img src={trainerImg} alt={trainer} className="w-10 h-10 object-contain rounded-full" style={{ background: '#1a1a1a' }} />
@@ -148,7 +148,7 @@ export default function AITab() {
       </div>
 
       {/* 入力エリア（fixed廃止・flex末尾に配置） */}
-      <div style={{ flexShrink: 0, borderTop: '1px solid #2a2a2a', background: '#0f0f0f', paddingBottom: 'calc(env(safe-area-inset-bottom) + 80px)' }}>
+      <div style={{ flexShrink: 0, borderTop: '1px solid #2a2a2a', background: '#0f0f0f' }}>
         {/* 選択肢チップ */}
         <div className="flex gap-2 overflow-x-auto px-4 pt-3 pb-2" style={{ scrollbarWidth: 'none' }}>
           {SUGGESTIONS.map((s, i) => (
