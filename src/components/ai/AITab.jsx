@@ -602,6 +602,9 @@ export default function AITab() {
         profile={profile}
         recentWorkouts={recentWorkouts}
         onClose={() => setChatOpen(false)}
+        trainerName={trainer}
+        trainerImg={trainerImg}
+        coach={coach}
       />
     </div>
   )
