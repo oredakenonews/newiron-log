@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
+import { getCategory } from '../../lib/categories'
 
 const PURPOSES = [
   { value: 'muscle', label: '筋肥大' },
@@ -317,7 +318,7 @@ export default function SettingsTab() {
               >
                 <div>
                   <div style={{ fontSize: 10, fontFamily: 'Bebas Neue', letterSpacing: 1.5, color: '#FF6A1A', marginBottom: 2 }}>
-                    {({ 'ベンチプレス': 'CHEST', 'スクワット': 'LEGS', 'デッドリフト': 'BACK', '懸垂': 'BACK', 'ショルダープレス': 'SHOULDERS', 'ダンベルカール': 'ARMS' }[ex.name] || 'EXERCISE')}
+                    {getCategory(ex.name)}
                   </div>
                   <div style={{ fontSize: 15, color: '#fff' }}>{ex.name}</div>
                 </div>

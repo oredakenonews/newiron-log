@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
+import { getCategory } from '../../lib/categories'
 
 const ITEM_H = 36
 const VISIBLE = 3
@@ -23,19 +24,6 @@ function nearestWeight(w) {
   return best
 }
 
-const CATEGORY_MAP = {
-  'ベンチプレス': 'CHEST', 'インクラインベンチ': 'CHEST', 'インクラインダンベルプレス': 'CHEST',
-  'ダンベルフライ': 'CHEST', 'ケーブルクロスオーバー': 'CHEST', 'ペックフライ': 'CHEST',
-  'スクワット': 'LEGS', 'レッグプレス': 'LEGS', 'ランジ': 'LEGS', 'レッグカール': 'LEGS',
-  'レッグエクステンション': 'LEGS', 'カーフレイズ': 'LEGS', 'ヒップスラスト': 'LEGS',
-  'デッドリフト': 'BACK', '懸垂': 'BACK', 'ラットプルダウン': 'BACK',
-  'ベントオーバーロウ': 'BACK', 'シーテッドロウ': 'BACK', 'ワンハンドロウ': 'BACK', 'フェイスプル': 'BACK',
-  'ショルダープレス': 'SHOULDERS', 'サイドレイズ': 'SHOULDERS', 'フロントレイズ': 'SHOULDERS', 'リアレイズ': 'SHOULDERS',
-  'ダンベルカール': 'ARMS', 'バーベルカール': 'ARMS', 'ハンマーカール': 'ARMS',
-  'トライセプスプレスダウン': 'ARMS', 'トライセプスエクステンション': 'ARMS', 'ディップス': 'ARMS',
-  'プランク': 'CORE', 'クランチ': 'CORE', 'ロシアンツイスト': 'CORE',
-}
-function getCategory(name) { return CATEGORY_MAP[name] || 'EXERCISE' }
 
 function today() {
   return new Date().toISOString().split('T')[0]

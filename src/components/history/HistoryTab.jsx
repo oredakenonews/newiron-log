@@ -1,26 +1,11 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
+import { getCategory, FILTER_CATS } from '../../lib/categories'
 
 const FILTERS = ['すべて', '胸', '背中', '脚', '肩・腕']
-const FILTER_CATS = {
-  '胸': ['CHEST'],
-  '背中': ['BACK'],
-  '脚': ['LEGS'],
-  '肩・腕': ['SHOULDERS', 'ARMS'],
-}
 
-const CATEGORY_MAP = {
-  'ベンチプレス': 'CHEST', 'インクラインベンチ': 'CHEST', 'インクラインダンベルプレス': 'CHEST',
-  'ダンベルフライ': 'CHEST', 'ケーブルクロスオーバー': 'CHEST', 'ペックフライ': 'CHEST',
-  'スクワット': 'LEGS', 'レッグプレス': 'LEGS', 'ランジ': 'LEGS',
-  'レッグカール': 'LEGS', 'レッグエクステンション': 'LEGS', 'カーフレイズ': 'LEGS',
-  'デッドリフト': 'BACK', '懸垂': 'BACK', 'ラットプルダウン': 'BACK',
-  'ベントオーバーロウ': 'BACK', 'シーテッドロウ': 'BACK',
-  'ショルダープレス': 'SHOULDERS', 'サイドレイズ': 'SHOULDERS',
-  'ダンベルカール': 'ARMS', 'バーベルカール': 'ARMS', 'トライセプスプレスダウン': 'ARMS',
-}
-function getCat(name) { return CATEGORY_MAP[name] || '' }
+function getCat(name) { return getCategory(name) }
 
 function calcVolume(session) {
   return (session.exercises || []).reduce((t, ex) =>
