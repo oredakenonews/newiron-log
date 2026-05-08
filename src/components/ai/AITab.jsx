@@ -104,7 +104,7 @@ export default function AITab() {
   return (
     <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#0f0f0f' }}>
       {/* ヘッダー */}
-      <div className="px-4 pt-6 pb-3 flex items-center gap-3" style={{ flexShrink: 0, borderBottom: '1px solid #2a2a2a' }}>
+      <div className="px-4 pt-6 pb-3 flex items-center gap-3" style={{ flexShrink: 0, borderBottom: '1px solid #2a2a2a', position: 'sticky', top: 0, zIndex: 10, background: '#0f0f0f' }}>
         <img src={trainerImg} alt={trainer} className="w-10 h-10 object-contain rounded-full" style={{ background: '#1a1a1a' }} />
         <div>
           <p className="font-bebas text-lg" style={{ color: '#f97316' }}>{trainer}</p>
