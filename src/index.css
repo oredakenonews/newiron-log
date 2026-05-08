@@ -30,6 +30,7 @@ body {
   min-height: 100dvh;
   position: relative;
   overflow-x: hidden;
+  padding-top: env(safe-area-inset-top);
 }
 
 .font-bebas {

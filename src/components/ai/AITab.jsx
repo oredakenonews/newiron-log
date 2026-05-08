@@ -148,7 +148,7 @@ export default function AITab() {
       </div>
 
       {/* 入力エリア（fixed廃止・flex末尾に配置） */}
-      <div style={{ flexShrink: 0, borderTop: '1px solid #2a2a2a', background: '#0f0f0f', paddingBottom: 80 }}>
+      <div style={{ flexShrink: 0, borderTop: '1px solid #2a2a2a', background: '#0f0f0f', paddingBottom: 'calc(env(safe-area-inset-bottom) + 80px)' }}>
         {/* 選択肢チップ */}
         <div className="flex gap-2 overflow-x-auto px-4 pt-3 pb-2" style={{ scrollbarWidth: 'none' }}>
           {SUGGESTIONS.map((s, i) => (

@@ -50,7 +50,7 @@ export default function BottomNav() {
   return (
     <nav
       className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] flex border-t"
-      style={{ background: '#0f0f0f', borderColor: '#2a2a2a', zIndex: 50 }}
+      style={{ background: '#0f0f0f', borderColor: '#2a2a2a', zIndex: 50, paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       {tabs.map(tab => (
         <NavLink
