@@ -102,9 +102,9 @@ export default function AITab() {
   }
 
   return (
-    <div className="flex flex-col min-h-dvh" style={{ background: '#0f0f0f' }}>
+    <div style={{ height: '100dvh', display: 'flex', flexDirection: 'column', background: '#0f0f0f' }}>
       {/* ヘッダー */}
-      <div className="px-4 pt-6 pb-3 flex items-center gap-3 flex-shrink-0" style={{ borderBottom: '1px solid #2a2a2a' }}>
+      <div className="px-4 pt-6 pb-3 flex items-center gap-3" style={{ flexShrink: 0, borderBottom: '1px solid #2a2a2a' }}>
         <img src={trainerImg} alt={trainer} className="w-10 h-10 object-contain rounded-full" style={{ background: '#1a1a1a' }} />
         <div>
           <p className="font-bebas text-lg" style={{ color: '#f97316' }}>{trainer}</p>
@@ -113,7 +113,7 @@ export default function AITab() {
       </div>
 
       {/* メッセージ */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4" style={{ paddingBottom: '160px' }}>
+      <div className="px-4 py-4 space-y-4" style={{ flex: 1, overflowY: 'auto' }}>
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} items-end gap-2`}>
             {msg.role === 'assistant' && (
@@ -147,11 +147,8 @@ export default function AITab() {
         <div ref={bottomRef} />
       </div>
 
-      {/* 入力エリア（固定） */}
-      <div
-        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px]"
-        style={{ background: '#0f0f0f', borderTop: '1px solid #2a2a2a', paddingBottom: 'calc(env(safe-area-inset-bottom) + 64px)' }}
-      >
+      {/* 入力エリア（fixed廃止・flex末尾に配置） */}
+      <div style={{ flexShrink: 0, borderTop: '1px solid #2a2a2a', background: '#0f0f0f', paddingBottom: 80 }}>
         {/* 選択肢チップ */}
         <div className="flex gap-2 overflow-x-auto px-4 pt-3 pb-2" style={{ scrollbarWidth: 'none' }}>
           {SUGGESTIONS.map((s, i) => (
@@ -176,8 +173,8 @@ export default function AITab() {
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
             placeholder="メッセージを入力..."
-            className="flex-1 px-4 py-3 rounded-xl text-sm outline-none"
-            style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#f5f5f5' }}
+            className="flex-1 px-4 py-3 rounded-xl outline-none"
+            style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#f5f5f5', fontSize: 16 }}
           />
           <button
             onClick={() => sendMessage()}
