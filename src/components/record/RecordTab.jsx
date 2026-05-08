@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
+
+const ITEM_H = 48
 
 function today() {
   return new Date().toISOString().split('T')[0]
@@ -10,6 +12,112 @@ function formatDateJP(dateStr) {
   const d = new Date(dateStr)
   const week = ['日', '月', '火', '水', '木', '金', '土']
   return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日（${week[d.getDay()]}）`
+}
+
+function makeWeightValues(weightMin = 0) {
+  return Array.from({ length: 201 - weightMin }, (_, i) => weightMin + i)
+}
+
+function makeRepsValues(repsStep = 1, repsMax = 30) {
+  const values = []
+  for (let v = repsStep; v <= repsMax; v += repsStep) values.push(v)
+  return values
+}
+
+function WheelPicker({ values, selected, onChange }) {
+  const containerRef = useRef(null)
+  const timerRef = useRef(null)
+
+  useEffect(() => {
+    const idx = values.indexOf(selected)
+    if (containerRef.current) {
+      containerRef.current.scrollTop = Math.max(0, idx) * ITEM_H
+    }
+  }, [])
+
+  function onScroll() {
+    clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(() => {
+      if (!containerRef.current) return
+      const idx = Math.round(containerRef.current.scrollTop / ITEM_H)
+      const clamped = Math.max(0, Math.min(idx, values.length - 1))
+      containerRef.current.scrollTo({ top: clamped * ITEM_H, behavior: 'smooth' })
+      onChange(values[clamped])
+    }, 80)
+  }
+
+  return (
+    <div className="relative flex-1" style={{ height: ITEM_H * 5, overflow: 'hidden' }}>
+      <div className="absolute inset-x-0 top-0 z-10 pointer-events-none" style={{ height: ITEM_H * 2, background: 'linear-gradient(to bottom, #1a1a1a 20%, transparent)' }} />
+      <div className="absolute inset-x-0 bottom-0 z-10 pointer-events-none" style={{ height: ITEM_H * 2, background: 'linear-gradient(to top, #1a1a1a 20%, transparent)' }} />
+      <div className="absolute inset-x-0 z-10 pointer-events-none" style={{ top: ITEM_H * 2, height: ITEM_H, borderTop: '1px solid #f97316', borderBottom: '1px solid #f97316' }} />
+      <div
+        ref={containerRef}
+        onScroll={onScroll}
+        style={{
+          height: '100%',
+          overflowY: 'scroll',
+          scrollSnapType: 'y mandatory',
+          WebkitOverflowScrolling: 'touch',
+          paddingTop: ITEM_H * 2,
+          paddingBottom: ITEM_H * 2,
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+        }}
+      >
+        {values.map((v, i) => (
+          <div
+            key={i}
+            style={{
+              height: ITEM_H,
+              scrollSnapAlign: 'center',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.6rem',
+              fontFamily: "'Bebas Neue', sans-serif",
+              color: '#f5f5f5',
+            }}
+          >
+            {v}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function SetPickerModal({ weightValues, repsValues, weight, reps, onConfirm, onClose }) {
+  const initW = weight !== '' && !isNaN(Number(weight)) ? Number(weight) : weightValues[0]
+  const initR = reps !== '' && !isNaN(Number(reps)) ? Number(reps) : repsValues[0]
+  const [w, setW] = useState(weightValues.includes(initW) ? initW : weightValues[0])
+  const [r, setR] = useState(repsValues.includes(initR) ? initR : repsValues[0])
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: 'rgba(0,0,0,0.75)' }}>
+      <div className="w-full max-w-[430px] rounded-t-3xl px-6 pt-5 pb-7" style={{ background: '#1a1a1a' }}>
+        <div className="flex items-center gap-3">
+          <WheelPicker values={weightValues} selected={w} onChange={setW} />
+          <div className="flex-shrink-0 flex flex-col items-center justify-center gap-1" style={{ color: '#666' }}>
+            <span className="text-xs">kg</span>
+            <span>×</span>
+          </div>
+          <WheelPicker values={repsValues} selected={r} onChange={setR} />
+          <span className="flex-shrink-0 text-xs self-center" style={{ color: '#666' }}>回</span>
+        </div>
+        <button
+          onClick={() => onConfirm(w, r)}
+          className="w-full mt-5 py-3 rounded-xl font-bold text-white text-sm"
+          style={{ background: '#f97316' }}
+        >
+          確定
+        </button>
+        <button onClick={onClose} className="w-full mt-2 py-2 text-sm" style={{ color: '#666' }}>
+          キャンセル
+        </button>
+      </div>
+    </div>
+  )
 }
 
 export default function RecordTab() {
@@ -22,6 +130,7 @@ export default function RecordTab() {
   const [saved, setSaved] = useState(false)
   const [showExercisePicker, setShowExercisePicker] = useState(false)
   const [showCardioForm, setShowCardioForm] = useState(false)
+  const [pickerTarget, setPickerTarget] = useState(null)
 
   useEffect(() => {
     if (user) {
@@ -69,17 +178,17 @@ export default function RecordTab() {
     })
   }
 
-  function updateSet(exIdx, setIdx, field, value) {
-    setExercises(prev => {
-      const updated = prev.map((ex, i) => {
-        if (i !== exIdx) return ex
-        return {
+  function updateSet(exIdx, setIdx, weight, reps) {
+    setExercises(prev =>
+      prev.map((ex, i) =>
+        i !== exIdx ? ex : {
           ...ex,
-          sets: ex.sets.map((s, j) => j === setIdx ? { ...s, [field]: value } : s),
+          sets: ex.sets.map((s, j) =>
+            j === setIdx ? { weight: String(weight), reps: String(reps) } : s
+          ),
         }
-      })
-      return updated
-    })
+      )
+    )
   }
 
   function removeExercise(exIdx) {
@@ -91,6 +200,14 @@ export default function RecordTab() {
     setShowCardioForm(false)
   }
 
+  function getExerciseConfig(name) {
+    const ex = userExercises.find(e => e.name === name)
+    return {
+      weightValues: makeWeightValues(ex?.weight_min ?? 0),
+      repsValues: makeRepsValues(ex?.reps_step ?? 1, ex?.reps_max ?? 30),
+    }
+  }
+
   async function saveSession() {
     setSaving(true)
     const { data: existing } = await supabase
@@ -100,13 +217,7 @@ export default function RecordTab() {
       .eq('date', today())
       .single()
 
-    const payload = {
-      user_id: user.id,
-      date: today(),
-      exercises,
-      cardio,
-      memo,
-    }
+    const payload = { user_id: user.id, date: today(), exercises, cardio, memo }
 
     if (existing) {
       await supabase.from('workout_sessions').update(payload).eq('id', existing.id)
@@ -117,6 +228,13 @@ export default function RecordTab() {
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
+
+  const activeTarget = pickerTarget
+    ? {
+        set: exercises[pickerTarget.exIdx]?.sets[pickerTarget.setIdx],
+        config: getExerciseConfig(exercises[pickerTarget.exIdx]?.name),
+      }
+    : null
 
   return (
     <div className="px-4 pt-6 pb-4">
@@ -135,7 +253,6 @@ export default function RecordTab() {
         </button>
       </div>
 
-      {/* 種目リスト */}
       <div className="space-y-4 mb-4">
         {exercises.map((ex, exIdx) => (
           <div key={exIdx} className="rounded-2xl p-4" style={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}>
@@ -151,28 +268,22 @@ export default function RecordTab() {
             <div className="space-y-2">
               {ex.sets.map((set, setIdx) => (
                 <div key={setIdx} className="flex items-center gap-2">
-                  <span className="text-xs w-6 flex-shrink-0 text-right" style={{ color: '#888' }}>{setIdx + 1}</span>
-                  <div className="flex items-center gap-1 flex-1 min-w-0">
-                    <input
-                      type="number"
-                      value={set.weight}
-                      onChange={e => updateSet(exIdx, setIdx, 'weight', e.target.value)}
-                      placeholder="0"
-                      className="w-0 flex-1 min-w-0 px-2 py-2 rounded-lg text-sm text-center outline-none"
-                      style={{ background: '#0f0f0f', color: '#f5f5f5', border: '1px solid #2a2a2a' }}
-                    />
-                    <span className="text-xs flex-shrink-0" style={{ color: '#888' }}>kg</span>
-                    <span className="flex-shrink-0" style={{ color: '#555' }}>×</span>
-                    <input
-                      type="number"
-                      value={set.reps}
-                      onChange={e => updateSet(exIdx, setIdx, 'reps', e.target.value)}
-                      placeholder="0"
-                      className="w-0 flex-1 min-w-0 px-2 py-2 rounded-lg text-sm text-center outline-none"
-                      style={{ background: '#0f0f0f', color: '#f5f5f5', border: '1px solid #2a2a2a' }}
-                    />
-                    <span className="text-xs flex-shrink-0" style={{ color: '#888' }}>回</span>
-                  </div>
+                  <span className="text-xs w-5 flex-shrink-0 text-right" style={{ color: '#555' }}>{setIdx + 1}</span>
+                  <button
+                    onClick={() => setPickerTarget({ exIdx, setIdx })}
+                    className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl"
+                    style={{ background: '#0f0f0f', border: '1px solid #2a2a2a' }}
+                  >
+                    <span className="font-bebas text-xl" style={{ color: set.weight !== '' ? '#f5f5f5' : '#444', minWidth: '2.5ch', textAlign: 'right' }}>
+                      {set.weight !== '' ? set.weight : '—'}
+                    </span>
+                    <span className="text-xs" style={{ color: '#666' }}>kg</span>
+                    <span style={{ color: '#444' }}>×</span>
+                    <span className="font-bebas text-xl" style={{ color: set.reps !== '' ? '#f5f5f5' : '#444', minWidth: '2ch', textAlign: 'right' }}>
+                      {set.reps !== '' ? set.reps : '—'}
+                    </span>
+                    <span className="text-xs" style={{ color: '#666' }}>回</span>
+                  </button>
                 </div>
               ))}
             </div>
@@ -188,7 +299,6 @@ export default function RecordTab() {
         ))}
       </div>
 
-      {/* 有酸素記録 */}
       {cardio.length > 0 && (
         <div className="rounded-2xl p-4 mb-4" style={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}>
           <h3 className="text-sm font-bold mb-2">有酸素</h3>
@@ -201,7 +311,6 @@ export default function RecordTab() {
         </div>
       )}
 
-      {/* アクションボタン */}
       <div className="space-y-2 mb-4">
         <button
           onClick={() => setShowExercisePicker(true)}
@@ -219,7 +328,6 @@ export default function RecordTab() {
         </button>
       </div>
 
-      {/* 今日の意図メモ */}
       <div className="rounded-2xl p-4" style={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}>
         <label className="block text-sm font-bold mb-2">今日の意図</label>
         <textarea
@@ -232,7 +340,6 @@ export default function RecordTab() {
         />
       </div>
 
-      {/* 種目ピッカー モーダル */}
       {showExercisePicker && (
         <ExercisePicker
           userExercises={userExercises}
@@ -241,11 +348,24 @@ export default function RecordTab() {
         />
       )}
 
-      {/* 有酸素フォーム モーダル */}
       {showCardioForm && (
         <CardioForm
           onAdd={addCardio}
           onClose={() => setShowCardioForm(false)}
+        />
+      )}
+
+      {pickerTarget && activeTarget?.set && (
+        <SetPickerModal
+          weightValues={activeTarget.config.weightValues}
+          repsValues={activeTarget.config.repsValues}
+          weight={activeTarget.set.weight}
+          reps={activeTarget.set.reps}
+          onConfirm={(w, r) => {
+            updateSet(pickerTarget.exIdx, pickerTarget.setIdx, w, r)
+            setPickerTarget(null)
+          }}
+          onClose={() => setPickerTarget(null)}
         />
       )}
     </div>
@@ -281,6 +401,7 @@ function ExercisePicker({ userExercises, onSelect, onClose }) {
             type="text"
             value={custom}
             onChange={e => setCustom(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && custom.trim() && onSelect(custom.trim())}
             placeholder="種目名を直接入力"
             className="flex-1 px-4 py-2 rounded-xl text-sm outline-none"
             style={{ background: '#0f0f0f', border: '1px solid #2a2a2a', color: '#f5f5f5' }}
