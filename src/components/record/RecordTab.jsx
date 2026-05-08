@@ -151,27 +151,27 @@ export default function RecordTab() {
             <div className="space-y-2">
               {ex.sets.map((set, setIdx) => (
                 <div key={setIdx} className="flex items-center gap-2">
-                  <span className="text-xs w-8 text-right" style={{ color: '#888' }}>{setIdx + 1}</span>
-                  <div className="flex items-center gap-1 flex-1">
+                  <span className="text-xs w-6 flex-shrink-0 text-right" style={{ color: '#888' }}>{setIdx + 1}</span>
+                  <div className="flex items-center gap-1 flex-1 min-w-0">
                     <input
                       type="number"
                       value={set.weight}
                       onChange={e => updateSet(exIdx, setIdx, 'weight', e.target.value)}
-                      placeholder="重量"
-                      className="flex-1 px-3 py-2 rounded-lg text-sm text-center outline-none"
+                      placeholder="0"
+                      className="w-0 flex-1 min-w-0 px-2 py-2 rounded-lg text-sm text-center outline-none"
                       style={{ background: '#0f0f0f', color: '#f5f5f5', border: '1px solid #2a2a2a' }}
                     />
-                    <span className="text-xs" style={{ color: '#888' }}>kg</span>
-                    <span style={{ color: '#2a2a2a' }}>×</span>
+                    <span className="text-xs flex-shrink-0" style={{ color: '#888' }}>kg</span>
+                    <span className="flex-shrink-0" style={{ color: '#555' }}>×</span>
                     <input
                       type="number"
                       value={set.reps}
                       onChange={e => updateSet(exIdx, setIdx, 'reps', e.target.value)}
-                      placeholder="回数"
-                      className="flex-1 px-3 py-2 rounded-lg text-sm text-center outline-none"
+                      placeholder="0"
+                      className="w-0 flex-1 min-w-0 px-2 py-2 rounded-lg text-sm text-center outline-none"
                       style={{ background: '#0f0f0f', color: '#f5f5f5', border: '1px solid #2a2a2a' }}
                     />
-                    <span className="text-xs" style={{ color: '#888' }}>回</span>
+                    <span className="text-xs flex-shrink-0" style={{ color: '#888' }}>回</span>
                   </div>
                 </div>
               ))}
