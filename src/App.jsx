@@ -15,10 +15,13 @@ function AuthGuard({ children }) {
 
   if (loading) {
     return (
-      <div className="min-h-dvh flex items-center justify-center" style={{ background: '#0f0f0f' }}>
-        <div className="text-center">
-          <p className="font-bebas text-4xl mb-2" style={{ color: '#f97316' }}>IRON LOG</p>
-          <p className="text-xs" style={{ color: '#888' }}>Loading...</p>
+      <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0B0D10' }}>
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 12 }}>
+            <div style={{ width: 32, height: 32, background: '#FF6A1A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Oswald', fontWeight: 700, fontSize: 18, color: '#0B0D10' }}>IL</div>
+            <p style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 28, color: '#fff', letterSpacing: 1, margin: 0 }}>IRON LOG</p>
+          </div>
+          <p style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2, color: '#5A6477', margin: 0 }}>LOADING...</p>
         </div>
       </div>
     )

@@ -22,16 +22,22 @@ const TRAINERS = [
   { id: 'BILLY', name: 'BILLY', desc: 'エンタメ系。楽しく盛り上げながらトレーニング', img: '/gazou/billybu.png' },
 ]
 
+function Section({ title, children }) {
+  return (
+    <div style={{ marginBottom: 18 }}>
+      <div style={{ padding: '8px 18px', fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2, color: '#5A6477' }}>{title}</div>
+      <div style={{ background: '#13171F', borderTop: '1px solid #1F242E', borderBottom: '1px solid #1F242E' }}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
 export default function SettingsTab() {
   const { user, profile, refreshProfile } = useAuth()
   const [form, setForm] = useState({
-    height_cm: '',
-    age: '',
-    gender: '',
-    current_weight_kg: '',
-    goal_weight_kg: '',
-    training_purpose: '',
-    trainer_character: 'RYOTA',
+    height_cm: '', age: '', gender: '', current_weight_kg: '',
+    goal_weight_kg: '', training_purpose: '', trainer_character: 'RYOTA',
   })
   const [exercises, setExercises] = useState([])
   const [saving, setSaving] = useState(false)
@@ -58,11 +64,7 @@ export default function SettingsTab() {
   }, [user])
 
   async function loadExercises() {
-    const { data } = await supabase
-      .from('user_exercises')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('order')
+    const { data } = await supabase.from('user_exercises').select('*').eq('user_id', user.id).order('order')
     setExercises(data || [])
   }
 
@@ -87,9 +89,7 @@ export default function SettingsTab() {
   async function addExercise() {
     if (!newExName.trim()) return
     const { data } = await supabase.from('user_exercises').insert({
-      user_id: user.id,
-      name: newExName.trim(),
-      order: exercises.length,
+      user_id: user.id, name: newExName.trim(), order: exercises.length,
     }).select().single()
     if (data) setExercises(prev => [...prev, data])
     setNewExName('')
@@ -104,202 +104,227 @@ export default function SettingsTab() {
     await supabase.auth.signOut()
   }
 
-  return (
-    <div className="px-4 pt-6 pb-4">
-      <h1 className="font-bebas text-3xl mb-6" style={{ color: '#f97316' }}>SETTINGS</h1>
+  const username = profile?.display_name || user?.email?.split('@')[0]?.toUpperCase() || 'USER'
+  const initial = username[0] || 'U'
 
-      {/* セクション切替 */}
-      <div className="flex gap-2 mb-6">
+  const inputStyle = {
+    width: '100%', padding: '10px 14px',
+    background: '#0E1118', border: '1px solid #1F242E',
+    color: '#E5E9F0', outline: 'none',
+    fontFamily: '"Noto Sans JP", system-ui',
+  }
+
+  return (
+    <div style={{ background: '#0B0D10', minHeight: '100%', paddingBottom: 20 }}>
+      {/* profile header */}
+      <div style={{
+        padding: '20px 18px 22px', background: '#13171F',
+        borderBottom: '1px solid #1F242E',
+        display: 'flex', alignItems: 'center', gap: 14,
+      }}>
+        <div style={{
+          width: 60, height: 60, flexShrink: 0,
+          background: '#0E1118', border: '1px solid #1F242E',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontFamily: 'Oswald', fontWeight: 700, fontSize: 28, color: '#FF6A1A',
+        }}>{initial}</div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 700, fontSize: 18, color: '#fff' }}>{username}</div>
+          <div style={{ fontSize: 11, color: '#8693AA', fontFamily: 'JetBrains Mono', marginTop: 2 }}>FREE PLAN</div>
+        </div>
+        <button style={{
+          background: '#FF6A1A', color: '#0B0D10', border: 'none',
+          padding: '8px 12px', fontFamily: 'Oswald', fontWeight: 700, fontSize: 12, letterSpacing: 1,
+          cursor: 'pointer',
+        }}>PRO →</button>
+      </div>
+
+      {/* section tabs */}
+      <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid #1F242E' }}>
         {[
           { id: 'profile', label: 'プロフィール' },
-          { id: 'trainer', label: 'トレーナー' },
+          { id: 'trainer', label: 'AIコーチ' },
           { id: 'exercises', label: '種目' },
         ].map(s => (
           <button
             key={s.id}
             onClick={() => setActiveSection(s.id)}
-            className="flex-1 py-2 rounded-xl text-xs font-bold"
             style={{
-              background: activeSection === s.id ? '#f97316' : '#1a1a1a',
-              color: activeSection === s.id ? '#fff' : '#888',
-              border: '1px solid #2a2a2a',
+              flex: 1, padding: '12px 0',
+              background: 'transparent', border: 'none',
+              borderBottom: activeSection === s.id ? '2px solid #FF6A1A' : '2px solid transparent',
+              color: activeSection === s.id ? '#FF6A1A' : '#5A6477',
+              fontFamily: 'Bebas Neue', fontSize: 13, letterSpacing: 1,
+              cursor: 'pointer',
             }}
-          >
-            {s.label}
-          </button>
+          >{s.label}</button>
         ))}
       </div>
 
-      {/* プロフィール */}
+      {/* profile section */}
       {activeSection === 'profile' && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs mb-1" style={{ color: '#888' }}>身長 (cm)</label>
-              <input
-                type="number"
-                value={form.height_cm}
-                onChange={e => setForm(f => ({ ...f, height_cm: e.target.value }))}
-                className="w-full px-3 py-2.5 rounded-xl text-sm outline-none border"
-                style={{ background: '#1a1a1a', borderColor: '#2a2a2a', color: '#f5f5f5' }}
-                placeholder="170"
-              />
+        <div style={{ padding: '14px' }}>
+          <Section title="身体データ">
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+              {[
+                { key: 'height_cm', label: '身長 (cm)', placeholder: '170' },
+                { key: 'age', label: '年齢', placeholder: '25' },
+                { key: 'current_weight_kg', label: '現在の体重 (kg)', placeholder: '70' },
+                { key: 'goal_weight_kg', label: '目標体重 (kg)', placeholder: '65' },
+              ].map(({ key, label, placeholder }) => (
+                <div key={key} style={{ padding: '12px 18px', borderBottom: '1px solid #1A1F28', borderRight: '1px solid #1A1F28' }}>
+                  <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1.5, color: '#5A6477', marginBottom: 6 }}>{label}</div>
+                  <input
+                    type="number"
+                    value={form[key]}
+                    onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+                    placeholder={placeholder}
+                    style={{ ...inputStyle, padding: '6px 0', background: 'transparent', border: 'none', fontSize: 18, fontFamily: 'Oswald', fontWeight: 700 }}
+                  />
+                </div>
+              ))}
             </div>
-            <div>
-              <label className="block text-xs mb-1" style={{ color: '#888' }}>年齢</label>
-              <input
-                type="number"
-                value={form.age}
-                onChange={e => setForm(f => ({ ...f, age: e.target.value }))}
-                className="w-full px-3 py-2.5 rounded-xl text-sm outline-none border"
-                style={{ background: '#1a1a1a', borderColor: '#2a2a2a', color: '#f5f5f5' }}
-                placeholder="25"
-              />
-            </div>
-            <div>
-              <label className="block text-xs mb-1" style={{ color: '#888' }}>性別</label>
+            <div style={{ padding: '12px 18px', borderBottom: '1px solid #1A1F28' }}>
+              <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1.5, color: '#5A6477', marginBottom: 8 }}>性別</div>
               <select
                 value={form.gender}
                 onChange={e => setForm(f => ({ ...f, gender: e.target.value }))}
-                className="w-full px-3 py-2.5 rounded-xl text-sm outline-none border"
-                style={{ background: '#1a1a1a', borderColor: '#2a2a2a', color: '#f5f5f5' }}
+                style={{ ...inputStyle, background: '#0E1118' }}
               >
-                <option value="">選択</option>
+                <option value="">選択してください</option>
                 <option value="male">男性</option>
                 <option value="female">女性</option>
                 <option value="other">その他</option>
               </select>
             </div>
-            <div>
-              <label className="block text-xs mb-1" style={{ color: '#888' }}>現在の体重 (kg)</label>
-              <input
-                type="number"
-                value={form.current_weight_kg}
-                onChange={e => setForm(f => ({ ...f, current_weight_kg: e.target.value }))}
-                className="w-full px-3 py-2.5 rounded-xl text-sm outline-none border"
-                style={{ background: '#1a1a1a', borderColor: '#2a2a2a', color: '#f5f5f5' }}
-                placeholder="70"
-              />
-            </div>
-            <div>
-              <label className="block text-xs mb-1" style={{ color: '#888' }}>目標体重 (kg)</label>
-              <input
-                type="number"
-                value={form.goal_weight_kg}
-                onChange={e => setForm(f => ({ ...f, goal_weight_kg: e.target.value }))}
-                className="w-full px-3 py-2.5 rounded-xl text-sm outline-none border"
-                style={{ background: '#1a1a1a', borderColor: '#2a2a2a', color: '#f5f5f5' }}
-                placeholder="65"
-              />
-            </div>
-          </div>
+          </Section>
 
-          <div>
-            <label className="block text-xs mb-2" style={{ color: '#888' }}>トレーニング目的</label>
-            <div className="grid grid-cols-3 gap-2">
+          <Section title="トレーニング目的">
+            <div style={{ padding: '12px 18px', display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {PURPOSES.map(p => (
                 <button
                   key={p.value}
                   onClick={() => setForm(f => ({ ...f, training_purpose: p.value }))}
-                  className="py-2 rounded-xl text-xs"
                   style={{
-                    background: form.training_purpose === p.value ? '#f97316' : '#1a1a1a',
-                    color: form.training_purpose === p.value ? '#fff' : '#888',
-                    border: '1px solid #2a2a2a',
+                    padding: '8px 16px',
+                    background: form.training_purpose === p.value ? '#FF6A1A' : '#0E1118',
+                    color: form.training_purpose === p.value ? '#0B0D10' : '#8693AA',
+                    border: form.training_purpose === p.value ? 'none' : '1px solid #1F242E',
+                    fontFamily: '"Noto Sans JP", system-ui', fontSize: 13, fontWeight: 500,
+                    cursor: 'pointer',
                   }}
-                >
-                  {p.label}
-                </button>
+                >{p.label}</button>
               ))}
             </div>
-          </div>
+          </Section>
 
           <button
             onClick={saveProfile}
             disabled={saving}
-            className="w-full py-3 rounded-xl font-bold text-white text-sm disabled:opacity-50"
-            style={{ background: '#f97316' }}
-          >
-            {saving ? '保存中...' : saved ? '保存済み ✓' : '保存する'}
-          </button>
+            style={{
+              width: '100%', padding: '14px 0',
+              background: saved ? '#5BC25B' : '#FF6A1A', border: 'none',
+              color: '#0B0D10', fontFamily: 'Oswald', fontWeight: 700,
+              fontSize: 16, letterSpacing: 1.5, cursor: 'pointer',
+              opacity: saving ? 0.6 : 1,
+            }}
+          >{saving ? 'SAVING...' : saved ? 'SAVED ✓' : '保存する'}</button>
         </div>
       )}
 
-      {/* トレーナー選択 */}
+      {/* trainer section */}
       {activeSection === 'trainer' && (
-        <div className="space-y-3">
-          {TRAINERS.map(t => (
-            <button
-              key={t.id}
-              onClick={() => setForm(f => ({ ...f, trainer_character: t.id }))}
-              className="w-full flex items-center gap-4 p-4 rounded-2xl text-left"
-              style={{
-                background: form.trainer_character === t.id ? 'rgba(249,115,22,0.1)' : '#1a1a1a',
-                border: `1px solid ${form.trainer_character === t.id ? '#f97316' : '#2a2a2a'}`,
-              }}
-            >
-              <img src={t.img} alt={t.name} className="w-12 h-12 object-contain rounded-full" style={{ background: '#0f0f0f' }} />
-              <div>
-                <p className="font-bebas text-lg" style={{ color: form.trainer_character === t.id ? '#f97316' : '#f5f5f5' }}>{t.name}</p>
-                <p className="text-xs" style={{ color: '#888' }}>{t.desc}</p>
-              </div>
-              {form.trainer_character === t.id && (
-                <div className="ml-auto">
-                  <div className="w-5 h-5 rounded-full flex items-center justify-center" style={{ background: '#f97316' }}>
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3">
+        <div style={{ padding: '14px' }}>
+          <div style={{ marginBottom: 14 }}>
+            {TRAINERS.map(t => (
+              <div
+                key={t.id}
+                onClick={() => setForm(f => ({ ...f, trainer_character: t.id }))}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 14,
+                  padding: '14px 16px', marginBottom: 8,
+                  background: form.trainer_character === t.id ? 'rgba(255,106,26,0.08)' : '#13171F',
+                  border: `1px solid ${form.trainer_character === t.id ? '#FF6A1A' : '#1F242E'}`,
+                  cursor: 'pointer',
+                }}
+              >
+                <img src={t.img} alt={t.name} style={{ width: 48, height: 48, objectFit: 'contain', background: '#0E1118' }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 16, color: form.trainer_character === t.id ? '#FF6A1A' : '#fff' }}>{t.name}</div>
+                  <div style={{ fontSize: 11, color: '#8693AA', marginTop: 2 }}>{t.desc}</div>
+                </div>
+                {form.trainer_character === t.id && (
+                  <div style={{
+                    width: 20, height: 20, background: '#FF6A1A',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+                  }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#0B0D10" strokeWidth="3">
                       <polyline points="20 6 9 17 4 12" />
                     </svg>
                   </div>
-                </div>
-              )}
-            </button>
-          ))}
-
+                )}
+              </div>
+            ))}
+          </div>
           <button
             onClick={saveProfile}
             disabled={saving}
-            className="w-full py-3 rounded-xl font-bold text-white text-sm disabled:opacity-50 mt-4"
-            style={{ background: '#f97316' }}
-          >
-            {saving ? '保存中...' : saved ? '保存済み ✓' : '保存する'}
-          </button>
+            style={{
+              width: '100%', padding: '14px 0',
+              background: saved ? '#5BC25B' : '#FF6A1A', border: 'none',
+              color: '#0B0D10', fontFamily: 'Oswald', fontWeight: 700,
+              fontSize: 16, letterSpacing: 1.5, cursor: 'pointer',
+              opacity: saving ? 0.6 : 1,
+            }}
+          >{saving ? 'SAVING...' : saved ? 'SAVED ✓' : '保存する'}</button>
         </div>
       )}
 
-      {/* 種目設定 */}
+      {/* exercises section */}
       {activeSection === 'exercises' && (
-        <div>
-          <div className="flex gap-2 mb-4">
+        <div style={{ padding: '14px' }}>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
             <input
               type="text"
               value={newExName}
               onChange={e => setNewExName(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && addExercise()}
               placeholder="種目名を入力"
-              className="flex-1 px-4 py-2.5 rounded-xl text-sm outline-none border"
-              style={{ background: '#1a1a1a', borderColor: '#2a2a2a', color: '#f5f5f5' }}
+              style={{ ...inputStyle, flex: 1 }}
             />
             <button
               onClick={addExercise}
-              className="px-4 py-2.5 rounded-xl text-sm font-bold text-white"
-              style={{ background: '#f97316' }}
-            >
-              追加
-            </button>
+              style={{
+                padding: '12px 16px', background: '#FF6A1A', border: 'none',
+                color: '#0B0D10', fontFamily: 'Oswald', fontWeight: 700,
+                fontSize: 14, letterSpacing: 1, cursor: 'pointer',
+              }}
+            >追加</button>
           </div>
 
-          <div className="space-y-2">
+          <div style={{ background: '#13171F', border: '1px solid #1F242E' }}>
             {exercises.length === 0 && (
-              <p className="text-center py-6 text-sm" style={{ color: '#888' }}>種目を追加しましょう</p>
+              <p style={{ textAlign: 'center', color: '#5A6477', fontSize: 13, padding: '30px 0' }}>種目を追加しましょう</p>
             )}
-            {exercises.map(ex => (
+            {exercises.map((ex, i) => (
               <div
                 key={ex.id}
-                className="flex items-center justify-between px-4 py-3 rounded-xl"
-                style={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '14px 18px',
+                  borderBottom: i < exercises.length - 1 ? '1px solid #1A1F28' : 'none',
+                }}
               >
-                <span className="text-sm">{ex.name}</span>
-                <button onClick={() => deleteExercise(ex.id)} style={{ color: '#888' }}>
+                <div>
+                  <div style={{ fontSize: 10, fontFamily: 'Bebas Neue', letterSpacing: 1.5, color: '#FF6A1A', marginBottom: 2 }}>
+                    {({ 'ベンチプレス': 'CHEST', 'スクワット': 'LEGS', 'デッドリフト': 'BACK', '懸垂': 'BACK', 'ショルダープレス': 'SHOULDERS', 'ダンベルカール': 'ARMS' }[ex.name] || 'EXERCISE')}
+                  </div>
+                  <div style={{ fontSize: 15, color: '#fff' }}>{ex.name}</div>
+                </div>
+                <button
+                  onClick={() => deleteExercise(ex.id)}
+                  style={{ background: 'none', border: 'none', color: '#5A6477', cursor: 'pointer', padding: 4 }}
+                >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <polyline points="3 6 5 6 21 6" />
                     <path d="M19 6l-1 14H6L5 6" />
@@ -313,15 +338,17 @@ export default function SettingsTab() {
         </div>
       )}
 
-      {/* ログアウト */}
-      <div className="mt-10 pt-6" style={{ borderTop: '1px solid #2a2a2a' }}>
+      {/* logout */}
+      <div style={{ padding: '0 14px', marginTop: 24 }}>
         <button
           onClick={handleSignOut}
-          className="w-full py-3 rounded-xl text-sm"
-          style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#888' }}
-        >
-          ログアウト
-        </button>
+          style={{
+            width: '100%', padding: '14px 0',
+            background: 'transparent', border: '1px solid #1F242E',
+            color: '#5A6477', fontFamily: 'Bebas Neue', fontSize: 14, letterSpacing: 1.5,
+            cursor: 'pointer',
+          }}
+        >ログアウト</button>
       </div>
     </div>
   )

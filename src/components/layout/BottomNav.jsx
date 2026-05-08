@@ -1,46 +1,47 @@
 import { NavLink } from 'react-router-dom'
 
-const tabs = [
+const TABS = [
   {
     path: '/',
     label: '記録',
-    icon: (active) => (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={active ? '#f97316' : '#888'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M6 4v16M18 4v16M6 12h12M3 6h3M18 6h3M3 18h3M18 18h3" />
+    icon: (c) => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="square">
+        <rect x="1.5" y="8" width="3" height="8" />
+        <rect x="4.5" y="6" width="2.5" height="12" />
+        <path d="M7 12h10" />
+        <rect x="17" y="6" width="2.5" height="12" />
+        <rect x="19.5" y="8" width="3" height="8" />
       </svg>
     ),
   },
   {
     path: '/history',
     label: '履歴',
-    icon: (active) => (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={active ? '#f97316' : '#888'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-        <line x1="16" y1="2" x2="16" y2="6" />
-        <line x1="8" y1="2" x2="8" y2="6" />
-        <line x1="3" y1="10" x2="21" y2="10" />
+    icon: (c) => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="square">
+        <path d="M3 3v18h18" />
+        <path d="M7 14l4-4 3 3 6-7" />
       </svg>
     ),
   },
   {
     path: '/ai',
     label: 'AI',
-    icon: (active) => (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={active ? '#f97316' : '#888'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="8" width="18" height="12" rx="2" />
-        <path d="M9 8V6a3 3 0 016 0v2" />
-        <circle cx="9" cy="14" r="1" fill={active ? '#f97316' : '#888'} />
-        <circle cx="15" cy="14" r="1" fill={active ? '#f97316' : '#888'} />
+    icon: (c) => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="square">
+        <rect x="4" y="7" width="16" height="13" />
+        <path d="M12 4v3M9 12v2M15 12v2M8 17h8" />
+        <path d="M2 11v4M22 11v4" />
       </svg>
     ),
   },
   {
     path: '/settings',
     label: '設定',
-    icon: (active) => (
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={active ? '#f97316' : '#888'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    icon: (c) => (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="1.8" strokeLinecap="square">
         <circle cx="12" cy="12" r="3" />
-        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+        <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1" />
       </svg>
     ),
   },
@@ -48,23 +49,43 @@ const tabs = [
 
 export default function BottomNav() {
   return (
-    <nav
-      className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] flex border-t"
-      style={{ background: '#0f0f0f', borderColor: '#2a2a2a', zIndex: 50, paddingBottom: 'env(safe-area-inset-bottom)' }}
-    >
-      {tabs.map(tab => (
+    <nav style={{
+      position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+      width: '100%', maxWidth: 430,
+      background: '#0B0D10', borderTop: '1px solid #1A1F28',
+      paddingBottom: 'env(safe-area-inset-bottom)',
+      display: 'flex', height: 'calc(64px + env(safe-area-inset-bottom))',
+      zIndex: 50,
+    }}>
+      {TABS.map(tab => (
         <NavLink
           key={tab.path}
           to={tab.path}
           end={tab.path === '/'}
-          className="flex-1 flex flex-col items-center justify-center py-3 gap-1"
+          style={{ flex: 1, textDecoration: 'none', position: 'relative' }}
         >
           {({ isActive }) => (
             <>
-              {tab.icon(isActive)}
-              <span className="text-[10px]" style={{ color: isActive ? '#f97316' : '#888' }}>
-                {tab.label}
-              </span>
+              {isActive && (
+                <div style={{
+                  position: 'absolute', top: 0, left: '20%', right: '20%',
+                  height: 2, background: '#FF6A1A',
+                }} />
+              )}
+              <div style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center',
+                justifyContent: 'center', height: '100%',
+                gap: 4, paddingTop: 8,
+                color: isActive ? '#FF6A1A' : '#5A6477',
+              }}>
+                {tab.icon(isActive ? '#FF6A1A' : '#5A6477')}
+                <span style={{
+                  fontSize: 10,
+                  fontFamily: '"Noto Sans JP", system-ui',
+                  fontWeight: isActive ? 700 : 500,
+                  color: isActive ? '#FF6A1A' : '#5A6477',
+                }}>{tab.label}</span>
+              </div>
             </>
           )}
         </NavLink>

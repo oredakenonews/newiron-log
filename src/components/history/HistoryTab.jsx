@@ -1,193 +1,304 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
-import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ReferenceLine, ResponsiveContainer,
-} from 'recharts'
 
-export default function HistoryTab() {
-  const { user, profile } = useAuth()
-  const [sessions, setSessions] = useState([])
-  const [weights, setWeights] = useState([])
-  const [currentMonth, setCurrentMonth] = useState(new Date())
-  const [selectedSession, setSelectedSession] = useState(null)
+const FILTERS = ['すべて', '胸', '背中', '脚', '肩・腕']
+const FILTER_CATS = {
+  '胸': ['CHEST'],
+  '背中': ['BACK'],
+  '脚': ['LEGS'],
+  '肩・腕': ['SHOULDERS', 'ARMS'],
+}
 
-  useEffect(() => {
-    if (user) {
-      loadSessions()
-      loadWeights()
-    }
-  }, [user, currentMonth])
+const CATEGORY_MAP = {
+  'ベンチプレス': 'CHEST', 'インクラインベンチ': 'CHEST', 'インクラインダンベルプレス': 'CHEST',
+  'ダンベルフライ': 'CHEST', 'ケーブルクロスオーバー': 'CHEST', 'ペックフライ': 'CHEST',
+  'スクワット': 'LEGS', 'レッグプレス': 'LEGS', 'ランジ': 'LEGS',
+  'レッグカール': 'LEGS', 'レッグエクステンション': 'LEGS', 'カーフレイズ': 'LEGS',
+  'デッドリフト': 'BACK', '懸垂': 'BACK', 'ラットプルダウン': 'BACK',
+  'ベントオーバーロウ': 'BACK', 'シーテッドロウ': 'BACK',
+  'ショルダープレス': 'SHOULDERS', 'サイドレイズ': 'SHOULDERS',
+  'ダンベルカール': 'ARMS', 'バーベルカール': 'ARMS', 'トライセプスプレスダウン': 'ARMS',
+}
+function getCat(name) { return CATEGORY_MAP[name] || '' }
 
-  async function loadSessions() {
-    const start = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1)
-      .toISOString().split('T')[0]
-    const end = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0)
-      .toISOString().split('T')[0]
+function calcVolume(session) {
+  return (session.exercises || []).reduce((t, ex) =>
+    t + (ex.sets || []).reduce((s, set) =>
+      s + (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0), 0), 0)
+}
 
-    const { data } = await supabase
-      .from('workout_sessions')
-      .select('*')
-      .eq('user_id', user.id)
-      .gte('date', start)
-      .lte('date', end)
-      .order('date', { ascending: false })
-    setSessions(data || [])
-  }
+function getWeekDates() {
+  const now = new Date()
+  const day = now.getDay()
+  const mon = new Date(now)
+  mon.setDate(now.getDate() - ((day + 6) % 7))
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(mon)
+    d.setDate(mon.getDate() + i)
+    return d.toISOString().split('T')[0]
+  })
+}
 
-  async function loadWeights() {
-    const { data } = await supabase
-      .from('body_weights')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('date', { ascending: true })
-      .limit(30)
-    setWeights(data || [])
-  }
+function getDayLabel(date) {
+  const d = new Date(date + 'T00:00:00')
+  return ['日', '月', '火', '水', '木', '金', '土'][d.getDay()]
+}
 
-  function prevMonth() {
-    setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))
-  }
-  function nextMonth() {
-    setCurrentMonth(prev => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))
-  }
+function MiniBar({ values, max }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 56 }}>
+      {values.map((v, i) => {
+        const h = Math.max(4, max > 0 ? (v / max) * 56 : 4)
+        const today = i === new Date().getDay() === 1 ? 6 : (new Date().getDay() + 6) % 7
+        const isToday = i === today
+        return (
+          <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+            <div style={{ width: '100%', height: h, background: isToday ? '#FF6A1A' : (v > 0 ? '#2A3142' : '#181C24') }} />
+            <div style={{ fontSize: 8, fontFamily: 'JetBrains Mono', color: isToday ? '#FF6A1A' : '#5A6477' }}>
+              {['月', '火', '水', '木', '金', '土', '日'][i]}
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 
-  const chartData = weights.map(w => ({
-    date: w.date.slice(5),
-    weight: parseFloat(w.weight_kg),
-  }))
+function HistoryRow({ session, isToday, onClick }) {
+  const d = new Date(session.date + 'T00:00:00')
+  const day = String(d.getDate()).padStart(2, '0')
+  const monthStr = `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}`
+  const dayLabel = getDayLabel(session.date)
+  const isSun = d.getDay() === 0
+
+  const volume = calcVolume(session)
+  const totalSets = (session.exercises || []).reduce((t, ex) => t + (ex.sets || []).length, 0)
+  const exNames = (session.exercises || []).map(e => e.name)
+  const highlights = exNames.slice(0, 2)
 
   return (
-    <div className="px-4 pt-6 pb-4">
-      <h1 className="font-bebas text-3xl mb-6" style={{ color: '#f97316' }}>HISTORY</h1>
-
-      {/* 体重グラフ */}
-      {weights.length > 0 && (
-        <div className="rounded-2xl p-4 mb-6" style={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}>
-          <h2 className="text-sm font-bold mb-3">体重推移</h2>
-          <ResponsiveContainer width="100%" height={150}>
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
-              <XAxis dataKey="date" tick={{ fill: '#888', fontSize: 10 }} />
-              <YAxis tick={{ fill: '#888', fontSize: 10 }} domain={['auto', 'auto']} />
-              <Tooltip
-                contentStyle={{ background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: 8 }}
-                labelStyle={{ color: '#888' }}
-                itemStyle={{ color: '#f97316' }}
-              />
-              {profile?.goal_weight_kg && (
-                <ReferenceLine y={profile.goal_weight_kg} stroke="#f97316" strokeDasharray="4 4" label={{ value: '目標', fill: '#f97316', fontSize: 10 }} />
-              )}
-              <Line type="monotone" dataKey="weight" stroke="#f97316" strokeWidth={2} dot={{ fill: '#f97316', r: 3 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+    <div
+      onClick={onClick}
+      style={{
+        display: 'flex', gap: 14, padding: '16px 18px',
+        borderBottom: '1px solid #1A1F28',
+        background: isToday ? 'linear-gradient(90deg, rgba(255,106,26,0.08), transparent 60%)' : 'transparent',
+        cursor: 'pointer', position: 'relative',
+      }}
+    >
+      {isToday && (
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 3, background: '#FF6A1A' }} />
       )}
-
-      {/* 月ナビ */}
-      <div className="flex items-center justify-between mb-4">
-        <button onClick={prevMonth} style={{ color: '#888' }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M15 18l-6-6 6-6" />
-          </svg>
-        </button>
-        <span className="text-sm font-bold">
-          {currentMonth.getFullYear()}年{currentMonth.getMonth() + 1}月
-        </span>
-        <button onClick={nextMonth} style={{ color: '#888' }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M9 18l6-6-6-6" />
-          </svg>
-        </button>
+      <div style={{ width: 56, flexShrink: 0, borderRight: '1px solid #1F242E', paddingRight: 14 }}>
+        <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 28, color: '#fff', lineHeight: 1 }}>{day}</div>
+        <div style={{ fontFamily: 'Bebas Neue', fontSize: 12, color: '#5A6477', letterSpacing: 1, marginTop: 2 }}>{monthStr}</div>
+        <div style={{ fontSize: 10, color: isSun ? '#FF6A1A' : '#8693AA', marginTop: 4, fontWeight: 700 }}>
+          {dayLabel}曜日
+        </div>
       </div>
-
-      {/* セッション一覧 */}
-      <div className="space-y-3">
-        {sessions.length === 0 && (
-          <p className="text-center py-8 text-sm" style={{ color: '#888' }}>この月の記録はありません</p>
-        )}
-        {sessions.map(session => (
-          <button
-            key={session.id}
-            onClick={() => setSelectedSession(session)}
-            className="w-full text-left rounded-2xl p-4"
-            style={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-bold">{session.date}</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="2">
-                <path d="M9 18l6-6-6-6" />
-              </svg>
-            </div>
-            <div className="mt-1 flex flex-wrap gap-2">
-              {(session.exercises || []).slice(0, 3).map((ex, i) => (
-                <span key={i} className="text-xs px-2 py-0.5 rounded-full" style={{ background: '#0f0f0f', color: '#888' }}>
-                  {ex.name}
-                </span>
-              ))}
-              {(session.exercises || []).length > 3 && (
-                <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: '#0f0f0f', color: '#888' }}>
-                  +{session.exercises.length - 3}
-                </span>
-              )}
-            </div>
-          </button>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+          <div style={{ fontFamily: 'Bebas Neue', fontSize: 14, letterSpacing: 1.5, color: '#fff' }}>
+            {exNames.slice(0, 2).join(' + ') || 'WORKOUT'}
+          </div>
+          {isToday && (
+            <div style={{
+              fontFamily: 'Bebas Neue', fontSize: 9, letterSpacing: 1,
+              border: '1px solid #FF6A1A', color: '#FF6A1A', padding: '2px 5px',
+            }}>TODAY</div>
+          )}
+        </div>
+        <div style={{
+          display: 'flex', gap: 14, marginBottom: 6, flexWrap: 'wrap',
+          fontFamily: 'JetBrains Mono', fontSize: 11, color: '#8693AA',
+        }}>
+          <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 3 }}>
+            <span style={{ color: '#fff', fontWeight: 700, fontSize: 13, fontFamily: 'Oswald' }}>{volume.toLocaleString()}</span>kg
+          </span>
+          <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 3 }}>
+            <span style={{ color: '#fff', fontWeight: 700, fontSize: 13, fontFamily: 'Oswald' }}>{totalSets}</span>sets
+          </span>
+          <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 3 }}>
+            <span style={{ color: '#fff', fontWeight: 700, fontSize: 13, fontFamily: 'Oswald' }}>{(session.exercises || []).length}</span>種目
+          </span>
+        </div>
+        {highlights.map((hl, i) => (
+          <div key={i} style={{ fontSize: 11, color: '#8693AA', display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+            <div style={{ width: 4, height: 4, background: '#3A4253' }} />
+            {hl}
+          </div>
         ))}
       </div>
-
-      {/* セッション詳細 モーダル */}
-      {selectedSession && (
-        <SessionDetail session={selectedSession} onClose={() => setSelectedSession(null)} />
-      )}
+      <div style={{ alignSelf: 'center', color: '#3A4253' }}>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="square">
+          <path d="M9 6l6 6-6 6" />
+        </svg>
+      </div>
     </div>
   )
 }
 
 function SessionDetail({ session, onClose }) {
+  const volume = calcVolume(session)
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto" style={{ background: '#0f0f0f' }}>
-      <div className="px-4 pt-6 pb-24">
-        <div className="flex items-center gap-3 mb-6">
-          <button onClick={onClose} style={{ color: '#888' }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: '#0B0D10', overflowY: 'auto', left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 430 }}>
+      <div style={{ paddingBottom: 40 }}>
+        <div style={{
+          padding: 'calc(env(safe-area-inset-top) + 16px) 18px 16px',
+          borderBottom: '1px solid #1F242E',
+          display: 'flex', alignItems: 'center', gap: 12,
+          background: '#13171F',
+        }}>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#5A6477', cursor: 'pointer', padding: 0 }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="square">
               <path d="M15 18l-6-6 6-6" />
             </svg>
           </button>
-          <h2 className="font-bold">{session.date}</h2>
+          <div>
+            <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 20, color: '#fff' }}>{session.date}</div>
+            <div style={{ fontFamily: 'JetBrains Mono', fontSize: 11, color: '#5A6477', marginTop: 2 }}>
+              {volume.toLocaleString()}kg · {(session.exercises || []).length} exercises
+            </div>
+          </div>
         </div>
 
-        <div className="space-y-4">
+        <div style={{ padding: '14px' }}>
           {(session.exercises || []).map((ex, i) => (
-            <div key={i} className="rounded-2xl p-4" style={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}>
-              <h3 className="font-bold text-sm mb-2">{ex.name}</h3>
-              {(ex.sets || []).map((set, j) => (
-                <div key={j} className="flex gap-4 text-sm py-1" style={{ color: '#888' }}>
-                  <span>Set {j + 1}</span>
-                  <span>{set.weight}kg × {set.reps}回</span>
+            <div key={i} style={{ background: '#13171F', border: '1px solid #1F242E', marginBottom: 10 }}>
+              <div style={{ padding: '12px 16px', borderBottom: '1px solid #1F242E', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 4, alignSelf: 'stretch', background: '#FF6A1A' }} />
+                <div>
+                  <div style={{ fontSize: 10, fontFamily: 'Bebas Neue', letterSpacing: 1.5, color: '#FF6A1A', marginBottom: 2 }}>{getCat(ex.name) || 'EXERCISE'}</div>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: '#fff' }}>{ex.name}</div>
                 </div>
-              ))}
+              </div>
+              <div style={{ padding: '8px 16px 12px' }}>
+                {(ex.sets || []).map((s, j) => (
+                  <div key={j} style={{ display: 'flex', gap: 12, padding: '6px 0', borderBottom: '1px solid #1A1F28', alignItems: 'center' }}>
+                    <div style={{ width: 22, fontFamily: 'Oswald', fontSize: 13, color: s.done ? '#5BC25B' : '#8693AA', fontWeight: 700 }}>{j + 1}</div>
+                    <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 16, color: '#fff' }}>
+                      {s.weight}<span style={{ fontSize: 10, color: '#5A6477', marginLeft: 2 }}>kg</span>
+                    </div>
+                    <div style={{ color: '#3A4253', fontFamily: 'Oswald', fontSize: 16 }}>×</div>
+                    <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 16, color: '#fff' }}>
+                      {s.reps}<span style={{ fontSize: 10, color: '#5A6477', marginLeft: 2 }}>回</span>
+                    </div>
+                    {s.done && (
+                      <div style={{ marginLeft: 'auto', color: '#5BC25B' }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square">
+                          <path d="M4 12l5 5 11-11" />
+                        </svg>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
 
-          {(session.cardio || []).length > 0 && (
-            <div className="rounded-2xl p-4" style={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}>
-              <h3 className="font-bold text-sm mb-2">有酸素</h3>
-              {session.cardio.map((c, i) => (
-                <div key={i} className="text-sm py-1" style={{ color: '#888' }}>
-                  {c.type}：{c.minutes}分
-                </div>
-              ))}
-            </div>
-          )}
-
           {session.memo && (
-            <div className="rounded-2xl p-4" style={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}>
-              <h3 className="font-bold text-sm mb-2">今日の意図</h3>
-              <p className="text-sm" style={{ color: '#888' }}>{session.memo}</p>
+            <div style={{ background: '#13171F', border: '1px solid #1F242E', padding: '14px 16px' }}>
+              <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1.5, color: '#FF6A1A', marginBottom: 8 }}>MEMO</div>
+              <p style={{ fontSize: 14, color: '#B5BECF', lineHeight: 1.6, margin: 0 }}>{session.memo}</p>
             </div>
           )}
         </div>
       </div>
+    </div>
+  )
+}
+
+export default function HistoryTab() {
+  const { user } = useAuth()
+  const [sessions, setSessions] = useState([])
+  const [selectedFilter, setSelectedFilter] = useState('すべて')
+  const [selectedSession, setSelectedSession] = useState(null)
+  const todayStr = new Date().toISOString().split('T')[0]
+
+  useEffect(() => {
+    if (user) loadSessions()
+  }, [user])
+
+  async function loadSessions() {
+    const { data } = await supabase
+      .from('workout_sessions').select('*')
+      .eq('user_id', user.id)
+      .order('date', { ascending: false })
+      .limit(50)
+    setSessions(data || [])
+  }
+
+  const weekDates = getWeekDates()
+  const weekVolumes = weekDates.map(d => {
+    const s = sessions.find(se => se.date === d)
+    return s ? calcVolume(s) : 0
+  })
+  const maxVol = Math.max(...weekVolumes, 1)
+  const thisWeekTotal = weekVolumes.reduce((a, b) => a + b, 0)
+
+  const filteredSessions = selectedFilter === 'すべて' ? sessions : sessions.filter(session => {
+    const cats = FILTER_CATS[selectedFilter] || []
+    return (session.exercises || []).some(ex => cats.includes(getCat(ex.name)))
+  })
+
+  return (
+    <div style={{ background: '#0B0D10', minHeight: '100%' }}>
+      {/* week summary */}
+      <div style={{ padding: '16px 20px 18px', background: '#13171F', borderBottom: '1px solid #1F242E' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10 }}>
+          <div>
+            <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2, color: '#FF6A1A' }}>THIS WEEK</div>
+            <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 32, color: '#fff', lineHeight: 1, marginTop: 2 }}>
+              {thisWeekTotal.toLocaleString()}
+              <span style={{ fontSize: 14, color: '#8693AA', marginLeft: 4 }}>KG</span>
+            </div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1.5, color: '#5A6477' }}>SESSIONS</div>
+            <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 22, color: '#E5E9F0' }}>
+              {weekVolumes.filter(v => v > 0).length}
+            </div>
+          </div>
+        </div>
+        <MiniBar values={weekVolumes} max={maxVol} />
+      </div>
+
+      {/* filter */}
+      <div style={{ display: 'flex', gap: 8, padding: '12px 14px', borderBottom: '1px solid #1A1F28', overflowX: 'auto', scrollbarWidth: 'none' }}>
+        {FILTERS.map((f) => (
+          <div
+            key={f}
+            onClick={() => setSelectedFilter(f)}
+            style={{
+              padding: '6px 12px', flexShrink: 0,
+              background: selectedFilter === f ? '#fff' : '#13171F',
+              color: selectedFilter === f ? '#0B0D10' : '#8693AA',
+              fontFamily: 'Bebas Neue', fontSize: 13, letterSpacing: 1,
+              border: selectedFilter === f ? 'none' : '1px solid #1F242E',
+              cursor: 'pointer',
+            }}
+          >{f}</div>
+        ))}
+      </div>
+
+      <div style={{ paddingBottom: 20 }}>
+        {filteredSessions.length === 0 && (
+          <p style={{ textAlign: 'center', color: '#5A6477', fontSize: 13, padding: '40px 0' }}>記録がありません</p>
+        )}
+        {filteredSessions.map((session) => (
+          <HistoryRow
+            key={session.id}
+            session={session}
+            isToday={session.date === todayStr}
+            onClick={() => setSelectedSession(session)}
+          />
+        ))}
+      </div>
+
+      {selectedSession && (
+        <SessionDetail session={selectedSession} onClose={() => setSelectedSession(null)} />
+      )}
     </div>
   )
 }
