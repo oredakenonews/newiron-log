@@ -265,7 +265,7 @@ const QUICK_PROMPTS = [
   '追い込み方を教えて',
 ]
 
-function ChatSheet({ open, initialPrompt, profile, recentWorkouts, onClose, trainerName, trainerImg, coach }) {
+function ChatSheet({ open, initialPrompt, profile, recentWorkouts, onClose, trainerName, trainerImg, coach, coachMode }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -298,7 +298,7 @@ function ChatSheet({ open, initialPrompt, profile, recentWorkouts, onClose, trai
     const hist = (history ?? messages).slice(-10)
     try {
       const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: { message: msg, history: hist, profile, recentWorkouts },
+        body: { message: msg, history: hist, profile, recentWorkouts, coachMode },
       })
       if (error) throw error
       setMessages(prev => [...prev, { role: 'assistant', content: data.content }])
@@ -605,6 +605,7 @@ export default function AITab() {
         trainerName={trainer}
         trainerImg={trainerImg}
         coach={coach}
+        coachMode={mode}
       />
     </div>
   )
