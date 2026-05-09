@@ -38,6 +38,46 @@ const TRAINER_IMAGES = {
   BILLY: '/gazou/billybu.png',
 }
 
+// ── Per-trainer greetings (spartan / gentle) ─────────────────────────────────
+const TRAINER_GREETINGS = {
+  RYOTA: {
+    spartan: '限界まで追い込んだか！？まだ余力があるなら全然足りてないぞ！',
+    gentle:  'お疲れ！今日もよく来たな。この調子で一緒に頑張っていこう！',
+  },
+  YUKI: {
+    spartan: '今日のトレーニング、手を抜いてないか？自分に正直になれ。',
+    gentle:  'お疲れさまでした。今日も来られただけで、本当に素晴らしいですよ。',
+  },
+  DAIKI: {
+    spartan: '前回のデータと比較すると改善点がある。数値を見て効率を上げろ。',
+    gentle:  '記録を分析しました。数値的に良い傾向が出ています。一緒に最適化しましょう。',
+  },
+  KENJI: {
+    spartan: '言い訳は要らない。今日も限界を超えるだけだ。それだけでいい。',
+    gentle:  '無理せず、でも妥協もするな。ちょうどいい負荷を一緒に見つけよう。',
+  },
+  NANA: {
+    spartan: '今日も全力で行くよ！手を抜いたら絶対後悔するからね！💪',
+    gentle:  'おつかれー！今日も来てくれてありがとう！一緒に楽しもうね😊',
+  },
+  HANA: {
+    spartan: '本日も丁寧に、しかし妥協なく取り組んでいただきます。',
+    gentle:  '本日もお疲れさまです。一歩一歩、着実に進んでいきましょう。',
+  },
+  RACHELL: {
+    spartan: 'No excuses。世界レベルの選手は不快感を乗り越える。さあやるぞ。',
+    gentle:  'よく来たね。継続こそが世界基準の成果につながる。一緒にやろう。',
+  },
+  TORU: {
+    spartan: '長年見てきたが、甘い選手はここで止まる。さあ、どうする。',
+    gentle:  '焦らんでいい。長い目で見れば、続けることが一番大切だ。',
+  },
+  BILLY: {
+    spartan: 'YO！今日も燃やしていくぞ！中途半端は俺が許さん！🔥',
+    gentle:  'YO！来てくれてサンキュー！一緒に楽しくやっていこうぜ！',
+  },
+}
+
 // ── Static coach content ──────────────────────────────────────────────────────
 const COACH_CONTENT = {
   spartan: {
@@ -131,8 +171,9 @@ function CoachToggle({ mode, onChange }) {
   )
 }
 
-function CharacterPanel({ coach, trainerName, trainerImg }) {
+function CharacterPanel({ coach, trainerName, trainerImg, mode }) {
   const tone = coach.tone
+  const greeting = TRAINER_GREETINGS[trainerName]?.[mode] || coach.greeting
   return (
     <div style={{
       background: '#13171F', border: '1px solid #1F242E',
@@ -154,7 +195,7 @@ function CharacterPanel({ coach, trainerName, trainerImg }) {
           }}>{coach.tag}</div>
         </div>
         <div style={{ fontWeight: 700, fontSize: 16, color: '#fff', marginBottom: 4 }}>{trainerName}</div>
-        <div style={{ fontSize: 12, color: '#B5BECF', lineHeight: 1.6 }}>{coach.greeting}</div>
+        <div style={{ fontSize: 12, color: '#B5BECF', lineHeight: 1.6 }}>{greeting}</div>
       </div>
     </div>
   )
@@ -583,7 +624,7 @@ export default function AITab() {
       </div>
 
       <div style={{ padding: '14px' }}>
-        <CharacterPanel coach={coach} trainerName={trainer} trainerImg={trainerImg} />
+        <CharacterPanel coach={coach} trainerName={trainer} trainerImg={trainerImg} mode={mode} />
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           <InsightCard data={cardData.growth}  icon={<IcoTrend   s={16} c="#5BC25B" />} accent="#5BC25B" />
