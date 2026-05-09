@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
 import { getCategory, FILTER_CATS } from '../../lib/categories'
+import WheelPickerSheet from '../shared/WheelPickerSheet'
+import AddExerciseSheet from '../shared/AddExerciseSheet'
 
 const FILTERS = ['すべて', '胸', '背中', '脚', '肩・腕']
 
@@ -124,65 +126,238 @@ function HistoryRow({ session, isToday, onClick }) {
   )
 }
 
-function SessionDetail({ session, onClose }) {
+function SessionDetail({ session, onClose, onSessionUpdated }) {
+  const { user } = useAuth()
+  const [isEditing, setIsEditing] = useState(false)
+  const [editExercises, setEditExercises] = useState([])
+  const [picker, setPicker] = useState(null) // { exIdx, setIdx }
+  const [showAddSheet, setShowAddSheet] = useState(false)
+  const [userExercises, setUserExercises] = useState([])
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (user) {
+      supabase.from('user_exercises').select('*').eq('user_id', user.id).order('order')
+        .then(({ data }) => setUserExercises(data || []))
+    }
+  }, [user])
+
+  function startEdit() {
+    setEditExercises(
+      (session.exercises || []).map((ex, i) => ({
+        ...ex,
+        _id: i,
+        sets: (ex.sets || []).map(s => ({ ...s })),
+      }))
+    )
+    setIsEditing(true)
+  }
+
+  function cancelEdit() {
+    setEditExercises([])
+    setIsEditing(false)
+  }
+
+  async function saveEdit() {
+    setSaving(true)
+    const cleanExercises = editExercises.map(({ _id, ...ex }) => ex)
+    await supabase.from('workout_sessions')
+      .update({ exercises: cleanExercises })
+      .eq('id', session.id)
+    setSaving(false)
+    setIsEditing(false)
+    onSessionUpdated({ ...session, exercises: cleanExercises })
+  }
+
+  function updateSet(exIdx, setIdx, weight, reps) {
+    setEditExercises(prev => prev.map((ex, i) =>
+      i !== exIdx ? ex : {
+        ...ex,
+        sets: ex.sets.map((s, j) => j !== setIdx ? s : { ...s, weight: String(weight), reps: String(reps) }),
+      }
+    ))
+  }
+
+  function addSet(exIdx) {
+    setEditExercises(prev => prev.map((ex, i) => {
+      if (i !== exIdx) return ex
+      const last = ex.sets[ex.sets.length - 1] || { weight: '', reps: '' }
+      return { ...ex, sets: [...ex.sets, { weight: last.weight, reps: last.reps, done: false }] }
+    }))
+  }
+
+  function removeSet(exIdx, setIdx) {
+    setEditExercises(prev => prev.map((ex, i) =>
+      i !== exIdx ? ex : { ...ex, sets: ex.sets.filter((_, j) => j !== setIdx) }
+    ))
+  }
+
+  function addExercise(name) {
+    setEditExercises(prev => [...prev, { name, _id: Date.now(), sets: [{ weight: '', reps: '', done: false }] }])
+  }
+
+  function removeExercise(exIdx) {
+    setEditExercises(prev => prev.filter((_, i) => i !== exIdx))
+  }
+
   const volume = calcVolume(session)
+  const displayExercises = isEditing ? editExercises : (session.exercises || [])
+
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: '#0B0D10', overflowY: 'auto', left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 430 }}>
-      <div style={{ paddingBottom: 40 }}>
-        <div style={{
-          padding: 'calc(env(safe-area-inset-top) + 16px) 18px 16px',
-          borderBottom: '1px solid #1F242E',
-          display: 'flex', alignItems: 'center', gap: 12,
-          background: '#13171F',
-        }}>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: '#5A6477', cursor: 'pointer', padding: 0 }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="square">
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
-          </button>
-          <div>
-            <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 20, color: '#fff' }}>{session.date}</div>
-            <div style={{ fontFamily: 'JetBrains Mono', fontSize: 11, color: '#5A6477', marginTop: 2 }}>
-              {volume.toLocaleString()}kg · {(session.exercises || []).length} exercises
-            </div>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 200, background: '#0B0D10', display: 'flex', flexDirection: 'column', left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 430 }}>
+      {/* header */}
+      <div style={{
+        flexShrink: 0,
+        padding: 'calc(env(safe-area-inset-top) + 16px) 18px 16px',
+        borderBottom: '1px solid #1F242E',
+        display: 'flex', alignItems: 'center', gap: 12,
+        background: '#13171F',
+      }}>
+        <button onClick={isEditing ? cancelEdit : onClose} style={{ background: 'none', border: 'none', color: '#5A6477', cursor: 'pointer', padding: 0, flexShrink: 0 }}>
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="square">
+            <path d="M15 18l-6-6 6-6" />
+          </svg>
+        </button>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 20, color: '#fff' }}>{session.date}</div>
+          <div style={{ fontFamily: 'JetBrains Mono', fontSize: 11, color: '#5A6477', marginTop: 2 }}>
+            {volume.toLocaleString()}kg · {(session.exercises || []).length} exercises
           </div>
         </div>
+        {!isEditing ? (
+          <button
+            onClick={startEdit}
+            style={{
+              background: 'transparent', border: '1px solid #1F242E',
+              color: '#8693AA', fontFamily: 'Bebas Neue', fontSize: 12, letterSpacing: 1,
+              padding: '6px 12px', cursor: 'pointer', flexShrink: 0,
+            }}
+          >編集</button>
+        ) : (
+          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+            <button
+              onClick={cancelEdit}
+              style={{
+                background: 'transparent', border: '1px solid #2A3142',
+                color: '#8693AA', fontFamily: 'Bebas Neue', fontSize: 12, letterSpacing: 1,
+                padding: '6px 12px', cursor: 'pointer',
+              }}
+            >キャンセル</button>
+            <button
+              onClick={saveEdit}
+              disabled={saving}
+              style={{
+                background: '#FF6A1A', border: 'none',
+                color: '#0B0D10', fontFamily: 'Bebas Neue', fontSize: 12, letterSpacing: 1,
+                padding: '6px 12px', cursor: 'pointer', opacity: saving ? 0.6 : 1,
+              }}
+            >{saving ? '保存中' : '保存'}</button>
+          </div>
+        )}
+      </div>
 
+      {/* body */}
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 40 }}>
         <div style={{ padding: '14px' }}>
-          {(session.exercises || []).map((ex, i) => (
-            <div key={i} style={{ background: '#13171F', border: '1px solid #1F242E', marginBottom: 10 }}>
+          {displayExercises.map((ex, exIdx) => (
+            <div key={isEditing ? ex._id : exIdx} style={{ background: '#13171F', border: '1px solid #1F242E', marginBottom: 10 }}>
               <div style={{ padding: '12px 16px', borderBottom: '1px solid #1F242E', display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 4, alignSelf: 'stretch', background: '#FF6A1A' }} />
-                <div>
+                <div style={{ width: 4, alignSelf: 'stretch', background: '#FF6A1A', flexShrink: 0 }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 10, fontFamily: 'Bebas Neue', letterSpacing: 1.5, color: '#FF6A1A', marginBottom: 2 }}>{getCat(ex.name) || 'EXERCISE'}</div>
                   <div style={{ fontWeight: 700, fontSize: 15, color: '#fff' }}>{ex.name}</div>
                 </div>
+                {isEditing && (
+                  <button
+                    onClick={() => removeExercise(exIdx)}
+                    style={{ background: 'none', border: 'none', color: '#5A6477', cursor: 'pointer', padding: '4px 6px', fontSize: 16, lineHeight: 1, flexShrink: 0 }}
+                  >×</button>
+                )}
               </div>
               <div style={{ padding: '8px 16px 12px' }}>
-                {(ex.sets || []).map((s, j) => (
-                  <div key={j} style={{ display: 'flex', gap: 12, padding: '6px 0', borderBottom: '1px solid #1A1F28', alignItems: 'center' }}>
-                    <div style={{ width: 22, fontFamily: 'Oswald', fontSize: 13, color: s.done ? '#5BC25B' : '#8693AA', fontWeight: 700 }}>{j + 1}</div>
-                    <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 16, color: '#fff' }}>
-                      {s.weight}<span style={{ fontSize: 10, color: '#5A6477', marginLeft: 2 }}>kg</span>
-                    </div>
-                    <div style={{ color: '#3A4253', fontFamily: 'Oswald', fontSize: 16 }}>×</div>
-                    <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 16, color: '#fff' }}>
-                      {s.reps}<span style={{ fontSize: 10, color: '#5A6477', marginLeft: 2 }}>回</span>
-                    </div>
-                    {s.done && (
-                      <div style={{ marginLeft: 'auto', color: '#5BC25B' }}>
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square">
-                          <path d="M4 12l5 5 11-11" />
-                        </svg>
-                      </div>
+                {(ex.sets || []).map((s, setIdx) => (
+                  <div key={setIdx} style={{ display: 'flex', gap: 8, padding: '6px 0', borderBottom: '1px solid #1A1F28', alignItems: 'center' }}>
+                    <div style={{ width: 22, fontFamily: 'Oswald', fontSize: 13, color: s.done ? '#5BC25B' : '#8693AA', fontWeight: 700, flexShrink: 0 }}>{setIdx + 1}</div>
+
+                    {isEditing ? (
+                      <>
+                        <div
+                          onClick={() => setPicker({ exIdx, setIdx })}
+                          style={{
+                            flex: 1, padding: '8px 8px',
+                            background: '#0E1118', border: '1px solid #1F242E',
+                            cursor: 'pointer', display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: 3,
+                            fontFamily: 'Oswald', fontWeight: 700, fontSize: 16, color: '#fff',
+                          }}
+                        >
+                          {s.weight || '—'}<span style={{ fontSize: 10, color: '#5A6477' }}>kg</span>
+                        </div>
+                        <div style={{ color: '#3A4253', fontFamily: 'Oswald', fontSize: 16, flexShrink: 0 }}>×</div>
+                        <div
+                          onClick={() => setPicker({ exIdx, setIdx })}
+                          style={{
+                            flex: 1, padding: '8px 8px',
+                            background: '#0E1118', border: '1px solid #1F242E',
+                            cursor: 'pointer', display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: 3,
+                            fontFamily: 'Oswald', fontWeight: 700, fontSize: 16, color: '#fff',
+                          }}
+                        >
+                          {s.reps || '—'}<span style={{ fontSize: 10, color: '#5A6477' }}>回</span>
+                        </div>
+                        <button
+                          onClick={() => removeSet(exIdx, setIdx)}
+                          style={{ background: 'none', border: 'none', color: '#5A6477', cursor: 'pointer', padding: '4px 6px', fontSize: 16, lineHeight: 1, flexShrink: 0 }}
+                        >×</button>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 16, color: '#fff' }}>
+                          {s.weight}<span style={{ fontSize: 10, color: '#5A6477', marginLeft: 2 }}>kg</span>
+                        </div>
+                        <div style={{ color: '#3A4253', fontFamily: 'Oswald', fontSize: 16 }}>×</div>
+                        <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 16, color: '#fff' }}>
+                          {s.reps}<span style={{ fontSize: 10, color: '#5A6477', marginLeft: 2 }}>回</span>
+                        </div>
+                        {s.done && (
+                          <div style={{ marginLeft: 'auto', color: '#5BC25B' }}>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="square">
+                              <path d="M4 12l5 5 11-11" />
+                            </svg>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 ))}
+
+                {isEditing && (
+                  <button
+                    onClick={() => addSet(exIdx)}
+                    style={{
+                      width: '100%', marginTop: 8,
+                      background: 'transparent', border: '1px dashed #2A3142',
+                      color: '#8693AA', fontFamily: 'Bebas Neue', fontSize: 13, letterSpacing: 1.5,
+                      padding: '8px 0', cursor: 'pointer',
+                    }}
+                  >+ SET 追加</button>
+                )}
               </div>
             </div>
           ))}
 
-          {session.memo && (
+          {isEditing && (
+            <button
+              onClick={() => setShowAddSheet(true)}
+              style={{
+                width: '100%', padding: '12px 0',
+                background: 'transparent', border: '1px dashed #2A3142',
+                color: '#8693AA', fontFamily: 'Bebas Neue', fontSize: 14, letterSpacing: 2,
+                cursor: 'pointer', marginBottom: 14,
+              }}
+            >+ 種目を追加</button>
+          )}
+
+          {session.memo && !isEditing && (
             <div style={{ background: '#13171F', border: '1px solid #1F242E', padding: '14px 16px' }}>
               <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1.5, color: '#FF6A1A', marginBottom: 8 }}>MEMO</div>
               <p style={{ fontSize: 14, color: '#B5BECF', lineHeight: 1.6, margin: 0 }}>{session.memo}</p>
@@ -190,6 +365,29 @@ function SessionDetail({ session, onClose }) {
           )}
         </div>
       </div>
+
+      {/* WheelPickerSheet */}
+      {picker && (
+        <WheelPickerSheet
+          open={!!picker}
+          exerciseName={editExercises[picker.exIdx]?.name || ''}
+          setIdx={picker.setIdx}
+          initial={editExercises[picker.exIdx]?.sets[picker.setIdx]}
+          onCancel={() => setPicker(null)}
+          onConfirm={({ weight, reps }) => {
+            updateSet(picker.exIdx, picker.setIdx, weight, reps)
+            setPicker(null)
+          }}
+        />
+      )}
+
+      {/* AddExerciseSheet */}
+      <AddExerciseSheet
+        open={showAddSheet}
+        userExercises={userExercises}
+        onClose={() => setShowAddSheet(false)}
+        onAdd={name => { addExercise(name); setShowAddSheet(false) }}
+      />
     </div>
   )
 }
@@ -282,7 +480,14 @@ export default function HistoryTab() {
       </div>
 
       {selectedSession && (
-        <SessionDetail session={selectedSession} onClose={() => setSelectedSession(null)} />
+        <SessionDetail
+          session={selectedSession}
+          onClose={() => setSelectedSession(null)}
+          onSessionUpdated={(updated) => {
+            setSessions(prev => prev.map(s => s.id === updated.id ? updated : s))
+            setSelectedSession(updated)
+          }}
+        />
       )}
     </div>
   )
