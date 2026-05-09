@@ -69,6 +69,44 @@
 | TORU | TORU | ベテラン系 | 俺 | トレーニング歴25年超、50代現役 |
 | BILLY | BILLY | エンタメ系 | 俺 | HIPHOPダンサー、YO！FIRE！ |
 
+## ファイル構成
+```
+newiron-log/
+├── index.html              # Googleフォント読み込み（Oswald/JetBrains Mono/Bebas Neue/Noto Sans JP）
+├── vite.config.js
+├── vercel.json
+├── public/
+├── gazou/                  # トレーナー画像（ryota_bu.png など）
+└── src/
+    ├── main.jsx
+    ├── App.jsx             # ルーティング・認証ガード・ローディング画面
+    ├── index.css           # CSS変数・font-size:16px強制・overflow-x:hidden
+    ├── lib/
+    │   ├── supabase.js     # Supabaseクライアント初期化
+    │   └── categories.js   # CATEGORY_MAP / getCategory() / FILTER_CATS（共有）
+    ├── hooks/
+    │   └── useAuth.js      # 認証状態・profile取得・refreshProfile
+    └── components/
+        ├── layout/
+        │   ├── Layout.jsx  # TopBar + 子コンテンツ + BottomNav の枠組み
+        │   ├── TopBar.jsx  # ILロゴ・タブ名サブタイトル・FREEバッジ
+        │   └── BottomNav.jsx # 4タブ・アクティブ時オレンジ上線
+        ├── auth/
+        │   ├── LoginForm.jsx
+        │   ├── SignupForm.jsx
+        │   └── ResetPasswordForm.jsx
+        ├── onboarding/
+        │   └── OnboardingChat.jsx  # 初回チャット形式カウンセリング・デフォルト種目登録
+        ├── record/
+        │   └── RecordTab.jsx       # 種目追加・セット記録・ホイールピッカー・保存
+        ├── history/
+        │   └── HistoryTab.jsx      # 週サマリー・フィルター・セッション詳細
+        ├── ai/
+        │   └── AITab.jsx           # キャラパネル・インサイトカード・チャットシート
+        └── settings/
+            └── SettingsTab.jsx     # プロフィール・AIコーチ（トレーナー選択＋モード）・種目管理
+```
+
 ## カテゴリ分類（src/lib/categories.js）
 共有モジュール。RecordTab・HistoryTab・SettingsTabすべてここからimport。
 - CHEST / BACK / LEGS / SHOULDERS / ARMS / CORE
