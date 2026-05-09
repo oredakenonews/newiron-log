@@ -410,6 +410,66 @@ function ExerciseCard({ ex, expanded, onToggleExpand, onOpenPicker, onAddSet, on
   )
 }
 
+function PlanBanner({ plan, onLoad }) {
+  const [expanded, setExpanded] = useState(false)
+  return (
+    <div style={{
+      background: '#0E1118', border: '1px solid #1F242E',
+      borderLeft: '3px solid #5BC25B', margin: '0 14px 14px',
+    }}>
+      <div
+        onClick={() => setExpanded(v => !v)}
+        style={{
+          padding: '10px 14px',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          cursor: 'pointer',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 2, color: '#5BC25B' }}>TODAY'S PLAN</div>
+          <div style={{ fontFamily: 'JetBrains Mono', fontSize: 10, color: '#5A6477' }}>
+            {(plan.exercises || []).length} exercises
+          </div>
+        </div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5A6477" strokeWidth="2.4" strokeLinecap="square"
+          style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}>
+          <path d="M9 6l6 6-6 6" />
+        </svg>
+      </div>
+
+      {expanded && (
+        <div style={{ padding: '0 14px 12px', borderTop: '1px solid #1F242E' }}>
+          <div style={{ paddingTop: 10, marginBottom: 10 }}>
+            {(plan.exercises || []).map((ex, i) => (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'baseline', gap: 8,
+                padding: '4px 0', borderBottom: '1px solid #1A1F28',
+                fontSize: 12,
+              }}>
+                <div style={{ color: '#E5E9F0', fontWeight: 500, flex: 1 }}>{ex.name}</div>
+                <div style={{ fontFamily: 'JetBrains Mono', fontSize: 10, color: '#5A6477' }}>
+                  {(ex.sets || []).length}セット
+                  {ex.sets?.[0]?.weight ? ` / ${ex.sets[0].weight}kg` : ''}
+                  {ex.sets?.[0]?.reps ? ` × ${ex.sets[0].reps}回` : ''}
+                </div>
+              </div>
+            ))}
+          </div>
+          <button
+            onClick={onLoad}
+            style={{
+              width: '100%', padding: '10px 0',
+              background: '#5BC25B', border: 'none',
+              color: '#0B0D10', fontFamily: 'Oswald', fontWeight: 700,
+              fontSize: 13, letterSpacing: 1.5, cursor: 'pointer',
+            }}
+          >この計画を読み込む</button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function AddExerciseSheet({ open, userExercises, onClose, onAdd }) {
   const [search, setSearch] = useState('')
   if (!open) return null
@@ -498,6 +558,7 @@ export default function RecordTab() {
   const { user } = useAuth()
   const [exercises, setExercises] = useState([])
   const [userExercises, setUserExercises] = useState([])
+  const [plannedSession, setPlannedSession] = useState(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [showAddSheet, setShowAddSheet] = useState(false)
@@ -509,6 +570,7 @@ export default function RecordTab() {
     if (user) {
       loadTodaySession()
       loadUserExercises()
+      loadTodayPlan()
     }
   }, [user])
 
@@ -516,6 +578,14 @@ export default function RecordTab() {
     const { data } = await supabase
       .from('user_exercises').select('*').eq('user_id', user.id).order('order')
     setUserExercises(data || [])
+  }
+
+  async function loadTodayPlan() {
+    const { data } = await supabase
+      .from('planned_sessions').select('*')
+      .eq('user_id', user.id).eq('planned_date', today()).eq('status', 'pending')
+      .order('created_at', { ascending: false }).limit(1).single()
+    if (data) setPlannedSession(data)
   }
 
   async function loadTodaySession() {
@@ -571,6 +641,16 @@ export default function RecordTab() {
     setExercises(prev => prev.filter(ex => ex.id !== exId))
   }
 
+  function loadPlan() {
+    const loaded = (plannedSession.exercises || []).map(ex => ({
+      ...ex,
+      id: genId(),
+      sets: (ex.sets || []).map(s => ({ ...s, done: false })),
+    }))
+    setExercises(loaded)
+    if (loaded.length > 0) setExpandedId(loaded[0].id)
+  }
+
   async function saveSession() {
     setSaving(true)
     const payload = {
@@ -581,11 +661,24 @@ export default function RecordTab() {
     const { data: existing } = await supabase
       .from('workout_sessions').select('id')
       .eq('user_id', user.id).eq('date', today()).single()
+
+    let sessionId = null
     if (existing) {
       await supabase.from('workout_sessions').update(payload).eq('id', existing.id)
+      sessionId = existing.id
     } else {
-      await supabase.from('workout_sessions').insert(payload)
+      const { data: inserted } = await supabase
+        .from('workout_sessions').insert(payload).select('id').single()
+      sessionId = inserted?.id
     }
+
+    if (plannedSession && sessionId) {
+      await supabase.from('planned_sessions')
+        .update({ status: 'done', linked_session_id: sessionId })
+        .eq('id', plannedSession.id)
+      setPlannedSession(null)
+    }
+
     setSaving(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
@@ -594,6 +687,10 @@ export default function RecordTab() {
   return (
     <div style={{ background: '#0B0D10', minHeight: '100%' }}>
       <VolumeHeader exercises={exercises} onSave={saveSession} saving={saving} saved={saved} />
+
+      {plannedSession && (
+        <PlanBanner plan={plannedSession} onLoad={loadPlan} />
+      )}
 
       <div style={{ padding: '14px 14px 20px' }}>
         <div style={{

@@ -239,9 +239,9 @@ function ChatComposer({ accent, onAsk }) {
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {[
-          '今日のフォーム、どうだった？',
-          '来週のメニューを組んで',
-          '伸び悩み、どう打開する？',
+          '直近のセッションを振り返る',
+          '今日のメニューを相談する',
+          '来週の計画を立てる',
         ].map((q, i) => (
           <div
             key={i}
@@ -300,16 +300,23 @@ function ProUpsell() {
 }
 
 const QUICK_PROMPTS = [
-  '今日のフォーム、どうだった？',
-  '来週のメニューを組んで',
+  '直近のセッションを振り返る',
+  '今日のメニューを相談する',
+  '来週の計画を立てる',
   '停滞期を打破したい',
-  '追い込み方を教えて',
 ]
+
+function hasPlan(text) {
+  return (text.match(/\d+\s*(セット|回|kg)/gi) || []).length >= 3
+}
 
 function ChatSheet({ open, initialPrompt, profile, recentWorkouts, onClose, trainerName, trainerImg, coach, coachMode }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [savingPlanIdx, setSavingPlanIdx] = useState(null)
+  const [savedPlanIdxes, setSavedPlanIdxes] = useState(new Set())
+  const [toast, setToast] = useState('')
   const bottomRef = useRef(null)
   const didSendInitial = useRef(false)
   const accent = coach?.tone || '#FF6A1A'
@@ -322,9 +329,38 @@ function ChatSheet({ open, initialPrompt, profile, recentWorkouts, onClose, trai
     if (!open) {
       setMessages([])
       setInput('')
+      setSavedPlanIdxes(new Set())
       didSendInitial.current = false
     }
   }, [open])
+
+  async function savePlan(content, idx) {
+    setSavingPlanIdx(idx)
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-chat', {
+        body: { message: content, history: [], profile, recentWorkouts, coachMode, format: 'structure' },
+      })
+      if (error) throw error
+      const plan = JSON.parse(data.content)
+      if (!plan.exercises?.length) throw new Error('exercises empty')
+      await supabase.from('planned_sessions').insert({
+        user_id: profile.id,
+        planned_date: plan.planned_date,
+        exercises: plan.exercises,
+        cardio: [],
+        memo: '',
+        status: 'pending',
+      })
+      setSavedPlanIdxes(prev => new Set([...prev, idx]))
+      setToast('計画を保存しました')
+      setTimeout(() => setToast(''), 2500)
+    } catch {
+      setToast('保存に失敗しました')
+      setTimeout(() => setToast(''), 2500)
+    } finally {
+      setSavingPlanIdx(null)
+    }
+  }
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -359,6 +395,17 @@ function ChatSheet({ open, initialPrompt, profile, recentWorkouts, onClose, trai
       left: '50%', transform: 'translateX(-50%)',
       width: '100%', maxWidth: 430,
     }}>
+      {/* toast */}
+      {toast && (
+        <div style={{
+          position: 'absolute', top: 'calc(env(safe-area-inset-top) + 60px)',
+          left: '50%', transform: 'translateX(-50%)',
+          background: '#1F242E', border: '1px solid #5BC25B',
+          color: '#5BC25B', padding: '8px 18px',
+          fontFamily: 'Bebas Neue', fontSize: 12, letterSpacing: 1,
+          zIndex: 10, whiteSpace: 'nowrap',
+        }}>{toast}</div>
+      )}
       {/* ── header ── */}
       <div style={{
         paddingTop: 'calc(env(safe-area-inset-top) + 10px)',
@@ -429,43 +476,64 @@ function ChatSheet({ open, initialPrompt, profile, recentWorkouts, onClose, trai
         )}
 
         {messages.map((msg, i) => (
-          <div key={i} style={{
-            display: 'flex',
-            flexDirection: msg.role === 'user' ? 'row-reverse' : 'row',
-            alignItems: 'flex-end',
-            gap: 8,
-            marginBottom: 10,
-          }}>
-            {/* trainer avatar for AI messages */}
-            {msg.role === 'assistant' && (
+          <div key={i} style={{ marginBottom: 10 }}>
+            <div style={{
+              display: 'flex',
+              flexDirection: msg.role === 'user' ? 'row-reverse' : 'row',
+              alignItems: 'flex-end',
+              gap: 8,
+            }}>
+              {msg.role === 'assistant' && (
+                <div style={{
+                  width: 28, height: 28, flexShrink: 0,
+                  background: '#0E1118', border: '1px solid #1F242E', overflow: 'hidden',
+                }}>
+                  <img src={trainerImg} alt={trainerName} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                </div>
+              )}
               <div style={{
-                width: 28, height: 28, flexShrink: 0,
-                background: '#0E1118', border: '1px solid #1F242E', overflow: 'hidden',
+                maxWidth: '75%',
+                padding: '10px 14px',
+                fontSize: 13, lineHeight: 1.7,
+                ...(msg.role === 'user'
+                  ? { background: '#FF6A1A', color: '#0B0D10', fontWeight: 500 }
+                  : { background: '#13171F', border: '1px solid #1F242E', borderLeft: `2px solid ${accent}`, color: '#E5E9F0' }
+                ),
               }}>
-                <img src={trainerImg} alt={trainerName} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                {msg.content}
+              </div>
+            </div>
+
+            {/* plan save button */}
+            {msg.role === 'assistant' && hasPlan(msg.content) && (
+              <div style={{ paddingLeft: 36, marginTop: 6 }}>
+                {savedPlanIdxes.has(i) ? (
+                  <div style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 5,
+                    padding: '5px 10px', background: '#5BC25B22',
+                    border: '1px solid #5BC25B', fontSize: 11, color: '#5BC25B',
+                    fontFamily: 'Bebas Neue', letterSpacing: 1,
+                  }}>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M4 12l5 5 11-11"/></svg>
+                    保存済み
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => savePlan(msg.content, i)}
+                    disabled={savingPlanIdx === i}
+                    style={{
+                      padding: '5px 12px', background: 'transparent',
+                      border: `1px solid ${accent}`, color: accent,
+                      fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1,
+                      cursor: savingPlanIdx === i ? 'default' : 'pointer',
+                      opacity: savingPlanIdx === i ? 0.5 : 1,
+                    }}
+                  >
+                    {savingPlanIdx === i ? '保存中...' : 'この計画を保存する →'}
+                  </button>
+                )}
               </div>
             )}
-
-            <div style={{
-              maxWidth: '75%',
-              padding: '10px 14px',
-              fontSize: 13, lineHeight: 1.7,
-              ...(msg.role === 'user'
-                ? {
-                    background: '#FF6A1A',
-                    color: '#0B0D10',
-                    fontWeight: 500,
-                  }
-                : {
-                    background: '#13171F',
-                    border: '1px solid #1F242E',
-                    borderLeft: `2px solid ${accent}`,
-                    color: '#E5E9F0',
-                  }
-              ),
-            }}>
-              {msg.content}
-            </div>
           </div>
         ))}
 
