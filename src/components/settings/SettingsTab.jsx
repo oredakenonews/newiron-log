@@ -39,6 +39,7 @@ export default function SettingsTab() {
   const [form, setForm] = useState({
     height_cm: '', age: '', gender: '', current_weight_kg: '',
     goal_weight_kg: '', training_purpose: '', trainer_character: 'RYOTA',
+    coach_mode: 'spartan',
   })
   const [exercises, setExercises] = useState([])
   const [saving, setSaving] = useState(false)
@@ -56,6 +57,7 @@ export default function SettingsTab() {
         goal_weight_kg: profile.goal_weight_kg || '',
         training_purpose: profile.training_purpose || '',
         trainer_character: profile.trainer_character || 'RYOTA',
+        coach_mode: profile.coach_mode || 'spartan',
       })
     }
   }, [profile])
@@ -79,6 +81,7 @@ export default function SettingsTab() {
       goal_weight_kg: form.goal_weight_kg ? parseFloat(form.goal_weight_kg) : null,
       training_purpose: form.training_purpose || null,
       trainer_character: form.trainer_character,
+      coach_mode: form.coach_mode,
       updated_at: new Date().toISOString(),
     }).eq('id', user.id)
     await refreshProfile()
@@ -236,6 +239,38 @@ export default function SettingsTab() {
       {/* trainer section */}
       {activeSection === 'trainer' && (
         <div style={{ padding: '14px' }}>
+
+          {/* coach mode toggle */}
+          <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2, color: '#5A6477', marginBottom: 8 }}>コーチングモード</div>
+          <div style={{ display: 'flex', background: '#0E1118', border: '1px solid #1F242E', padding: 3, marginBottom: 20 }}>
+            {[
+              { id: 'spartan', label: 'スパルタ', sub: 'HARD', color: '#FF6A1A' },
+              { id: 'gentle',  label: 'やさしい', sub: 'SOFT', color: '#5BC25B' },
+            ].map(opt => {
+              const active = form.coach_mode === opt.id
+              return (
+                <button
+                  key={opt.id}
+                  onClick={() => setForm(f => ({ ...f, coach_mode: opt.id }))}
+                  style={{
+                    flex: 1, padding: '10px 0',
+                    background: active ? opt.color : 'transparent',
+                    border: 'none',
+                    color: active ? '#0B0D10' : '#8693AA',
+                    fontFamily: '"Noto Sans JP", system-ui',
+                    fontWeight: 700, fontSize: 13,
+                    cursor: 'pointer',
+                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
+                  }}
+                >
+                  <span>{opt.label}</span>
+                  <span style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1, opacity: 0.7 }}>{opt.sub}</span>
+                </button>
+              )
+            })}
+          </div>
+
+          <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2, color: '#5A6477', marginBottom: 8 }}>トレーナー選択</div>
           <div style={{ marginBottom: 14 }}>
             {TRAINERS.map(t => (
               <div

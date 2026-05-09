@@ -546,13 +546,13 @@ function ChatSheet({ open, initialPrompt, profile, recentWorkouts, onClose, trai
 // ── Main screen ───────────────────────────────────────────────────────────────
 export default function AITab() {
   const { user, profile } = useAuth()
-  const [mode, setMode] = useState('spartan')
   const [recentWorkouts, setRecentWorkouts] = useState([])
   const [chatOpen, setChatOpen] = useState(false)
   const [chatPrompt, setChatPrompt] = useState('')
 
   const trainer = profile?.trainer_character || 'RYOTA'
   const trainerImg = TRAINER_IMAGES[trainer] || TRAINER_IMAGES.RYOTA
+  const mode = profile?.coach_mode || 'spartan'
   const coach = COACH_CONTENT[mode]
   const accent = coach.tone
 
@@ -618,11 +618,6 @@ export default function AITab() {
 
   return (
     <div style={{ background: '#0B0D10', minHeight: '100%', paddingBottom: 20 }}>
-      {/* toggle */}
-      <div style={{ padding: '14px 14px 12px', borderBottom: '1px solid #1A1F28' }}>
-        <CoachToggle mode={mode} onChange={setMode} />
-      </div>
-
       <div style={{ padding: '14px' }}>
         <CharacterPanel coach={coach} trainerName={trainer} trainerImg={trainerImg} mode={mode} />
 
