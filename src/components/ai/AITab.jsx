@@ -572,11 +572,10 @@ function ChatSheet({ open, initialPrompt, profile, recentWorkouts, onClose, trai
       <div style={{
         flexShrink: 0,
         borderTop: '1px solid #1F242E',
-        padding: '12px 16px',
-        paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)',
+        padding: '12px max(16px, env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 12px) 16px',
         background: '#0B0D10',
       }}>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, overflow: 'hidden' }}>
           <input
             type="text"
             value={input}
@@ -584,7 +583,7 @@ function ChatSheet({ open, initialPrompt, profile, recentWorkouts, onClose, trai
             onKeyDown={e => e.key === 'Enter' && !e.shiftKey && doSend()}
             placeholder="メッセージを入力..."
             style={{
-              flex: 1, padding: '12px 14px',
+              flex: 1, minWidth: 0, padding: '12px 14px',
               background: '#13171F', border: '1px solid #1F242E',
               color: '#E5E9F0', outline: 'none',
               fontFamily: '"Noto Sans JP", system-ui',
