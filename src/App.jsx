@@ -4,10 +4,6 @@ import LoginForm from './components/auth/LoginForm'
 import SignupForm from './components/auth/SignupForm'
 import ResetPasswordForm from './components/auth/ResetPasswordForm'
 import Layout from './components/layout/Layout'
-import RecordTab from './components/record/RecordTab'
-import HistoryTab from './components/history/HistoryTab'
-import AITab from './components/ai/AITab'
-import SettingsTab from './components/settings/SettingsTab'
 import OnboardingChat from './components/onboarding/OnboardingChat'
 
 function AuthGuard({ children }) {
@@ -54,16 +50,8 @@ export default function App() {
           <OnboardingGuard><OnboardingChat /></OnboardingGuard>
         } />
 
-        {/* メイン画面 */}
-        <Route element={<AuthGuard><Layout /></AuthGuard>}>
-          <Route path="/" element={<RecordTab />} />
-          <Route path="/history" element={<HistoryTab />} />
-          <Route path="/ai" element={<AITab />} />
-          <Route path="/settings" element={<SettingsTab />} />
-        </Route>
-
-        {/* フォールバック */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* メイン画面（全タブ常時マウント） */}
+        <Route path="/*" element={<AuthGuard><Layout /></AuthGuard>} />
       </Routes>
     </BrowserRouter>
   )
