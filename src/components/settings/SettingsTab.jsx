@@ -39,7 +39,7 @@ export default function SettingsTab() {
   const [form, setForm] = useState({
     height_cm: '', age: '', gender: '', current_weight_kg: '',
     goal_weight_kg: '', training_purpose: '', trainer_character: 'RYOTA',
-    coach_mode: 'spartan',
+    coach_mode: 'spartan', coach_notes: '',
   })
   const [exercises, setExercises] = useState([])
   const [saving, setSaving] = useState(false)
@@ -58,6 +58,7 @@ export default function SettingsTab() {
         training_purpose: profile.training_purpose || '',
         trainer_character: profile.trainer_character || 'RYOTA',
         coach_mode: profile.coach_mode || 'spartan',
+        coach_notes: profile.coach_notes || '',
       })
     }
   }, [profile])
@@ -82,6 +83,7 @@ export default function SettingsTab() {
       training_purpose: form.training_purpose || null,
       trainer_character: form.trainer_character,
       coach_mode: form.coach_mode,
+      coach_notes: form.coach_notes || null,
       updated_at: new Date().toISOString(),
     }).eq('id', user.id)
     await refreshProfile()
@@ -269,6 +271,18 @@ export default function SettingsTab() {
               )
             })}
           </div>
+
+          <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2, color: '#5A6477', marginBottom: 8 }}>コーチへのメモ</div>
+          <textarea
+            value={form.coach_notes}
+            onChange={e => setForm(f => ({ ...f, coach_notes: e.target.value }))}
+            placeholder={'ケガ・持病・苦手な種目など、毎回覚えておいてほしいことを書いてください'}
+            rows={4}
+            style={{
+              ...inputStyle, width: '100%', resize: 'vertical',
+              lineHeight: 1.6, marginBottom: 20, boxSizing: 'border-box',
+            }}
+          />
 
           <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2, color: '#5A6477', marginBottom: 8 }}>トレーナー選択</div>
           <div style={{ marginBottom: 14 }}>
