@@ -307,6 +307,12 @@ export default function RecordTab() {
     }
   }, [user])
 
+  useEffect(() => {
+    const h = () => loadTodayPlan()
+    window.addEventListener('iron-plan-saved', h)
+    return () => window.removeEventListener('iron-plan-saved', h)
+  }, [user])
+
   async function loadUserExercises() {
     const { data } = await supabase
       .from('user_exercises').select('*').eq('user_id', user.id).order('order')

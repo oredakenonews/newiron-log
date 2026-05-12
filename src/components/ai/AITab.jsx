@@ -238,6 +238,7 @@ function ChatSheet({ open, initialPrompt, profile, recentWorkouts, onClose, trai
         status: 'pending',
       })
       setSavedPlanIdxes(prev => new Set([...prev, idx]))
+      window.dispatchEvent(new CustomEvent('iron-plan-saved'))
       setToast('計画を保存しました')
       setTimeout(() => setToast(''), 2500)
     } catch {
