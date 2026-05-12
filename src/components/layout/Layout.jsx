@@ -13,6 +13,12 @@ const TAB_STYLE = {
   paddingBottom: 'calc(env(safe-area-inset-bottom) + 80px)',
 }
 
+const AI_TAB_STYLE = {
+  position: 'absolute', inset: 0,
+  display: 'flex', flexDirection: 'column',
+  overflow: 'hidden',
+}
+
 export default function Layout() {
   const { pathname } = useLocation()
 
@@ -23,7 +29,7 @@ export default function Layout() {
         <main style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
           <div style={{ ...TAB_STYLE, display: pathname === '/'         ? 'block' : 'none' }}><RecordTab /></div>
           <div style={{ ...TAB_STYLE, display: pathname === '/history'  ? 'block' : 'none' }}><HistoryTab /></div>
-          <div style={{ ...TAB_STYLE, display: pathname === '/ai'       ? 'block' : 'none' }}><AITab /></div>
+          <div style={{ ...AI_TAB_STYLE, display: pathname === '/ai'    ? 'flex'  : 'none' }}><AITab /></div>
           <div style={{ ...TAB_STYLE, display: pathname === '/settings' ? 'block' : 'none' }}><SettingsTab /></div>
         </main>
         <BottomNav />
