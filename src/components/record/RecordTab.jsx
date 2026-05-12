@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
 import { getCategory } from '../../lib/categories'
 import WheelPickerSheet, { WEIGHT_VALUES, REP_VALUES, nearestWeight } from '../shared/WheelPickerSheet'
 import AddExerciseSheet from '../shared/AddExerciseSheet'
+import { useCoach, CoachStrip, COACH_LINES } from '../../lib/coachContext'
 
 
 function today() {
@@ -285,6 +287,8 @@ function PlanBanner({ plan, onLoad }) {
 
 export default function RecordTab() {
   const { user } = useAuth()
+  const navigate = useNavigate()
+  const { mode } = useCoach()
   const [exercises, setExercises] = useState([])
   const [userExercises, setUserExercises] = useState([])
   const [plannedSession, setPlannedSession] = useState(null)
@@ -413,9 +417,27 @@ export default function RecordTab() {
     setTimeout(() => setSaved(false), 2000)
   }
 
+  const doneSets = exercises.reduce((t, ex) => t + (ex.sets || []).filter(s => s.done).length, 0)
+  const allSets = exercises.reduce((t, ex) => t + (ex.sets || []).length, 0)
+  const progress = allSets > 0 ? doneSets / allSets : 0
+  const coachLine = progress === 0
+    ? COACH_LINES[mode].record_idle
+    : progress >= 1
+      ? COACH_LINES[mode].record_done
+      : COACH_LINES[mode].record_active({ doneSets, totalSets: allSets })
+
   return (
     <div style={{ background: '#0B0D10', minHeight: '100%' }}>
       <VolumeHeader exercises={exercises} onSave={saveSession} saving={saving} saved={saved} />
+
+      <div style={{ padding: '12px 14px 0' }}>
+        <CoachStrip
+          message={coachLine}
+          sub={allSets > 0 ? `${doneSets}/${allSets} SETS` : undefined}
+          action="チャットを開く"
+          onOpenChat={() => navigate('/ai')}
+        />
+      </div>
 
       {plannedSession && (
         <PlanBanner plan={plannedSession} onLoad={loadPlan} />

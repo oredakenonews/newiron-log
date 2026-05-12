@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
 import { getCategory } from '../../lib/categories'
+import { useCoach, CoachAvatarShared, COACHES_SHARED } from '../../lib/coachContext'
 
 // ── Icons ────────────────────────────────────────────────────────────────────
 const IcoTrend = ({ s = 16, c = 'currentColor' }) => (
@@ -38,7 +39,6 @@ const TRAINER_IMAGES = {
   BILLY: '/gazou/billybu.png',
 }
 
-// ── Per-trainer greetings (spartan / gentle) ─────────────────────────────────
 const TRAINER_GREETINGS = {
   RYOTA: {
     spartan: '限界まで追い込んだか！？まだ余力があるなら全然足りてないぞ！',
@@ -57,8 +57,8 @@ const TRAINER_GREETINGS = {
     gentle:  '無理せず、でも妥協もするな。ちょうどいい負荷を一緒に見つけよう。',
   },
   NANA: {
-    spartan: '今日も全力で行くよ！手を抜いたら絶対後悔するからね！💪',
-    gentle:  'おつかれー！今日も来てくれてありがとう！一緒に楽しもうね😊',
+    spartan: '今日も全力で行くよ！手を抜いたら絶対後悔するからね！',
+    gentle:  'おつかれー！今日も来てくれてありがとう！一緒に楽しもうね',
   },
   HANA: {
     spartan: '本日も丁寧に、しかし妥協なく取り組んでいただきます。',
@@ -73,50 +73,26 @@ const TRAINER_GREETINGS = {
     gentle:  '焦らんでいい。長い目で見れば、続けることが一番大切だ。',
   },
   BILLY: {
-    spartan: 'YO！今日も燃やしていくぞ！中途半端は俺が許さん！🔥',
+    spartan: 'YO！今日も燃やしていくぞ！中途半端は俺が許さん！',
     gentle:  'YO！来てくれてサンキュー！一緒に楽しくやっていこうぜ！',
   },
 }
 
-// ── Static coach content ──────────────────────────────────────────────────────
-const COACH_CONTENT = {
+const FEED_MSGS = {
   spartan: {
-    tag: 'スパルタモード',
-    tone: '#FF6A1A',
-    greeting: '今日の追い込みが甘い。胸の最終セット、まだ2レップ余ってただろ。',
-    cards: {
-      growth: { title: '成長', fallbackMetric: '—', fallbackUnit: 'KG / 前週比', fallbackMsg: '記録を続けると成長グラフが表示されます。' },
-      issue:  { title: '課題', fallbackMetric: '—', fallbackUnit: '% PULL',    fallbackMsg: '直近のセッションからプッシュ/プル比率を分析します。' },
-      goal:   { title: '次の目標', fallbackMetric: '—', fallbackUnit: '',           fallbackMsg: 'プロフィールで目標を設定しましょう。' },
-      balance:{ title: 'バランス', fallbackMetric: '—', fallbackUnit: '% 左右差',  fallbackMsg: 'セッションを重ねるとバランス分析が解放されます。' },
-    },
-    cardMsg: {
-      growth: (v) => `${v >= 0 ? '+' : ''}${v}%の変化。だが満足するな、これは通過点だ。`,
-      issue:  (v) => `プッシュ系${v}%。プル系のボリュームを増やせ。背中を組め。`,
-      goal:   (v) => `${v}を目標に設定。全力で取りにいけ。`,
-      balance:(v) => `直近${v}セッション。もっと継続して精度を上げろ。`,
-    },
+    growth:  (v) => v !== null ? `${v >= 0 ? '+' : ''}${v}%の変化。満足するな、これは通過点だ。` : '記録を続けると成長グラフが表示される。',
+    issue:   (v) => v !== null ? `プッシュ系${v}%。プル系を増やせ、背中の日を組め。` : 'プッシュ/プル比率を分析する。記録を続けろ。',
+    goal:    (v) => v !== '—'  ? `${v}を目標に設定。全力で取りにいけ。` : 'プロフィールで目標を設定しろ。',
+    balance: (v) => v > 0     ? `直近${v}セッション。継続してデータを積め。` : 'セッションを重ねるとバランス分析が解放される。',
   },
   gentle: {
-    tag: 'やさしいモード',
-    tone: '#5BC25B',
-    greeting: 'お疲れさまでした。今日も継続できているの、本当に立派ですよ。',
-    cards: {
-      growth: { title: '成長', fallbackMetric: '—', fallbackUnit: 'KG / 前週比', fallbackMsg: '記録を続けると成長グラフが表示されますよ。' },
-      issue:  { title: '課題', fallbackMetric: '—', fallbackUnit: '% PULL',    fallbackMsg: '直近のセッションからトレーニングバランスを確認します。' },
-      goal:   { title: '次の目標', fallbackMetric: '—', fallbackUnit: '',           fallbackMsg: 'プロフィールで目標を設定してみましょう。' },
-      balance:{ title: 'バランス', fallbackMetric: '—', fallbackUnit: '% 左右差',  fallbackMsg: 'セッションを重ねると詳細分析ができますよ。' },
-    },
-    cardMsg: {
-      growth: (v) => `${v >= 0 ? '+' : ''}${v}%の変化。素晴らしい伸びです、自信を持って。`,
-      issue:  (v) => `プッシュ系${v}%。背中の日を1日入れてみましょうか。`,
-      goal:   (v) => `${v}を目標に。一緒に目指しましょう。`,
-      balance:(v) => `直近${v}セッションを分析中。継続していきましょう。`,
-    },
+    growth:  (v) => v !== null ? `${v >= 0 ? '+' : ''}${v}%の変化。素晴らしい伸びです、自信を持って。` : '記録を続けると成長グラフが表示されますよ。',
+    issue:   (v) => v !== null ? `プッシュ系${v}%。背中の日を1日入れてみましょう。` : 'トレーニングバランスを確認しています。',
+    goal:    (v) => v !== '—'  ? `${v}を目標に。一緒に目指しましょう。` : 'プロフィールで目標を設定してみましょう。',
+    balance: (v) => v > 0     ? `直近${v}セッションを分析中。継続していきましょう。` : 'セッションを重ねると詳細分析ができますよ。',
   },
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 function calcVolume(session) {
   return (session?.exercises || []).reduce((t, ex) =>
     t + (ex.sets || []).reduce((s, set) =>
@@ -137,166 +113,8 @@ function calcPushRatio(sessions) {
   return Math.round((push / total) * 100)
 }
 
-// ── Components ────────────────────────────────────────────────────────────────
-function CoachToggle({ mode, onChange }) {
-  return (
-    <div style={{ display: 'flex', background: '#0E1118', border: '1px solid #1F242E', padding: 3 }}>
-      {[
-        { id: 'spartan', label: 'スパルタ', sub: 'HARD' },
-        { id: 'gentle',  label: 'やさしい', sub: 'SOFT' },
-      ].map(opt => {
-        const active = mode === opt.id
-        const color = opt.id === 'spartan' ? '#FF6A1A' : '#5BC25B'
-        return (
-          <button
-            key={opt.id}
-            onClick={() => onChange(opt.id)}
-            style={{
-              flex: 1,
-              background: active ? color : 'transparent',
-              border: 'none',
-              color: active ? '#0B0D10' : '#8693AA',
-              fontFamily: '"Noto Sans JP", system-ui',
-              fontWeight: 700, fontSize: 13,
-              padding: '10px 0', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-            }}
-          >
-            {opt.label}
-            <span style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1, opacity: 0.7 }}>{opt.sub}</span>
-          </button>
-        )
-      })}
-    </div>
-  )
-}
-
-function CharacterPanel({ coach, trainerName, trainerImg, mode }) {
-  const tone = coach.tone
-  const greeting = TRAINER_GREETINGS[trainerName]?.[mode] || coach.greeting
-  return (
-    <div style={{
-      background: '#13171F', border: '1px solid #1F242E',
-      borderLeft: `3px solid ${tone}`,
-      padding: 16, display: 'flex', gap: 14, marginBottom: 14,
-    }}>
-      <div style={{
-        width: 60, height: 60, flexShrink: 0,
-        background: '#0E1118', border: '1px solid #1F242E', overflow: 'hidden',
-      }}>
-        <img src={trainerImg} alt={trainerName} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-          <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1.5, color: tone }}>AI COACH</div>
-          <div style={{
-            fontFamily: 'Bebas Neue', fontSize: 9, letterSpacing: 1,
-            background: `${tone}22`, color: tone, padding: '1px 4px',
-          }}>{coach.tag}</div>
-        </div>
-        <div style={{ fontWeight: 700, fontSize: 16, color: '#fff', marginBottom: 4 }}>{trainerName}</div>
-        <div style={{ fontSize: 12, color: '#B5BECF', lineHeight: 1.6 }}>{greeting}</div>
-      </div>
-    </div>
-  )
-}
-
-function InsightCard({ data, icon, accent }) {
-  return (
-    <div style={{
-      background: '#13171F', border: '1px solid #1F242E',
-      padding: 14, position: 'relative', overflow: 'hidden',
-      minHeight: 150, display: 'flex', flexDirection: 'column',
-    }}>
-      {/* accent corner */}
-      <div style={{
-        position: 'absolute', top: 0, right: 0,
-        width: 0, height: 0,
-        borderTop: `20px solid ${accent}`,
-        borderLeft: '20px solid transparent',
-      }} />
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-        <div style={{ color: accent }}>{icon}</div>
-        <div style={{ fontFamily: '"Noto Sans JP", system-ui', fontWeight: 700, fontSize: 13, color: '#fff' }}>{data.title}</div>
-      </div>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 10 }}>
-        <div style={{
-          fontFamily: 'Oswald', fontWeight: 700,
-          fontSize: 36, lineHeight: 1, color: accent, letterSpacing: -0.5,
-        }}>{data.metric}</div>
-        <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1, color: '#5A6477' }}>{data.unit}</div>
-      </div>
-      <div style={{ fontSize: 11, lineHeight: 1.6, color: '#B5BECF', flex: 1 }}>{data.msg}</div>
-    </div>
-  )
-}
-
-function ChatComposer({ accent, onAsk }) {
-  return (
-    <div style={{ marginTop: 14, background: '#13171F', border: '1px solid #1F242E', padding: 12 }}>
-      <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1.5, color: '#8693AA', marginBottom: 8 }}>
-        AI に質問する
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {[
-          '直近のセッションを振り返る',
-          '今日のメニューを相談する',
-          '来週の計画を立てる',
-        ].map((q, i) => (
-          <div
-            key={i}
-            onClick={() => onAsk(q)}
-            style={{
-              padding: '10px 12px', border: '1px solid #1F242E',
-              background: '#0E1118', fontSize: 12, color: '#B5BECF',
-              display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-              cursor: 'pointer',
-            }}
-          >
-            <span>{q}</span>
-            <span style={{ color: accent, fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1 }}>ASK →</span>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-function ProUpsell() {
-  return (
-    <div style={{
-      marginTop: 14,
-      background: 'linear-gradient(135deg, #1A1410 0%, #0E1118 60%)',
-      border: '1px solid #2D1F12', borderLeft: '3px solid #FF6A1A',
-      padding: 14, position: 'relative', overflow: 'hidden',
-    }}>
-      <div style={{
-        position: 'absolute', top: -20, right: -10,
-        fontFamily: 'Oswald', fontWeight: 700, fontSize: 90,
-        color: 'rgba(255,106,26,0.06)', lineHeight: 1, pointerEvents: 'none',
-      }}>PRO</div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-        <IcoCrown s={14} c="#FF6A1A" />
-        <div style={{ fontFamily: 'Bebas Neue', fontSize: 12, letterSpacing: 2, color: '#FF6A1A' }}>UPGRADE TO PRO</div>
-      </div>
-      <div style={{ fontFamily: '"Noto Sans JP", system-ui', fontWeight: 700, fontSize: 15, color: '#fff', marginBottom: 6, position: 'relative' }}>
-        無制限の AI 質問・週次プラン自動生成
-      </div>
-      <div style={{ fontSize: 11, color: '#8693AA', lineHeight: 1.6, marginBottom: 12, position: 'relative' }}>
-        無料版は週3回まで。Pro はフォーム動画解析・PR予測・パーソナルメニューが使い放題。
-      </div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'relative' }}>
-        <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 22, color: '#fff' }}>
-          ¥980<span style={{ fontSize: 11, color: '#8693AA', fontFamily: 'JetBrains Mono', marginLeft: 4 }}>/月</span>
-        </div>
-        <button style={{
-          background: '#FF6A1A', color: '#0B0D10', border: 'none',
-          padding: '8px 18px', fontFamily: 'Oswald', fontWeight: 700, fontSize: 14, letterSpacing: 1.5,
-          cursor: 'pointer',
-        }}>始める →</button>
-      </div>
-    </div>
-  )
+function hasPlan(text) {
+  return (text.match(/\d+\s*(セット|回|kg)/gi) || []).length >= 3
 }
 
 const QUICK_PROMPTS = [
@@ -306,10 +124,78 @@ const QUICK_PROMPTS = [
   '停滞期を打破したい',
 ]
 
-function hasPlan(text) {
-  return (text.match(/\d+\s*(セット|回|kg)/gi) || []).length >= 3
+// ── ModePill ────────────────────────────────────────────────────────────────
+function ModePill() {
+  const { mode, setMode } = useCoach()
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 6,
+      background: '#0E1118', border: '1px solid #1F242E', padding: 3,
+    }}>
+      {[
+        { id: 'spartan', label: 'スパルタ', tone: COACHES_SHARED.spartan.tone },
+        { id: 'gentle',  label: 'やさしい', tone: COACHES_SHARED.gentle.tone },
+      ].map(opt => {
+        const active = mode === opt.id
+        return (
+          <button
+            key={opt.id}
+            onClick={() => setMode(opt.id)}
+            style={{
+              background: active ? opt.tone : 'transparent',
+              border: 'none',
+              color: active ? '#0B0D10' : '#8693AA',
+              fontFamily: '"Noto Sans JP", system-ui',
+              fontWeight: 700, fontSize: 11,
+              padding: '5px 9px', cursor: 'pointer',
+            }}
+          >{opt.label}</button>
+        )
+      })}
+    </div>
+  )
 }
 
+// ── FeedTurn ────────────────────────────────────────────────────────────────
+function FeedTurn({ icon, label, message, metric, unit, accent, big = false, onAsk }) {
+  const { coach } = useCoach()
+  return (
+    <div style={{ display: 'flex', gap: 10, marginBottom: 14, alignItems: 'flex-start' }}>
+      <div style={{ paddingTop: 2 }}>
+        <CoachAvatarShared size={48} tone={coach.tone} letter={coach.letter} />
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+          {icon && <div style={{ color: accent }}>{icon}</div>}
+          <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1.5, color: accent }}>{label}</div>
+        </div>
+        <div style={{
+          background: '#13171F', border: '1px solid #1F242E',
+          borderLeft: `2px solid ${accent}`, padding: '12px 14px',
+        }}>
+          {metric !== undefined && (
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 6 }}>
+              <div style={{
+                fontFamily: 'Oswald', fontWeight: 700,
+                fontSize: big ? 36 : 26, lineHeight: 1, color: accent, letterSpacing: -0.5,
+              }}>{metric}</div>
+              <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1, color: '#5A6477' }}>{unit}</div>
+            </div>
+          )}
+          <div style={{ fontSize: 13, lineHeight: 1.65, color: '#E5E9F0', fontWeight: 500 }}>{message}</div>
+          {onAsk && (
+            <div onClick={onAsk} style={{
+              marginTop: 8, fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1.5,
+              color: accent, cursor: 'pointer',
+            }}>もっと聞く →</div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── ChatSheet ────────────────────────────────────────────────────────────────
 function ChatSheet({ open, initialPrompt, profile, recentWorkouts, onClose, trainerName, trainerImg, coach, coachMode }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
@@ -395,7 +281,6 @@ function ChatSheet({ open, initialPrompt, profile, recentWorkouts, onClose, trai
       left: '50%', transform: 'translateX(-50%)',
       width: '100%', maxWidth: 430,
     }}>
-      {/* toast */}
       {toast && (
         <div style={{
           position: 'absolute', top: 'calc(env(safe-area-inset-top) + 60px)',
@@ -406,7 +291,6 @@ function ChatSheet({ open, initialPrompt, profile, recentWorkouts, onClose, trai
           zIndex: 10, whiteSpace: 'nowrap',
         }}>{toast}</div>
       )}
-      {/* ── header ── */}
       <div style={{
         paddingTop: 'calc(env(safe-area-inset-top) + 10px)',
         paddingBottom: 12, paddingLeft: 18, paddingRight: 18,
@@ -421,15 +305,12 @@ function ChatSheet({ open, initialPrompt, profile, recentWorkouts, onClose, trai
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
-
-        {/* trainer avatar */}
         <div style={{
           width: 36, height: 36, flexShrink: 0,
           background: '#0E1118', border: '1px solid #1F242E', overflow: 'hidden',
         }}>
           <img src={trainerImg} alt={trainerName} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         </div>
-
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 16, color: '#fff', letterSpacing: 0.5 }}>
@@ -444,16 +325,12 @@ function ChatSheet({ open, initialPrompt, profile, recentWorkouts, onClose, trai
         </div>
       </div>
 
-      {/* ── messages ── */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '16px 16px 8px' }}>
-
-        {/* empty state — quick prompts */}
         {messages.length === 0 && !isLoading && (
           <div style={{ marginBottom: 20 }}>
-            <div style={{
-              fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2,
-              color: '#5A6477', marginBottom: 10,
-            }}>QUICK START</div>
+            <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2, color: '#5A6477', marginBottom: 10 }}>
+              QUICK START
+            </div>
             {QUICK_PROMPTS.map((q, i) => (
               <div
                 key={i}
@@ -467,9 +344,7 @@ function ChatSheet({ open, initialPrompt, profile, recentWorkouts, onClose, trai
                 }}
               >
                 <span>{q}</span>
-                <span style={{ color: accent, fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1, flexShrink: 0 }}>
-                  ASK →
-                </span>
+                <span style={{ color: accent, fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1, flexShrink: 0 }}>ASK →</span>
               </div>
             ))}
           </div>
@@ -492,8 +367,7 @@ function ChatSheet({ open, initialPrompt, profile, recentWorkouts, onClose, trai
                 </div>
               )}
               <div style={{
-                maxWidth: '75%',
-                padding: '10px 14px',
+                maxWidth: '75%', padding: '10px 14px',
                 fontSize: 13, lineHeight: 1.7,
                 ...(msg.role === 'user'
                   ? { background: '#FF6A1A', color: '#0B0D10', fontWeight: 500 }
@@ -503,8 +377,6 @@ function ChatSheet({ open, initialPrompt, profile, recentWorkouts, onClose, trai
                 {msg.content}
               </div>
             </div>
-
-            {/* plan save button */}
             {msg.role === 'assistant' && hasPlan(msg.content) && (
               <div style={{ paddingLeft: 36, marginTop: 6 }}>
                 {savedPlanIdxes.has(i) ? (
@@ -537,7 +409,6 @@ function ChatSheet({ open, initialPrompt, profile, recentWorkouts, onClose, trai
           </div>
         ))}
 
-        {/* typing indicator */}
         {isLoading && (
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, marginBottom: 10 }}>
             <div style={{
@@ -554,8 +425,7 @@ function ChatSheet({ open, initialPrompt, profile, recentWorkouts, onClose, trai
               <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
                 {[0, 1, 2].map(i => (
                   <div key={i} style={{
-                    width: 6, height: 6,
-                    background: accent,
+                    width: 6, height: 6, background: accent,
                     animation: 'bounce 1.2s ease-in-out infinite',
                     animationDelay: `${i * 0.2}s`,
                   }} />
@@ -568,7 +438,6 @@ function ChatSheet({ open, initialPrompt, profile, recentWorkouts, onClose, trai
         <div ref={bottomRef} />
       </div>
 
-      {/* ── input ── */}
       <div style={{
         flexShrink: 0,
         borderTop: '1px solid #1F242E',
@@ -613,15 +482,13 @@ function ChatSheet({ open, initialPrompt, profile, recentWorkouts, onClose, trai
 // ── Main screen ───────────────────────────────────────────────────────────────
 export default function AITab() {
   const { user, profile } = useAuth()
+  const { coach, mode } = useCoach()
   const [recentWorkouts, setRecentWorkouts] = useState([])
   const [chatOpen, setChatOpen] = useState(false)
-  const [chatPrompt, setChatPrompt] = useState('')
+  const [chatPrompt, setChatPrompt] = useState(null)
 
   const trainer = profile?.trainer_character || 'RYOTA'
   const trainerImg = TRAINER_IMAGES[trainer] || TRAINER_IMAGES.RYOTA
-  const mode = profile?.coach_mode || 'spartan'
-  const coach = COACH_CONTENT[mode]
-  const accent = coach.tone
 
   useEffect(() => {
     if (user) {
@@ -635,7 +502,13 @@ export default function AITab() {
     }
   }, [user])
 
-  // ── Derived metrics ─────────────────────────────────────────────────────────
+  useEffect(() => {
+    const h = () => { setChatPrompt(null); setChatOpen(true) }
+    window.addEventListener('iron-open-chat', h)
+    return () => window.removeEventListener('iron-open-chat', h)
+  }, [])
+
+  // ── Derived metrics ────────────────────────────────────────────────────────
   const recent3 = recentWorkouts.slice(0, 3)
   const prev3   = recentWorkouts.slice(3, 6)
   const thisVol = recent3.reduce((t, s) => t + calcVolume(s), 0)
@@ -653,53 +526,111 @@ export default function AITab() {
     return Date.now() - d.valueOf() < 30 * 24 * 60 * 60 * 1000
   }).length
 
-  // Build card data (real data if available, else fallback)
-  const cardData = {
-    growth: {
-      title: coach.cards.growth.title,
-      metric: volChangePct !== null ? `${volChangePct >= 0 ? '+' : ''}${volChangePct}` : coach.cards.growth.fallbackMetric,
-      unit:   volChangePct !== null ? '% 前週比' : coach.cards.growth.fallbackUnit,
-      msg:    volChangePct !== null ? coach.cardMsg.growth(volChangePct) : coach.cards.growth.fallbackMsg,
-    },
-    issue: {
-      title: coach.cards.issue.title,
-      metric: pushRatio !== null ? String(pushRatio) : coach.cards.issue.fallbackMetric,
-      unit:   pushRatio !== null ? '% PUSH' : coach.cards.issue.fallbackUnit,
-      msg:    pushRatio !== null ? coach.cardMsg.issue(pushRatio) : coach.cards.issue.fallbackMsg,
-    },
-    goal: {
-      title:  coach.cards.goal.title,
-      metric: goalLabel,
-      unit:   profile?.goal_weight_kg ? `目標 ${profile.goal_weight_kg}kg` : '',
-      msg:    goalLabel !== '—'
-        ? coach.cardMsg.goal(goalLabel)
-        : coach.cards.goal.fallbackMsg,
-    },
-    balance: {
-      title:  coach.cards.balance.title,
-      metric: days30 > 0 ? String(days30) : coach.cards.balance.fallbackMetric,
-      unit:   days30 > 0 ? '日 / 30日' : coach.cards.balance.fallbackUnit,
-      msg:    days30 > 0 ? coach.cardMsg.balance(days30) : coach.cards.balance.fallbackMsg,
-    },
-  }
+  const msgs = FEED_MSGS[mode]
+  const greetingText = TRAINER_GREETINGS[trainer]?.[mode]
+    ?? (mode === 'spartan' ? '今日の追い込みが甘い。まだいける。' : 'お疲れさまでした。継続できています。')
+
+  const openChat = (q = null) => { setChatPrompt(q); setChatOpen(true) }
 
   return (
     <div style={{ background: '#0B0D10', minHeight: '100%', paddingBottom: 20 }}>
-      <div style={{ padding: '14px' }}>
-        <CharacterPanel coach={coach} trainerName={trainer} trainerImg={trainerImg} mode={mode} />
+      {/* ── Coach header ── */}
+      <div style={{
+        padding: '14px 16px',
+        background: '#0B0D10',
+        borderBottom: '1px solid #1A1F28',
+        display: 'flex', alignItems: 'center', gap: 12,
+      }}>
+        <CoachAvatarShared size={72} tone={coach.tone} letter={coach.letter} pulse />
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1.5, color: coach.tone }}>
+            YOUR COACH · ONLINE
+          </div>
+          <div style={{ fontWeight: 700, fontSize: 16, color: '#fff', marginTop: 2 }}>{coach.name}</div>
+        </div>
+        <ModePill />
+      </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          <InsightCard data={cardData.growth}  icon={<IcoTrend   s={16} c="#5BC25B" />} accent="#5BC25B" />
-          <InsightCard data={cardData.issue}   icon={<IcoFlame   s={16} c="#FF6A1A" />} accent="#FF6A1A" />
-          <InsightCard data={cardData.goal}    icon={<IcoTarget  s={16} c="#FFB800" />} accent="#FFB800" />
-          <InsightCard data={cardData.balance} icon={<IcoBalance s={16} c="#5AA9FF" />} accent="#5AA9FF" />
+      {/* ── Feed ── */}
+      <div style={{ padding: '14px 14px 0' }}>
+        <FeedTurn
+          label="今日のひとこと"
+          accent={coach.tone}
+          message={greetingText}
+        />
+        <FeedTurn
+          icon={<IcoTrend s={14} c="#5BC25B" />}
+          label="伸び"
+          accent="#5BC25B"
+          metric={volChangePct !== null ? `${volChangePct >= 0 ? '+' : ''}${volChangePct}` : '—'}
+          unit={volChangePct !== null ? '% 前週比' : ''}
+          message={msgs.growth(volChangePct)}
+          onAsk={() => openChat('この伸びをどう活かす？')}
+        />
+        <FeedTurn
+          icon={<IcoFlame s={14} c="#FF6A1A" />}
+          label="気になる点"
+          accent="#FF6A1A"
+          metric={pushRatio !== null ? String(pushRatio) : '—'}
+          unit={pushRatio !== null ? '% PUSH' : ''}
+          message={msgs.issue(pushRatio)}
+          onAsk={() => openChat('プル系、何から組む？')}
+        />
+        <FeedTurn
+          icon={<IcoTarget s={14} c="#FFB800" />}
+          label="次の目標"
+          accent="#FFB800"
+          metric={goalLabel}
+          unit={profile?.goal_weight_kg ? `目標 ${profile.goal_weight_kg}kg` : ''}
+          message={msgs.goal(goalLabel)}
+          onAsk={() => openChat('目標達成のプランを組んで')}
+        />
+        <FeedTurn
+          icon={<IcoBalance s={14} c="#5AA9FF" />}
+          label="バランス"
+          accent="#5AA9FF"
+          metric={days30 > 0 ? String(days30) : '—'}
+          unit={days30 > 0 ? '日 / 30日' : ''}
+          message={msgs.balance(days30)}
+          onAsk={() => openChat('トレーニングバランスを改善したい')}
+        />
+
+        {/* ── Inline chat trigger ── */}
+        <div
+          onClick={() => openChat(null)}
+          style={{
+            display: 'flex', gap: 8, alignItems: 'center',
+            padding: '10px 12px',
+            background: '#13171F', border: '1px solid #1F242E',
+            marginTop: 4, marginBottom: 10,
+            cursor: 'pointer',
+          }}
+        >
+          <CoachAvatarShared size={36} tone={coach.tone} letter={coach.letter} />
+          <div style={{ flex: 1, fontSize: 12, color: '#8693AA' }}>{coach.name} に質問する...</div>
+          <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1.5, color: coach.tone }}>OPEN →</div>
         </div>
 
-        <ChatComposer accent={accent} onAsk={(q) => { setChatPrompt(q); setChatOpen(true) }} />
-        <ProUpsell />
+        {/* ── Subtle Pro mention ── */}
+        <div style={{
+          marginTop: 4, padding: '10px 12px',
+          background: 'transparent', border: '1px dashed #2A3142',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+            <div style={{ color: '#FF6A1A', flexShrink: 0 }}><IcoCrown s={13} c="#FF6A1A" /></div>
+            <div style={{ fontSize: 11, color: '#8693AA', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              無料は週3回まで · Pro で質問・プラン無制限
+            </div>
+          </div>
+          <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1.5, color: '#FF6A1A', flexShrink: 0, cursor: 'pointer' }}>
+            ¥980 →
+          </div>
+        </div>
       </div>
 
       <ChatSheet
+        key={chatOpen ? `${mode}-${chatPrompt || 'open'}` : 'closed'}
         open={chatOpen}
         initialPrompt={chatPrompt}
         profile={profile}

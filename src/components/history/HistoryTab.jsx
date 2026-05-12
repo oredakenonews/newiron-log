@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
 import { getCategory, FILTER_CATS } from '../../lib/categories'
 import WheelPickerSheet from '../shared/WheelPickerSheet'
 import AddExerciseSheet from '../shared/AddExerciseSheet'
+import { useCoach, CoachStrip, CoachQuote, COACH_LINES } from '../../lib/coachContext'
 
 const FILTERS = ['すべて', '胸', '背中', '脚', '肩・腕']
 
@@ -394,6 +396,8 @@ function SessionDetail({ session, onClose, onSessionUpdated }) {
 
 export default function HistoryTab() {
   const { user } = useAuth()
+  const navigate = useNavigate()
+  const { mode } = useCoach()
   const [sessions, setSessions] = useState([])
   const [selectedFilter, setSelectedFilter] = useState('すべて')
   const [selectedSession, setSelectedSession] = useState(null)
@@ -447,6 +451,16 @@ export default function HistoryTab() {
         <MiniBar values={weekVolumes} max={maxVol} />
       </div>
 
+      {/* coach strip */}
+      <div style={{ padding: '12px 14px 0' }}>
+        <CoachStrip
+          message={COACH_LINES[mode].history_summary}
+          sub="WEEKLY"
+          action="チャットで聞く"
+          onOpenChat={() => navigate('/ai')}
+        />
+      </div>
+
       {/* filter */}
       <div style={{ display: 'flex', gap: 8, padding: '12px 14px', borderBottom: '1px solid #1A1F28', overflowX: 'auto', scrollbarWidth: 'none' }}>
         {FILTERS.map((f) => (
@@ -469,14 +483,27 @@ export default function HistoryTab() {
         {filteredSessions.length === 0 && (
           <p style={{ textAlign: 'center', color: '#5A6477', fontSize: 13, padding: '40px 0' }}>記録がありません</p>
         )}
-        {filteredSessions.map((session) => (
-          <HistoryRow
-            key={session.id}
-            session={session}
-            isToday={session.date === todayStr}
-            onClick={() => setSelectedSession(session)}
-          />
-        ))}
+        {filteredSessions.map((session, idx) => {
+          const isLeg = (session.exercises || []).some(ex => getCat(ex.name) === 'LEGS')
+          const showQuote = session.date === todayStr || (idx <= 1 && isLeg)
+          const quoteText = isLeg
+            ? COACH_LINES[mode].workout_legs
+            : COACH_LINES[mode].workout_normal
+          return (
+            <div key={session.id}>
+              <HistoryRow
+                session={session}
+                isToday={session.date === todayStr}
+                onClick={() => setSelectedSession(session)}
+              />
+              {showQuote && (
+                <div style={{ padding: '0 18px 12px' }}>
+                  <CoachQuote text={quoteText} />
+                </div>
+              )}
+            </div>
+          )
+        })}
       </div>
 
       {selectedSession && (
