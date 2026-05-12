@@ -14,7 +14,9 @@ const TAB_STYLE = {
 }
 
 const AI_TAB_STYLE = {
-  position: 'absolute', inset: 0,
+  position: 'absolute',
+  top: 0, left: 0, right: 0,
+  bottom: 'calc(env(safe-area-inset-bottom) + 64px)',
   display: 'flex', flexDirection: 'column',
   overflow: 'hidden',
 }

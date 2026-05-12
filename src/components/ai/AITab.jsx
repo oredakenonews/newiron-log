@@ -286,7 +286,7 @@ export default function AITab() {
       <div style={{
         flexShrink: 0,
         borderTop: '1px solid #1F242E',
-        padding: `12px 16px calc(env(safe-area-inset-bottom) + 12px)`,
+        padding: '12px 16px',
         background: '#0B0D10',
       }}>
         <div style={{ display: 'flex', gap: 8 }}>
