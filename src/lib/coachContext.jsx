@@ -7,6 +7,18 @@ export const COACHES_SHARED = {
   gentle:  { name: 'コーチ・ハル',     tag: 'やさしい', tone: '#5BC25B', letter: 'H' },
 }
 
+const TRAINER_IMAGES = {
+  RYOTA:   '/gazou/ryota_bu.png',
+  DAIKI:   '/gazou/daiki_bu.png',
+  YUKI:    '/gazou/yuki_bu.png',
+  KENJI:   '/gazou/kenji_bu.png',
+  NANA:    '/gazou/nana_bu.png',
+  HANA:    '/gazou/hana_bu.png',
+  RACHELL: '/gazou/rachell_bu.png',
+  TORU:    '/gazou/toru_bu.png',
+  BILLY:   '/gazou/billybu.png',
+}
+
 export const COACH_LINES = {
   spartan: {
     record_idle:     '今日も来たな。追い込め。',
@@ -32,6 +44,7 @@ const CoachContext = createContext({
   mode: 'spartan',
   setMode: () => {},
   coach: COACHES_SHARED.spartan,
+  trainerImg: TRAINER_IMAGES.RYOTA,
 })
 
 export function CoachProvider({ children }) {
@@ -49,9 +62,11 @@ export function CoachProvider({ children }) {
     }
   }
 
+  const trainerImg = TRAINER_IMAGES[profile?.trainer_character] ?? TRAINER_IMAGES.RYOTA
+
   const value = useMemo(
-    () => ({ mode, setMode, coach: COACHES_SHARED[mode] ?? COACHES_SHARED.spartan }),
-    [mode, user]
+    () => ({ mode, setMode, coach: COACHES_SHARED[mode] ?? COACHES_SHARED.spartan, trainerImg }),
+    [mode, user, trainerImg]
   )
 
   return <CoachContext.Provider value={value}>{children}</CoachContext.Provider>
@@ -61,23 +76,29 @@ export function useCoach() {
   return useContext(CoachContext)
 }
 
-export function CoachAvatarShared({ size = 32, tone, letter, pulse = false }) {
+export function CoachAvatarShared({ size = 32, tone, letter, img, pulse = false }) {
   return (
     <div style={{
       width: size, height: size, flexShrink: 0,
       background: '#0E1118', border: '1px solid #1F242E',
       position: 'relative', overflow: 'hidden',
     }}>
-      <div style={{
-        position: 'absolute', inset: 0,
-        background: `repeating-linear-gradient(45deg, transparent 0 6px, ${tone}22 6px 7px)`,
-      }} />
-      <div style={{
-        position: 'absolute', inset: 0,
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontFamily: 'Oswald', fontWeight: 700,
-        fontSize: Math.round(size * 0.46), color: tone,
-      }}>{letter}</div>
+      {img ? (
+        <img src={img} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+      ) : (
+        <>
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: `repeating-linear-gradient(45deg, transparent 0 6px, ${tone}22 6px 7px)`,
+          }} />
+          <div style={{
+            position: 'absolute', inset: 0,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontFamily: 'Oswald', fontWeight: 700,
+            fontSize: Math.round(size * 0.46), color: tone,
+          }}>{letter}</div>
+        </>
+      )}
       {pulse && (
         <div style={{
           position: 'absolute', right: 2, bottom: 2,
@@ -90,7 +111,7 @@ export function CoachAvatarShared({ size = 32, tone, letter, pulse = false }) {
 }
 
 export function CoachStrip({ message, sub, action, onOpenChat }) {
-  const { coach } = useCoach()
+  const { coach, trainerImg } = useCoach()
   return (
     <div
       style={{
@@ -103,7 +124,7 @@ export function CoachStrip({ message, sub, action, onOpenChat }) {
       onClick={onOpenChat}
     >
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-        <CoachAvatarShared size={64} tone={coach.tone} letter={coach.letter} pulse />
+        <CoachAvatarShared size={64} tone={coach.tone} letter={coach.letter} img={trainerImg} pulse />
         <div style={{ fontFamily: 'Bebas Neue', fontSize: 9, letterSpacing: 1.5, color: coach.tone }}>{coach.tag}</div>
       </div>
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
@@ -124,13 +145,13 @@ export function CoachStrip({ message, sub, action, onOpenChat }) {
 }
 
 export function CoachQuote({ text }) {
-  const { coach } = useCoach()
+  const { coach, trainerImg } = useCoach()
   return (
     <div style={{
       display: 'flex', alignItems: 'flex-start', gap: 8,
       marginTop: 8, fontSize: 12, color: '#B5BECF', lineHeight: 1.55,
     }}>
-      <CoachAvatarShared size={32} tone={coach.tone} letter={coach.letter} />
+      <CoachAvatarShared size={32} tone={coach.tone} letter={coach.letter} img={trainerImg} />
       <div style={{ flex: 1, borderLeft: `2px solid ${coach.tone}`, paddingLeft: 10, paddingTop: 2 }}>
         「{text}」
       </div>

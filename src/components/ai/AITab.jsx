@@ -158,11 +158,11 @@ function ModePill() {
 
 // ── FeedTurn ────────────────────────────────────────────────────────────────
 function FeedTurn({ icon, label, message, metric, unit, accent, big = false, onAsk }) {
-  const { coach } = useCoach()
+  const { coach, trainerImg } = useCoach()
   return (
     <div style={{ display: 'flex', gap: 10, marginBottom: 14, alignItems: 'flex-start' }}>
       <div style={{ paddingTop: 2 }}>
-        <CoachAvatarShared size={48} tone={coach.tone} letter={coach.letter} />
+        <CoachAvatarShared size={48} tone={coach.tone} letter={coach.letter} img={trainerImg} />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
@@ -541,7 +541,7 @@ export default function AITab() {
         borderBottom: '1px solid #1A1F28',
         display: 'flex', alignItems: 'center', gap: 12,
       }}>
-        <CoachAvatarShared size={72} tone={coach.tone} letter={coach.letter} pulse />
+        <CoachAvatarShared size={72} tone={coach.tone} letter={coach.letter} img={trainerImg} pulse />
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1.5, color: coach.tone }}>
             YOUR COACH · ONLINE
@@ -606,7 +606,7 @@ export default function AITab() {
             cursor: 'pointer',
           }}
         >
-          <CoachAvatarShared size={36} tone={coach.tone} letter={coach.letter} />
+          <CoachAvatarShared size={36} tone={coach.tone} letter={coach.letter} img={trainerImg} />
           <div style={{ flex: 1, fontSize: 12, color: '#8693AA' }}>{coach.name} に質問する...</div>
           <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1.5, color: coach.tone }}>OPEN →</div>
         </div>
