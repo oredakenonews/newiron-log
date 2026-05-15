@@ -152,6 +152,19 @@ newiron-log/
 - Supabase無料プランのため7日間アクセスなしで自動停止する点に注意
 - CoachProviderはLayout.jsx内（認証済みルートのみ）に配置。useCoach()はAuth確定後のみ呼ぶこと
 
+## デザイン・コード同期ルール
+
+**本番コード（`src/`）が canonical（正）。デザインファイルはミラー。**
+
+- 変更の流れ: コード修正 → 同じセッション内でデザインファイルにも同じ差分を反映
+- 対象ファイル: `design_handoff_coach_copresence/` 内の該当 `.jsx`
+  - `coachContext.jsx` 変更 → `coach-shared.jsx` に反映
+  - `RecordTab.jsx` 変更 → `record.jsx` に反映
+  - `HistoryTab.jsx` 変更 → `history.jsx` に反映
+  - `AITab.jsx` 変更 → `ai.jsx` に反映
+- デザインファイル単独での変更は禁止。必ずコードを先に変更してからミラーする
+- Claude Code は各コード変更後、対応するデザインファイルを必ず更新すること
+
 ## 今後やること
 - フリーミアム・Stripe連携（¥980/月 Pro）
 - トレーナーキャラのイラスト（現在はbu画像を使用）
