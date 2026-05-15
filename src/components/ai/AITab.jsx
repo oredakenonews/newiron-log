@@ -166,7 +166,7 @@ export default function AITab() {
           <CoachAvatarShared size={52} tone={accent} letter={coach.letter} img={trainerImg} pulse />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontFamily: 'Bebas Neue', fontSize: 9, letterSpacing: 1.5, color: accent }}>YOUR COACH · ONLINE</div>
-            <div style={{ fontWeight: 700, fontSize: 15, color: '#fff', marginTop: 1 }}>{coach.name}</div>
+            <div style={{ fontWeight: 700, fontSize: 15, color: '#fff', marginTop: 1 }}>{trainer}</div>
           </div>
           <ModePill />
         </div>

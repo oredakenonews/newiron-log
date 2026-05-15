@@ -78,7 +78,7 @@ function VolumeHeader({ exercises, onSave, saving, saved }) {
   )
 }
 
-function SetRow({ set, idx, exId, onOpenPicker, onToggleDone }) {
+function SetRow({ set, idx, exId, onOpenPicker, onToggleDone, onRemoveSet }) {
   const done = !!set.done
   return (
     <div style={{
@@ -142,11 +142,26 @@ function SetRow({ set, idx, exId, onOpenPicker, onToggleDone }) {
           <path d="M4 12l5 5 11-11" />
         </svg>
       </button>
+
+      <button
+        onClick={() => onRemoveSet(idx)}
+        style={{
+          width: 28, height: 28, flexShrink: 0,
+          background: 'transparent', border: 'none',
+          color: '#3A4253',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer', padding: 0,
+        }}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square">
+          <path d="M18 6L6 18M6 6l12 12" />
+        </svg>
+      </button>
     </div>
   )
 }
 
-function ExerciseCard({ ex, expanded, onToggleExpand, onOpenPicker, onAddSet, onToggleDone, onRemove }) {
+function ExerciseCard({ ex, expanded, onToggleExpand, onOpenPicker, onAddSet, onToggleDone, onRemoveSet, onRemove }) {
   const totalVol = (ex.sets || []).reduce((s, x) => s + (parseFloat(x.weight) || 0) * (parseInt(x.reps) || 0), 0)
   const doneCount = (ex.sets || []).filter(s => s.done).length
 
@@ -196,6 +211,7 @@ function ExerciseCard({ ex, expanded, onToggleExpand, onOpenPicker, onAddSet, on
               exId={ex.id}
               onOpenPicker={(setIdx) => onOpenPicker(ex.id, setIdx)}
               onToggleDone={(setIdx) => onToggleDone(ex.id, setIdx)}
+              onRemoveSet={(setIdx) => onRemoveSet(ex.id, setIdx)}
             />
           ))}
           <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
@@ -376,6 +392,12 @@ export default function RecordTab() {
     ))
   }
 
+  function removeSet(exId, setIdx) {
+    setExercises(prev => prev.map(ex =>
+      ex.id !== exId ? ex : { ...ex, sets: ex.sets.filter((_, j) => j !== setIdx) }
+    ))
+  }
+
   function removeExercise(exId) {
     setExercises(prev => prev.filter(ex => ex.id !== exId))
   }
@@ -471,6 +493,7 @@ export default function RecordTab() {
             onOpenPicker={(exId, setIdx) => setPicker({ exId, setIdx })}
             onAddSet={addSet}
             onToggleDone={toggleDone}
+            onRemoveSet={removeSet}
             onRemove={removeExercise}
           />
         ))}

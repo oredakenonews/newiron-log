@@ -63,10 +63,11 @@ export function CoachProvider({ children }) {
   }
 
   const trainerImg = TRAINER_IMAGES[profile?.trainer_character] ?? TRAINER_IMAGES.RYOTA
+  const trainerName = profile?.trainer_character || 'RYOTA'
 
   const value = useMemo(
-    () => ({ mode, setMode, coach: COACHES_SHARED[mode] ?? COACHES_SHARED.spartan, trainerImg }),
-    [mode, user, trainerImg]
+    () => ({ mode, setMode, coach: COACHES_SHARED[mode] ?? COACHES_SHARED.spartan, trainerImg, trainerName }),
+    [mode, user, trainerImg, trainerName]
   )
 
   return <CoachContext.Provider value={value}>{children}</CoachContext.Provider>
@@ -111,7 +112,7 @@ export function CoachAvatarShared({ size = 32, tone, letter, img, pulse = false 
 }
 
 export function CoachStrip({ message, sub, action, onOpenChat }) {
-  const { coach, trainerImg } = useCoach()
+  const { coach, trainerImg, trainerName } = useCoach()
   return (
     <div
       style={{
@@ -129,7 +130,7 @@ export function CoachStrip({ message, sub, action, onOpenChat }) {
       </div>
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-          <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1.5, color: '#fff' }}>{coach.name}</div>
+          <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1.5, color: '#fff' }}>{trainerName}</div>
           {sub && <div style={{ fontFamily: 'JetBrains Mono', fontSize: 9, color: '#5A6477' }}>· {sub}</div>}
         </div>
         <div style={{ fontSize: 13, lineHeight: 1.55, color: '#E5E9F0', fontWeight: 500 }}>{message}</div>
