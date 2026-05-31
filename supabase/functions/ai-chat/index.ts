@@ -102,6 +102,21 @@ ${workoutLines.join("\n")}
 - 返答は150文字程度にまとめる`
 }
 
+const MEMORY_TTL_DAYS: Record<string, number> = {
+  injury: 60,
+  goal: 90,
+  preference: 180,
+  habit: 180,
+  note: 30,
+}
+
+function expiresAt(memoryType: string): string {
+  const days = MEMORY_TTL_DAYS[memoryType] ?? 60
+  const d = new Date()
+  d.setDate(d.getDate() + days)
+  return d.toISOString()
+}
+
 const MEMORY_TRIGGER_KEYWORDS = [
   "痛", "怪我", "負傷", "苦手", "好き", "嫌い", "目標", "休憩", "休む",
   "体重", "やりたい", "できない", "変えたい", "続けたい", "辞めたい", "リハビリ",
@@ -119,11 +134,13 @@ async function extractAndSaveMemories(
   userMessage: string,
   assistantResponse: string
 ): Promise<void> {
-  // 既存記憶を取得して矛盾検出に使う
+  // 期限切れでない既存記憶を取得して矛盾検出に使う
+  const now = new Date().toISOString()
   const { data: existing } = await supabase
     .from("ai_memories")
     .select("id, memory_type, content")
     .eq("user_id", userId)
+    .or(`expires_at.is.null,expires_at.gt.${now}`)
   const existingList: Array<{ id: string; memory_type: string; content: string }> = existing || []
 
   const existingSection = existingList.length > 0
@@ -171,7 +188,7 @@ memory_typeの値: injury / goal / preference / habit / note
   }
   if (toAdd.length > 0) {
     await supabase.from("ai_memories").insert(
-      toAdd.map(a => ({ user_id: userId, memory_type: a.memory_type, content: a.content }))
+      toAdd.map(a => ({ user_id: userId, memory_type: a.memory_type, content: a.content, expires_at: expiresAt(a.memory_type) }))
     )
   }
 }
@@ -240,6 +257,7 @@ ${message}`
         .from("ai_memories")
         .select("memory_type, content")
         .eq("user_id", userId)
+        .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
         .order("created_at", { ascending: false })
         .limit(8)
       if (data) longTermMemories = data

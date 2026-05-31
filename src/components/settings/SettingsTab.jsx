@@ -74,10 +74,12 @@ export default function SettingsTab() {
   }, [user, activeSection])
 
   async function loadMemories() {
+    const now = new Date().toISOString()
     const { data } = await supabase
       .from('ai_memories')
       .select('id, memory_type, content')
       .eq('user_id', user.id)
+      .or(`expires_at.is.null,expires_at.gt.${now}`)
       .order('created_at', { ascending: false })
     setMemories(data || [])
   }
