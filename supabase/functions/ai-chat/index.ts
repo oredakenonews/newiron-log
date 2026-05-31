@@ -119,47 +119,61 @@ async function extractAndSaveMemories(
   userMessage: string,
   assistantResponse: string
 ): Promise<void> {
-  const extractPrompt = `以下の会話から、トレーナーが長期的に記憶すべき重要情報を抽出してください。
-対象: 怪我・痛み・苦手種目・好み・目標変更・生活習慣など、将来の会話でも参照すべき情報のみ。
-返答はJSONのみ（他のテキスト不要）: [{"memory_type":"injury","content":"左肩痛"}]
-なければ: []
-memory_typeの値: injury / goal / preference / habit / note
+  // 既存記憶を取得して矛盾検出に使う
+  const { data: existing } = await supabase
+    .from("ai_memories")
+    .select("id, memory_type, content")
+    .eq("user_id", userId)
+  const existingList: Array<{ id: string; memory_type: string; content: string }> = existing || []
 
-ユーザー発言: ${userMessage}
-トレーナー応答: ${assistantResponse}`
+  const existingSection = existingList.length > 0
+    ? `\n既存の記憶:\n${existingList.map(m => `[id:${m.id}] [${m.memory_type}] ${m.content}`).join("\n")}\n`
+    : ""
+
+  const extractPrompt = `以下の会話をもとに、トレーナーが管理する長期記憶を更新してください。
+${existingSection}
+新しい会話:
+ユーザー: ${userMessage}
+トレーナー: ${assistantResponse}
+
+指示:
+- 新しく記憶すべき情報があれば action:"add" で追加する
+- 既存の記憶と矛盾・更新がある場合は action:"delete" で古い記憶のidを指定して削除し、action:"add" で新しい内容を追加する
+- 特に記憶すべき変化がなければ []
+
+返答はJSONのみ（他のテキスト不要）:
+[{"action":"add","memory_type":"injury","content":"左肩痛"},{"action":"delete","id":"既存のid"}]
+memory_typeの値: injury / goal / preference / habit / note
+なければ: []`
 
   const res = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 200,
+    max_tokens: 300,
     messages: [{ role: "user", content: extractPrompt }],
   })
 
   const raw = res.content[0].type === "text" ? res.content[0].text.trim() : "[]"
   const jsonStr = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim()
 
-  let extracted: Array<{ memory_type: string; content: string }> = []
+  let actions: Array<{ action: string; id?: string; memory_type?: string; content?: string }> = []
   try {
     const parsed = JSON.parse(jsonStr)
-    if (Array.isArray(parsed)) {
-      extracted = parsed.filter((m: any) =>
-        m.memory_type && m.content &&
-        typeof m.memory_type === "string" &&
-        typeof m.content === "string"
-      )
-    }
+    if (Array.isArray(parsed)) actions = parsed
   } catch {
     return
   }
 
-  if (extracted.length === 0) return
+  const toDelete = actions.filter(a => a.action === "delete" && a.id)
+  const toAdd = actions.filter(a => a.action === "add" && a.memory_type && a.content)
 
-  await supabase.from("ai_memories").insert(
-    extracted.map((m: { memory_type: string; content: string }) => ({
-      user_id: userId,
-      memory_type: m.memory_type,
-      content: m.content,
-    }))
-  )
+  if (toDelete.length > 0) {
+    await supabase.from("ai_memories").delete().in("id", toDelete.map(a => a.id))
+  }
+  if (toAdd.length > 0) {
+    await supabase.from("ai_memories").insert(
+      toAdd.map(a => ({ user_id: userId, memory_type: a.memory_type, content: a.content }))
+    )
+  }
 }
 
 Deno.serve(async (req: Request) => {
