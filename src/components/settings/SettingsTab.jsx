@@ -46,6 +46,8 @@ export default function SettingsTab() {
   const [saved, setSaved] = useState(false)
   const [newExName, setNewExName] = useState('')
   const [activeSection, setActiveSection] = useState('profile')
+  const [memories, setMemories] = useState([])
+  const [deletingMemoryId, setDeletingMemoryId] = useState(null)
 
   useEffect(() => {
     if (profile) {
@@ -66,6 +68,31 @@ export default function SettingsTab() {
   useEffect(() => {
     if (user) loadExercises()
   }, [user])
+
+  useEffect(() => {
+    if (user && activeSection === 'trainer') loadMemories()
+  }, [user, activeSection])
+
+  async function loadMemories() {
+    const { data } = await supabase
+      .from('ai_memories')
+      .select('id, memory_type, content')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+    setMemories(data || [])
+  }
+
+  async function deleteMemory(id) {
+    setDeletingMemoryId(id)
+    await supabase.from('ai_memories').delete().eq('id', id)
+    setMemories(prev => prev.filter(m => m.id !== id))
+    setDeletingMemoryId(null)
+  }
+
+  async function deleteAllMemories() {
+    await supabase.from('ai_memories').delete().eq('user_id', user.id)
+    setMemories([])
+  }
 
   async function loadExercises() {
     const { data } = await supabase.from('user_exercises').select('*').eq('user_id', user.id).order('order')
@@ -283,6 +310,52 @@ export default function SettingsTab() {
               lineHeight: 1.6, marginBottom: 20, boxSizing: 'border-box',
             }}
           />
+
+          {/* AI記憶 */}
+          <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2, color: '#5A6477', marginBottom: 8, marginTop: 4 }}>AI記憶</div>
+          <div style={{ background: '#13171F', border: '1px solid #1F242E', marginBottom: 20 }}>
+            {memories.length === 0 ? (
+              <div style={{ padding: '14px 16px', fontSize: 12, color: '#5A6477', textAlign: 'center' }}>
+                チャットで話した内容が自動的に記録されます
+              </div>
+            ) : (
+              <>
+                {memories.map(m => (
+                  <div key={m.id} style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '10px 14px', borderBottom: '1px solid #1A1F28',
+                  }}>
+                    <div style={{
+                      fontFamily: 'Bebas Neue', fontSize: 9, letterSpacing: 1,
+                      color: '#FF6A1A', background: 'rgba(255,106,26,0.1)',
+                      padding: '2px 6px', flexShrink: 0,
+                    }}>
+                      {{ injury: '怪我', goal: '目標', preference: '好み', habit: '習慣', note: 'メモ' }[m.memory_type] || m.memory_type}
+                    </div>
+                    <div style={{ flex: 1, fontSize: 13, color: '#B5BECF', lineHeight: 1.5 }}>{m.content}</div>
+                    <button
+                      onClick={() => deleteMemory(m.id)}
+                      disabled={deletingMemoryId === m.id}
+                      style={{ background: 'none', border: 'none', color: '#5A6477', cursor: 'pointer', padding: 4, flexShrink: 0, opacity: deletingMemoryId === m.id ? 0.4 : 1 }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                        <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+                <button
+                  onClick={deleteAllMemories}
+                  style={{
+                    width: '100%', padding: '10px 0',
+                    background: 'transparent', border: 'none',
+                    color: '#5A6477', fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1.5,
+                    cursor: 'pointer',
+                  }}
+                >全て削除</button>
+              </>
+            )}
+          </div>
 
           <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2, color: '#5A6477', marginBottom: 8 }}>トレーナー選択</div>
           <div style={{ marginBottom: 14 }}>
