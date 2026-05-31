@@ -44,12 +44,17 @@
   - システムプロンプト構成: トレーナーペルソナ + コーチングモード指示 + ユーザー情報 + **長期記憶** + 直近記録
   - キャラクターの口調・一人称を最優先、その上でモード強度を調整する設計
 
-### ai_memories読み書きの仕組み（v8〜）
-1. **読み込み（毎リクエスト）**: AuthorizationヘッダーのJWTでSupabaseクライアント生成 → `ai_memories`から直近8件取得 → system promptの【長期記憶】セクションに `[memory_type] content` 形式で注入
+### ai_memories読み書きの仕組み（v11〜）
+1. **読み込み（毎リクエスト）**: AuthorizationヘッダーのJWTでSupabaseクライアント生成 → 期限切れでない`ai_memories`を直近8件取得 → system promptの【長期記憶】セクションに `[memory_type] content` 形式で注入
 2. **書き込み（バックグラウンド）**: ユーザーメッセージにキーワード（痛/怪我/肩/膝/目標/苦手 など）が含まれる場合のみ、`EdgeRuntime.waitUntil()` で非同期実行
-   - Haikuに軽量抽出プロンプト → `[{memory_type, content}]` JSON → `ai_memories` にINSERT
+   - 既存記憶（期限切れ除外）をプロンプトに渡し、**type別・最終状態置き換え方式**で統合
+   - AIが `{"updates":[{"memory_type":"injury","memories":["統合済み内容"]}]}` を返す
+   - 対象typeの既存レコードを全削除 → 統合済みリストをINSERT（重複発生しない）
    - レスポンス返却を待たないためレイテンシへの影響なし
-3. **セキュリティ**: RLS（`auth.uid() = user_id`）がユーザースコープを自動保証
+3. **TTL（自動期限切れ）**: 保存時に`expires_at`を付与。期限切れはAI参照・UI表示両方から除外
+   - injury=60日 / goal=90日 / preference・habit=180日 / note=30日
+4. **セキュリティ**: RLS（`auth.uid() = user_id`）がユーザースコープを自動保証
+5. **UI管理**: 設定 → AIコーチタブの「AI記憶」セクションで一覧表示・個別削除・全削除が可能
 
 ## デザインシステム
 - ダークテーマ: 背景`#0B0D10`、カード`#13171F`、深背景`#0E1118`、ボーダー`#1F242E`
@@ -186,6 +191,5 @@ newiron-log/
 - トレーナーキャラのイラスト（現在はbu画像を使用）
 - 体重グラフ（body_weights活用）
 - CoachStripタップ→AIタブ遷移後にチャット自動オープン（現在は遷移のみ）
-- ai_memories改善: 古い記憶の自動削除（expires_at活用）、重複記憶のdedup
 - hasPlan検出ロジック強化（誤検知対策: format:'detect'パラメータ追加）
 - クイックプロンプトのパーソナライズ（トレーナー×モード×直近記録から動的生成）
