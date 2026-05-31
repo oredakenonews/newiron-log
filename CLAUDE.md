@@ -29,15 +29,27 @@
 - workout_sessions（トレーニング記録・exercises/cardio/memoをJSONで保存）
 - user_exercises（種目設定・weight_min/reps_step/reps_maxカラムあり）
 - planned_sessions（AIが生成したトレーニング計画・planned_date/exercises/status/linked_session_id）
-- ai_memories（AI記憶・将来用）
+- ai_memories（AI長期記憶）
+  - カラム: `id` uuid PK / `user_id` uuid / `memory_type` text NOT NULL / `content` text NOT NULL / `created_at` timestamptz / `expires_at` timestamptz
+  - RLS: `auth.uid() = user_id`（全操作）
+  - `memory_type`の値: `injury` / `goal` / `preference` / `habit` / `note`
+  - 読み書きはEdge Function側で完結（クライアントから直接触らない）
 
 ## Supabase Edge Functions
-- `ai-chat`（v6）: Anthropic API呼び出し
+- コードは `supabase/functions/ai-chat/index.ts` でリポジトリ管理
+- `ai-chat`（v8）: Anthropic API呼び出し + ai_memories読み書き
   - リクエスト: `{ message, history, profile, recentWorkouts, coachMode, format? }`
   - `coachMode`: 'spartan' or 'gentle'（profiles.coach_modeから送信）
   - `format: 'structure'`: AIテキストからトレーニング計画JSONを抽出して返す
-  - システムプロンプト構成: トレーナーペルソナ（経歴・口癖・一人称含む詳細） + コーチングモード指示 + ユーザー情報 + 直近記録
+  - システムプロンプト構成: トレーナーペルソナ + コーチングモード指示 + ユーザー情報 + **長期記憶** + 直近記録
   - キャラクターの口調・一人称を最優先、その上でモード強度を調整する設計
+
+### ai_memories読み書きの仕組み（v8〜）
+1. **読み込み（毎リクエスト）**: AuthorizationヘッダーのJWTでSupabaseクライアント生成 → `ai_memories`から直近8件取得 → system promptの【長期記憶】セクションに `[memory_type] content` 形式で注入
+2. **書き込み（バックグラウンド）**: ユーザーメッセージにキーワード（痛/怪我/肩/膝/目標/苦手 など）が含まれる場合のみ、`EdgeRuntime.waitUntil()` で非同期実行
+   - Haikuに軽量抽出プロンプト → `[{memory_type, content}]` JSON → `ai_memories` にINSERT
+   - レスポンス返却を待たないためレイテンシへの影響なし
+3. **セキュリティ**: RLS（`auth.uid() = user_id`）がユーザースコープを自動保証
 
 ## デザインシステム
 - ダークテーマ: 背景`#0B0D10`、カード`#13171F`、深背景`#0E1118`、ボーダー`#1F242E`
@@ -106,6 +118,10 @@ newiron-log/
 ├── vercel.json
 ├── public/
 ├── gazou/                  # トレーナー画像（ryota_bu.png など）
+├── supabase/
+│   └── functions/
+│       └── ai-chat/
+│           └── index.ts    # Edge Function本体（Supabaseにデプロイ済み）
 └── src/
     ├── main.jsx
     ├── App.jsx             # ルーティング・認証ガード・ローディング画面
@@ -168,6 +184,8 @@ newiron-log/
 ## 今後やること
 - フリーミアム・Stripe連携（¥980/月 Pro）
 - トレーナーキャラのイラスト（現在はbu画像を使用）
-- AIメモリ機能（ai_memoriesテーブル活用）
 - 体重グラフ（body_weights活用）
 - CoachStripタップ→AIタブ遷移後にチャット自動オープン（現在は遷移のみ）
+- ai_memories改善: 古い記憶の自動削除（expires_at活用）、重複記憶のdedup
+- hasPlan検出ロジック強化（誤検知対策: format:'detect'パラメータ追加）
+- クイックプロンプトのパーソナライズ（トレーナー×モード×直近記録から動的生成）
