@@ -134,62 +134,67 @@ async function extractAndSaveMemories(
   userMessage: string,
   assistantResponse: string
 ): Promise<void> {
-  // 期限切れでない既存記憶を取得して矛盾検出に使う
+  // 期限切れでない既存記憶を全件取得
   const now = new Date().toISOString()
   const { data: existing } = await supabase
     .from("ai_memories")
-    .select("id, memory_type, content")
+    .select("memory_type, content")
     .eq("user_id", userId)
     .or(`expires_at.is.null,expires_at.gt.${now}`)
-  const existingList: Array<{ id: string; memory_type: string; content: string }> = existing || []
+  const existingList: Array<{ memory_type: string; content: string }> = existing || []
 
   const existingSection = existingList.length > 0
-    ? `\n既存の記憶:\n${existingList.map(m => `[id:${m.id}] [${m.memory_type}] ${m.content}`).join("\n")}\n`
+    ? `\n既存の記憶:\n${existingList.map(m => `[${m.memory_type}] ${m.content}`).join("\n")}\n`
     : ""
 
-  const extractPrompt = `以下の会話をもとに、トレーナーが管理する長期記憶を更新してください。
+  // 差分ではなく「影響を受けるtypeの最終状態」を返させることで重複を防ぐ
+  const extractPrompt = `以下の会話をもとに、長期記憶を更新・整理してください。
 ${existingSection}
 新しい会話:
 ユーザー: ${userMessage}
 トレーナー: ${assistantResponse}
 
-指示:
-- 新しく記憶すべき情報があれば action:"add" で追加する
-- 既存の記憶と矛盾・更新がある場合は action:"delete" で古い記憶のidを指定して削除し、action:"add" で新しい内容を追加する
-- 特に記憶すべき変化がなければ []
+変更が必要なmemory_typeについて、既存の記憶と新情報を統合した最終的な記憶リストを返してください。
+似た内容は必ず1件にまとめてください。変化がないtypeは含めないでください。
 
 返答はJSONのみ（他のテキスト不要）:
-[{"action":"add","memory_type":"injury","content":"左肩痛"},{"action":"delete","id":"既存のid"}]
-memory_typeの値: injury / goal / preference / habit / note
-なければ: []`
+{"updates":[{"memory_type":"injury","memories":["左肩に痛みがある"]}]}
+変化がなければ: {"updates":[]}
+memory_typeの値: injury / goal / preference / habit / note`
 
   const res = await client.messages.create({
     model: "claude-haiku-4-5-20251001",
-    max_tokens: 300,
+    max_tokens: 400,
     messages: [{ role: "user", content: extractPrompt }],
   })
 
-  const raw = res.content[0].type === "text" ? res.content[0].text.trim() : "[]"
+  const raw = res.content[0].type === "text" ? res.content[0].text.trim() : '{"updates":[]}'
   const jsonStr = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim()
 
-  let actions: Array<{ action: string; id?: string; memory_type?: string; content?: string }> = []
+  let result: { updates: Array<{ memory_type: string; memories: string[] }> } = { updates: [] }
   try {
-    const parsed = JSON.parse(jsonStr)
-    if (Array.isArray(parsed)) actions = parsed
+    result = JSON.parse(jsonStr)
   } catch {
     return
   }
 
-  const toDelete = actions.filter(a => a.action === "delete" && a.id)
-  const toAdd = actions.filter(a => a.action === "add" && a.memory_type && a.content)
-
-  if (toDelete.length > 0) {
-    await supabase.from("ai_memories").delete().in("id", toDelete.map(a => a.id))
-  }
-  if (toAdd.length > 0) {
-    await supabase.from("ai_memories").insert(
-      toAdd.map(a => ({ user_id: userId, memory_type: a.memory_type, content: a.content, expires_at: expiresAt(a.memory_type) }))
-    )
+  for (const update of (result.updates || [])) {
+    if (!update.memory_type || !Array.isArray(update.memories)) continue
+    // そのtypeの既存レコードを全削除してから統合済みリストを挿入
+    await supabase.from("ai_memories")
+      .delete()
+      .eq("user_id", userId)
+      .eq("memory_type", update.memory_type)
+    if (update.memories.length > 0) {
+      await supabase.from("ai_memories").insert(
+        update.memories.map((content: string) => ({
+          user_id: userId,
+          memory_type: update.memory_type,
+          content,
+          expires_at: expiresAt(update.memory_type),
+        }))
+      )
+    }
   }
 }
 
