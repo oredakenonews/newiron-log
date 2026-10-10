@@ -13,6 +13,20 @@ TEAM_ID=$(grep -m1 -o 'DEVELOPMENT_TEAM = [A-Z0-9]*' $PROJECT/project.pbxproj | 
 ARCHIVE=~/Library/Developer/Xcode/Archives/$(date +%Y-%m-%d)/airon-log-$BUILD_NUMBER.xcarchive
 EXPORT_DIR=$(mktemp -d)
 
+# App Store Connect APIキー認証（あれば使う。Apple IDのセッション切れと無縁になる）
+# .env.asc に ASC_KEY_ID / ASC_ISSUER_ID を書き、
+# ~/.appstoreconnect/private_keys/AuthKey_<ASC_KEY_ID>.p8 を置く
+AUTH_FLAGS=()
+[[ -f .env.asc ]] && source .env.asc
+if [[ -n "${ASC_KEY_ID:-}" && -n "${ASC_ISSUER_ID:-}" ]]; then
+  AUTH_FLAGS=(
+    -authenticationKeyPath "$HOME/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+    -authenticationKeyID "$ASC_KEY_ID"
+    -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+  )
+  echo "▶ App Store Connect APIキー認証を使用（Key ID: $ASC_KEY_ID）"
+fi
+
 # ビルドを iOS プロジェクトへ同期
 npm run ios:sync
 # exFAT の SSD では ._ ファイルが生まれる。バンドルに入ると署名が壊れるので消す
@@ -44,7 +58,7 @@ xcodebuild archive \
   -project $PROJECT -scheme App -configuration Release \
   -destination 'generic/platform=iOS' \
   -archivePath "$ARCHIVE" \
-  -allowProvisioningUpdates \
+  -allowProvisioningUpdates "${AUTH_FLAGS[@]}" \
   CURRENT_PROJECT_VERSION=$BUILD_NUMBER \
   -quiet
 
@@ -53,7 +67,7 @@ xcodebuild -exportArchive \
   -archivePath "$ARCHIVE" \
   -exportOptionsPlist "$EXPORT_DIR/ExportOptions.plist" \
   -exportPath "$EXPORT_DIR" \
-  -allowProvisioningUpdates
+  -allowProvisioningUpdates "${AUTH_FLAGS[@]}"
 
 rm -rf "$EXPORT_DIR"
 echo "✔ アップロード完了（ビルド $BUILD_NUMBER）。処理が終わると App Store Connect の TestFlight に出ます（10〜30分）"

@@ -31,3 +31,4 @@ dist-ssr
 ._*
 **/._*
 backups/
+.env.asc
