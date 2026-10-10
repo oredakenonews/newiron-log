@@ -22,17 +22,17 @@ async function post(body) {
   return res.json()
 }
 
-export async function sendChat({ message, history, profile, recentWorkouts, coachMode }) {
+export async function sendChat({ message, history, profile, recentWorkouts }) {
   const memories = await listMemories()
   const data = await post({
-    message, history, profile, recentWorkouts, coachMode,
+    message, history, profile, recentWorkouts,
     memories: memories.map(m => ({ memory_type: m.memory_type, content: m.content })),
   })
   return data.content
 }
 
-export async function structurePlan({ message, profile, coachMode }) {
-  const data = await post({ message, profile, coachMode, format: 'structure' })
+export async function structurePlan({ message, profile }) {
+  const data = await post({ message, profile, format: 'structure' })
   return JSON.parse(data.content)
 }
 

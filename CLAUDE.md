@@ -126,31 +126,24 @@
 - 履歴タブ: 今週サマリー（MiniBar）＋CoachStrip＋フィルター＋セッション詳細（編集モードあり）
   - セッション行に今日・脚の日はCoachQuoteを表示
   - 編集モード: セット重量/回数タップ→ホイールピッカー、セット追加/削除、種目追加/削除、DB保存
-- AIタブ（コーチフィード）:
-  - ヘッダー: 72pxアバター（K/H）＋コーチ名（コーチ・カイザー/コーチ・ハル）＋ModePill
-  - ModePill: スパルタ/やさしい切替、即時全タブに反映しDBにも保存
-  - FeedTurn × 5: 今日のひとこと / 伸び / 気になる点 / 次の目標 / バランス
-  - インラインチャットトリガー、控えめなProライン（dashed border）
-  - チャット: トレーナー画像アバター＋名前＋モードバッジ＋オンライン表示
+- AIタブ:
+  - ヘッダー: 大型キャラ切り抜き（右下・高さ148px透過PNG）＋吹き出し挨拶（あすけん風ヒーロー）
+  - チャット: トレーナー画像アバター＋名前＋オンライン表示
   - プラン検出（3回以上のセット/回/kg表記）→「この計画を保存する」ボタン→planned_sessionsに保存
-- 設定タブ: プロフィール・AIコーチ（トレーナー選択＋モード切替）・種目管理
+  - チャット履歴はトレーナー刻印付きで保存。トレーナー変更後は旧履歴を引き継がない（人格ブリード防止）
+- 設定タブ: プロフィール・AIコーチ（トレーナー選択・コーチへのメモ・AI記憶）・種目管理・エクスポート/インポート
 
 ## コーチ共存プレゼンス（src/lib/coachContext.jsx）
 全タブに共通のコーチ状態を提供するReact Context。
 
-```ts
-COACHES_SHARED = {
-  spartan: { name: 'コーチ・カイザー', tag: 'スパルタ', tone: '#FF6A1A', letter: 'K' },
-  gentle:  { name: 'コーチ・ハル',     tag: 'やさしい', tone: '#5BC25B', letter: 'H' },
-}
-```
+**⚠️ v2.1（2026-10-10）: スパルタ/やさしいのモード切替は廃止**（TestFlightフィードバック: 切替で別人格になる）。コーチ・カイザー/コーチ・ハル（K/H）の二重人格レイヤーも撤去し、トレーナーキャラクター本来の性格一本に統一。`profiles.coach_mode`は未使用（互換のためDEFAULT_PROFILEには残置）。
 
-- `CoachProvider`: Layout.jsxでラップ。`profiles.coach_mode`と自動同期。`setMode()`でDB即時保存。
-- `useCoach()`: `{ mode, setMode, coach }` を返す
-- `CoachAvatarShared`: ハッチパターン+レター正方形アバター（pulse propでグリーンドット付加）
-- `CoachStrip`: 64pxアバター+コーチ名+メッセージ+CTA。RecordTab・HistoryTabで使用
+- `CoachProvider`: Layout.jsxでラップ。`profiles.trainer_character`から導出
+- `useCoach()`: `{ coach: { name, tag, tone, letter }, trainerImg, trainerName, lines }` を返す（tagは熱血/理論派などのタイプ、toneは常に`#FF6A1A`）
+- `CoachAvatarShared`: 画像 or ハッチパターン+レター正方形アバター（pulse propでグリーンドット付加）
+- `CoachStrip`: 88pxアバター+トレーナー名+メッセージ+CTA。RecordTab・HistoryTabで使用
 - `CoachQuote`: 32pxアバター+左ボーダー付き引用。HistoryTabのセッション行で使用
-- `COACH_LINES`: spartan/gentleそれぞれの画面別セリフ（record_idle/record_active/record_done/history_summary/workout_*）
+- `TRAINER_LINES`: トレーナー9人それぞれの画面別セリフ（record_idle/record_active/record_done/history_summary/workout_*）。`useCoach().lines`が現在トレーナーの解決済みセットを返す
 
 クロスタブチャット起動: `window.dispatchEvent(new CustomEvent('iron-open-chat'))` → AITabのuseEffectが購読。ナビゲーション遷移は`navigate('/ai')`。
 
@@ -207,7 +200,7 @@ newiron-log/
         ├── history/
         │   └── HistoryTab.jsx      # CoachStrip・CoachQuote・週サマリー・フィルター・セッション詳細（編集モード）
         ├── ai/
-        │   └── AITab.jsx           # コーチフィード（FeedTurn）・ModePill・チャットシート
+        │   └── AITab.jsx           # 大型キャラヘッダー・チャット・計画保存
         ├── settings/
         │   └── SettingsTab.jsx     # プロフィール・AIコーチ（トレーナー選択＋モード）・種目管理
         └── shared/
@@ -223,7 +216,7 @@ newiron-log/
 ## 注意事項
 - iOS Safariのauto-zoom防止のためinput/select/textareaにfont-size:16px強制（index.css）
 - **認証はAuthProvider（src/hooks/useAuth.js）で全体共有**。main.jsxでラップ済み。useAuth()は必ずProvider配下で呼ぶ（profile・coach_modeの単一ソース）
-- コーチモードはuseCoach()のmode/setModeが唯一のソース。SettingsTabのformには持たせない（巻き戻りバグ防止）
+- コーチングモード（スパルタ/やさしい）はv2.1で廃止。mode/setMode/coachModeは存在しない（復活させない）
 - Supabaseクエリで0行があり得る箇所は`.single()`ではなく`.maybeSingle()`を使う
 - overflow-x:hiddenをbodyと#root両方に設定済み
 - Supabase無料プランのため7日間アクセスなしで自動停止する点に注意

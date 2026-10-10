@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../../hooks/useAuth'
-import { useCoach } from '../../lib/coachContext'
 import { getCategory } from '../../lib/categories'
 import { hapticSuccess, hapticError } from '../../lib/haptics'
 import {
@@ -42,9 +41,6 @@ function Section({ title, children }) {
 
 export default function SettingsTab() {
   const { user, profile, saveProfile } = useAuth()
-  // コーチモードは共有Contextで管理（AIタブのModePillと同一ソース）。
-  // 旧実装はformに持っていたため、AIタブで切替→設定で保存すると古い値で巻き戻るバグがあった。
-  const { mode, setMode } = useCoach()
   const [form, setForm] = useState({
     height_cm: '', age: '', gender: '', current_weight_kg: '',
     goal_weight_kg: '', training_purpose: '', trainer_character: 'RYOTA',
@@ -309,36 +305,6 @@ export default function SettingsTab() {
       {/* trainer section */}
       {activeSection === 'trainer' && (
         <div style={{ padding: '14px' }}>
-
-          {/* coach mode toggle */}
-          <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2, color: '#5A6477', marginBottom: 8 }}>コーチングモード</div>
-          <div style={{ display: 'flex', background: '#0E1118', border: '1px solid #1F242E', padding: 3, marginBottom: 20 }}>
-            {[
-              { id: 'spartan', label: 'スパルタ', sub: 'HARD', color: '#FF6A1A' },
-              { id: 'gentle',  label: 'やさしい', sub: 'SOFT', color: '#5BC25B' },
-            ].map(opt => {
-              const active = mode === opt.id
-              return (
-                <button
-                  key={opt.id}
-                  onClick={() => setMode(opt.id)}
-                  style={{
-                    flex: 1, padding: '10px 0',
-                    background: active ? opt.color : 'transparent',
-                    border: 'none',
-                    color: active ? '#0B0D10' : '#8693AA',
-                    fontFamily: '"Noto Sans JP", system-ui',
-                    fontWeight: 700, fontSize: 13,
-                    cursor: 'pointer',
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
-                  }}
-                >
-                  <span>{opt.label}</span>
-                  <span style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1, opacity: 0.7 }}>{opt.sub}</span>
-                </button>
-              )
-            })}
-          </div>
 
           <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2, color: '#5A6477', marginBottom: 8 }}>コーチへのメモ</div>
           <textarea

@@ -210,12 +210,20 @@ export async function deleteAllMemories() {
 }
 
 // ---- chat履歴 ----
-export async function loadChat() {
-  return load('chat', [])
+// トレーナーを刻印して保存し、トレーナー変更後は旧履歴を返さない
+// （前キャラの人格が会話履歴経由でAIの返答に混ざるのを防ぐ）
+export async function loadChat(trainer) {
+  const data = await load('chat', [])
+  if (Array.isArray(data)) return data // 旧形式（刻印なし）はそのまま返す
+  if (data && Array.isArray(data.messages)) {
+    if (trainer && data.trainer && data.trainer !== trainer) return []
+    return data.messages
+  }
+  return []
 }
 
-export async function saveChat(messages) {
-  await save('chat', messages.slice(-30))
+export async function saveChat(messages, trainer) {
+  await save('chat', { trainer: trainer || null, messages: messages.slice(-30) })
 }
 
 // ---- 全データエクスポート/インポート（機種変更・バックアップ用） ----

@@ -4,18 +4,18 @@ import { localDateStr } from '../../lib/dates'
 import { hapticImpact, hapticError } from '../../lib/haptics'
 import { listSessions, addPlan, loadChat, saveChat } from '../../lib/localdb'
 import { sendChat, structurePlan, hasMemoryTrigger, extractAndSaveMemories } from '../../lib/aiClient'
-import { useCoach, CoachAvatarShared, COACHES_SHARED } from '../../lib/coachContext'
+import { useCoach } from '../../lib/coachContext'
 
 const TRAINER_GREETINGS = {
-  RYOTA:   { spartan: '限界まで追い込んだか！？まだ余力があるなら全然足りてないぞ！', gentle: 'お疲れ！今日もよく来たな。この調子で一緒に頑張っていこう！' },
-  YUKI:    { spartan: '今日のトレーニング、手を抜いてないか？自分に正直になれ。', gentle: 'お疲れさまでした。今日も来られただけで、本当に素晴らしいですよ。' },
-  DAIKI:   { spartan: '前回のデータと比較すると改善点がある。数値を見て効率を上げろ。', gentle: '記録を分析しました。数値的に良い傾向が出ています。一緒に最適化しましょう。' },
-  KENJI:   { spartan: '言い訳は要らない。今日も限界を超えるだけだ。それだけでいい。', gentle: '無理せず、でも妥協もするな。ちょうどいい負荷を一緒に見つけよう。' },
-  NANA:    { spartan: '今日も全力で行くよ！手を抜いたら絶対後悔するからね！', gentle: 'おつかれー！今日も来てくれてありがとう！一緒に楽しもうね' },
-  HANA:    { spartan: '本日も丁寧に、しかし妥協なく取り組んでいただきます。', gentle: '本日もお疲れさまです。一歩一歩、着実に進んでいきましょう。' },
-  RACHELL: { spartan: 'No excuses。世界レベルの選手は不快感を乗り越える。さあやるぞ。', gentle: 'よく来たね。継続こそが世界基準の成果につながる。一緒にやろう。' },
-  TORU:    { spartan: '長年見てきたが、甘い選手はここで止まる。さあ、どうする。', gentle: '焦らんでいい。長い目で見れば、続けることが一番大切だ。' },
-  BILLY:   { spartan: 'YO！今日も燃やしていくぞ！中途半端は俺が許さん！', gentle: 'YO！来てくれてサンキュー！一緒に楽しくやっていこうぜ！' },
+  RYOTA:   'お疲れ！今日もよく来たな。この調子で一緒に頑張っていこう！',
+  YUKI:    'お疲れさまでした。今日も来られただけで、本当に素晴らしいですよ。',
+  DAIKI:   '記録を分析しました。数値的に良い傾向が出ています。一緒に最適化しましょう。',
+  KENJI:   '言い訳は要らない。やるか、やらないかだ。',
+  NANA:    'おつかれー！今日も来てくれてありがとう！一緒に楽しもうね',
+  HANA:    '本日もお疲れさまです。一歩一歩、着実に進んでいきましょう。',
+  RACHELL: 'よく来たね。継続こそがWorld-classの成果につながる。一緒にやろう。',
+  TORU:    '焦らんでいい。長い目で見れば、続けることが一番大切だ。',
+  BILLY:   'YO！来てくれてサンキュー！一緒に楽しくやっていこうぜ！',
 }
 
 const QUICK_PROMPTS = [
@@ -28,37 +28,9 @@ function hasPlan(text) {
   return (text.match(/\d+\s*(セット|回|kg)/gi) || []).length >= 3
 }
 
-function ModePill() {
-  const { mode, setMode } = useCoach()
-  return (
-    <div style={{ display: 'flex', background: '#0E1118', border: '1px solid #1F242E', padding: 3 }}>
-      {[
-        { id: 'spartan', label: 'スパルタ', tone: COACHES_SHARED.spartan.tone },
-        { id: 'gentle',  label: 'やさしい', tone: COACHES_SHARED.gentle.tone },
-      ].map(opt => {
-        const active = mode === opt.id
-        return (
-          <button
-            key={opt.id}
-            onClick={() => setMode(opt.id)}
-            style={{
-              background: active ? opt.tone : 'transparent',
-              border: 'none',
-              color: active ? '#0B0D10' : '#8693AA',
-              fontFamily: '"Noto Sans JP", system-ui',
-              fontWeight: 700, fontSize: 11,
-              padding: '5px 9px', cursor: 'pointer',
-            }}
-          >{opt.label}</button>
-        )
-      })}
-    </div>
-  )
-}
-
 export default function AITab() {
   const { user, profile } = useAuth()
-  const { coach, mode, trainerImg } = useCoach()
+  const { coach, trainerImg } = useCoach()
   const [recentWorkouts, setRecentWorkouts] = useState([])
   const [messages, setMessages] = useState([])
   const chatLoadedRef = useRef(false)
@@ -73,16 +45,17 @@ export default function AITab() {
   const trainer = profile?.trainer_character || 'RYOTA'
   const accent = coach.tone
 
-  // チャット履歴の復元・永続化（端末内）
+  // チャット履歴の復元・永続化（端末内）。
+  // トレーナーを変更した場合は履歴を引き継がない（前キャラの人格が会話に混ざるのを防ぐ）
   useEffect(() => {
-    loadChat().then(saved => {
+    loadChat(trainer).then(saved => {
       if (saved.length) setMessages(saved)
       chatLoadedRef.current = true
     })
   }, [])
 
   useEffect(() => {
-    if (chatLoadedRef.current) saveChat(messages)
+    if (chatLoadedRef.current) saveChat(messages, trainer)
   }, [messages])
 
   useEffect(() => {
@@ -121,7 +94,7 @@ export default function AITab() {
     setIsLoading(true)
     try {
       const content = await sendChat({
-        message: msg, history: messages.slice(-10), profile, recentWorkouts, coachMode: mode,
+        message: msg, history: messages.slice(-10), profile, recentWorkouts,
       })
       setMessages(prev => [...prev, { role: 'assistant', content }])
       // 長期記憶の抽出・保存はバックグラウンド（UIを待たせない）
@@ -138,7 +111,7 @@ export default function AITab() {
   async function savePlan(content, idx) {
     setSavingPlanIdx(idx)
     try {
-      const plan = await structurePlan({ message: content, profile, coachMode: mode })
+      const plan = await structurePlan({ message: content, profile })
       if (!plan.exercises?.length) throw new Error('exercises empty')
       // AIが返す日付が欠落・過去日の場合は今日に補正
       const today = localDateStr()
@@ -158,8 +131,7 @@ export default function AITab() {
     }
   }
 
-  const greetingText = TRAINER_GREETINGS[trainer]?.[mode]
-    ?? (mode === 'spartan' ? '今日の追い込みが甘い。まだいける。' : 'お疲れさまでした。継続できています。')
+  const greetingText = TRAINER_GREETINGS[trainer] ?? '今日も一緒に頑張ろう。'
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#0B0D10' }}>
@@ -175,23 +147,63 @@ export default function AITab() {
         }}>{toast}</div>
       )}
 
-      {/* ── Header ── */}
-      <div style={{ flexShrink: 0, borderBottom: '1px solid #1A1F28', background: '#0B0D10' }}>
-        <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <CoachAvatarShared size={52} tone={accent} letter={coach.letter} img={trainerImg} pulse />
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: 'Bebas Neue', fontSize: 9, letterSpacing: 1.5, color: accent }}>YOUR COACH · ONLINE</div>
-            <div style={{ fontWeight: 700, fontSize: 15, color: '#fff', marginTop: 1 }}>{trainer}</div>
-          </div>
-          <ModePill />
-        </div>
+      {/* ── Header: 大型キャラ切り抜き＋吹き出し（あすけん風） ── */}
+      <div style={{
+        flexShrink: 0, position: 'relative', overflow: 'hidden',
+        borderBottom: '1px solid #1A1F28',
+        background: 'linear-gradient(180deg, #0E1118 0%, #0B0D10 100%)',
+        minHeight: 148,
+      }}>
+        {/* 背景のアクセント斜線 */}
         <div style={{
-          margin: '0 16px 12px',
-          borderLeft: `2px solid ${accent}`, paddingLeft: 10,
-          fontSize: 12, lineHeight: 1.65, color: '#B5BECF',
+          position: 'absolute', right: 0, top: 0, bottom: 0, width: 170,
+          background: `repeating-linear-gradient(45deg, transparent 0 10px, ${accent}0D 10px 11px)`,
+          pointerEvents: 'none',
+        }} />
+        <div style={{
+          position: 'relative', zIndex: 1,
+          padding: '14px 158px 14px 16px',
+          minHeight: 148, boxSizing: 'border-box',
+          display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8,
         }}>
-          {greetingText}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ fontFamily: 'Bebas Neue', fontSize: 9, letterSpacing: 1.5, color: accent }}>YOUR COACH · ONLINE</div>
+            <div style={{ width: 6, height: 6, borderRadius: 3, background: '#5BC25B', boxShadow: '0 0 0 1px #0B0D10' }} />
+          </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+            <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 24, color: '#fff', letterSpacing: 1 }}>{trainer}</div>
+            <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1.5, color: accent }}>{coach.tag}</div>
+          </div>
+          {/* 吹き出し */}
+          <div style={{ position: 'relative' }}>
+            <div style={{
+              background: '#13171F', border: '1px solid #1F242E',
+              borderLeft: `2px solid ${accent}`,
+              padding: '9px 12px',
+              fontSize: 12, lineHeight: 1.6, color: '#E5E9F0',
+            }}>
+              {greetingText}
+            </div>
+            {/* 吹き出しの矢（キャラ側に向ける） */}
+            <div style={{
+              position: 'absolute', right: -6, top: '50%', marginTop: -6,
+              width: 0, height: 0,
+              borderTop: '6px solid transparent', borderBottom: '6px solid transparent',
+              borderLeft: '6px solid #1F242E',
+            }} />
+          </div>
         </div>
+        {/* キャラ切り抜き（右下に大きく） */}
+        <img
+          src={trainerImg}
+          alt={trainer}
+          style={{
+            position: 'absolute', right: -6, bottom: 0, zIndex: 2,
+            height: 148, maxWidth: 150, objectFit: 'contain', objectPosition: 'bottom',
+            pointerEvents: 'none',
+            filter: 'drop-shadow(0 0 12px rgba(0,0,0,0.6))',
+          }}
+        />
       </div>
 
       {/* ── Messages ── */}

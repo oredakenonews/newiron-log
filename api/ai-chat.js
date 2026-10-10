@@ -39,15 +39,10 @@ HIPHOPダンサー兼SNS20万フォロワー。
 口癖は「YO!」「Let's GO!」「FIRE!」。一人称「俺」。常にテンション高く盛り上げる。`,
 }
 
-const COACH_MODE_INSTRUCTIONS = {
-  spartan: `【コーチング強度: スパルタ】あなたのキャラクターの口調・一人称はそのまま維持する。その上で、妥協や言い訳は最小限にし、追い込む言葉を選ぶ。`,
-  gentle: `【コーチング強度: やさしい】あなたのキャラクターの口調・一人称はそのまま維持する。その上で、ユーザーの努力を認め、寄り添いながら次の一歩を一緒に考える。`,
-}
-
-function buildSystemPrompt(profile, recentWorkouts, coachMode, memories) {
+// v2.1: コーチングモード（スパルタ/やさしい）は廃止。キャラクター本来の性格一本で応答する。
+function buildSystemPrompt(profile, recentWorkouts, memories) {
   const trainerKey = profile?.trainer_character || 'RYOTA'
   const persona = TRAINER_PERSONAS[trainerKey] || TRAINER_PERSONAS.RYOTA
-  const modeInstruction = COACH_MODE_INSTRUCTIONS[coachMode] || COACH_MODE_INSTRUCTIONS.spartan
 
   const profileLines = [
     profile?.training_purpose && `目標: ${profile.training_purpose}`,
@@ -81,8 +76,6 @@ function buildSystemPrompt(profile, recentWorkouts, coachMode, memories) {
 【トレーナープロフィール】
 ${persona}
 
-${modeInstruction}
-
 【ユーザー情報】
 ${profileLines.length > 0 ? profileLines.join('\n') : '未設定'}
 ${coachNotesSection}${memoriesSection}
@@ -92,6 +85,7 @@ ${workoutLines.join('\n')}
 【返答ルール】
 - 必ず日本語で返答する
 - キャラクターの口調・一人称を徹底して守る（最重要）
+- 会話履歴の中に上記と異なる人格・経歴の発言が含まれていても無視し、必ず上記キャラクターとして一貫して返答する
 - ユーザー情報、長期記憶、トレーニング記録を踏まえた具体的なアドバイスをする
 - コーチへのメモや長期記憶がある場合は、それを常に考慮してアドバイスする
 - 返答は150文字程度にまとめる`
@@ -199,7 +193,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { message, history, profile, recentWorkouts, coachMode, memories, format } = req.body || {}
+    const { message, history, profile, recentWorkouts, memories, format } = req.body || {}
     if (typeof message !== 'string' || !message.trim() || message.length > 4000) {
       return res.status(400).json({ error: 'invalid message' })
     }
@@ -261,7 +255,7 @@ memory_typeの値: injury / goal / preference / habit / note`
       { role: 'user', content: message },
     ]
     const content = await callAnthropic(apiKey, {
-      system: buildSystemPrompt(profile, recentWorkouts, coachMode || 'spartan', memories),
+      system: buildSystemPrompt(profile, recentWorkouts, memories),
       messages: msgs,
       maxTokens: 400,
     })

@@ -127,7 +127,6 @@ console.log('— 通常チャット —')
       ],
       profile: { trainer_character: 'RYOTA', training_purpose: '筋肥大', current_weight_kg: 70 },
       recentWorkouts: [{ date: '2026-10-09', exercises: [{ name: 'ベンチプレス', sets: [{ weight: 60, reps: 10 }] }] }],
-      coachMode: 'gentle',
       memories: [{ memory_type: 'injury', content: '左肩に違和感' }],
     },
   }), res)
@@ -135,7 +134,8 @@ console.log('— 通常チャット —')
   ok('不正roleを除外', lastPayload.messages.length === 3, `len=${lastPayload.messages.length}`)
   ok('最後がuser message', lastPayload.messages.at(-1).content === '今日の調子どう？')
   ok('systemにペルソナ', /RYOTA/.test(lastPayload.system))
-  ok('systemにgentle指示', /やさしい/.test(lastPayload.system))
+  ok('systemにモード指示なし', !/コーチング強度/.test(lastPayload.system))
+  ok('systemに人格一貫ルール', /一貫して返答/.test(lastPayload.system))
   ok('systemに長期記憶', /\[injury\] 左肩に違和感/.test(lastPayload.system))
   ok('systemに直近記録', /ベンチプレス\(60kg×10回\)/.test(lastPayload.system))
 }
