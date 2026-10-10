@@ -3,8 +3,8 @@
 ## プロジェクト概要
 筋トレ記録アプリ（iOS: AIron.log）。React + Vite + Capacitor構成。
 
-## ⚠️ v2アーキテクチャ（このブランチ: v2-local-first）
-**Supabase依存を廃止し、ローカルファースト化した。** 以下のCLAUDE.md中のSupabase関連記述（テーブル・Edge Function・認証）はv1（mainブランチ）の説明であり、このブランチには該当しない。
+## ⚠️ v2アーキテクチャ（2026-10-10 mainへマージ・本番反映済み）
+**Supabase依存を廃止し、ローカルファースト化した。** 以下のCLAUDE.md中のSupabase関連記述（テーブル・Edge Function・認証）はv1時代の説明（参照用）であり、現行コードには該当しない。
 
 - **認証なし**: ログイン/サインアップ画面は削除。初回起動→オンボーディング→メイン
 - **データは全て端末内**: `src/lib/localdb.js` が唯一のデータ層
@@ -17,7 +17,7 @@
 - **AIプロキシ**: `api/ai-chat.js`（Vercel Serverless Function、ステートレス）
   - クライアント（`src/lib/aiClient.js`）がprofile・直近記録・記憶を毎回送る
   - `format:'structure'`=計画JSON化 / `format:'memory'`=記憶抽出（保存はクライアント）
-  - **要設定: Vercel環境変数 `ANTHROPIC_API_KEY`**（未設定だとAIチャット不可）
+  - **設定済み: Vercel環境変数 `ANTHROPIC_API_KEY`**（2026-10-10・All Environments・Secretタイプのため値は再表示不可。キーはClaude Consoleの`newironlog-vercel`）
   - 簡易レート制限あり。App Attest等の本格的な保護は未実装（TODO）
   - ネイティブからは `https://newiron-log.vercel.app/api/ai-chat` を叩く（VITE_AI_ENDPOINTで上書き可）
 - **useAuth**: API互換のまま中身をローカル化（user={id:'local'}固定、saveProfile(patch)追加）
@@ -31,10 +31,10 @@
 
 ## 技術スタック
 - React + Vite
-- Supabase（認証・DB・Edge Functions）
-- Vercel（デプロイ）
+- Supabase（v1の遺産。v2では未使用）
+- Vercel（デプロイ + `api/ai-chat.js` Serverless Function）
 - React Router v6
-- Anthropic API（claude-haiku-4-5-20251001）→ Supabase Edge Function経由
+- Anthropic API（claude-haiku-4-5-20251001）→ `api/ai-chat.js` 経由
 - Capacitor（iOSネイティブラップ。`ios/`ディレクトリ、`capacitor.config.json`）
 
 ## iOSアプリ（Capacitor）
