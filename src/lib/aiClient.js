@@ -36,18 +36,8 @@ export async function structurePlan({ message, profile }) {
   return JSON.parse(data.content)
 }
 
-// 旧Edge Function v11と同じキーワード判定（該当時のみ抽出APIを呼んでコストを抑える）
-const MEMORY_TRIGGER_KEYWORDS = [
-  '痛', '怪我', '負傷', '苦手', '好き', '嫌い', '目標', '休憩', '休む',
-  '体重', 'やりたい', 'できない', '変えたい', '続けたい', '辞めたい', 'リハビリ',
-  '肩', '膝', '腰', '首', '腕', '足', '背中', '胸', '腹', '不安', '疲れ',
-]
-
-export function hasMemoryTrigger(message) {
-  return MEMORY_TRIGGER_KEYWORDS.some(kw => message.includes(kw))
-}
-
 // 返答後にバックグラウンドで呼ぶ（UIをブロックしない）。保存は端末内。
+// v2.1: キーワードゲートは「記憶が機能していない」FBにより廃止し、毎回抽出する。
 export async function extractAndSaveMemories({ message, assistantResponse }) {
   try {
     const memories = await listMemories()

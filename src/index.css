@@ -34,10 +34,10 @@
   --border: #D9DFE8;
   --border2: #E3E8EF;
   --border-dash: #C6CEDA;
-  --text: #1A212E;        /* 本文 */
-  --text-sub: #3D4656;    /* サブ本文 */
-  --text-2nd: #5D6880;    /* セカンダリ */
-  --muted: #8A94A6;       /* ラベル・ミュート */
+  --text: #11161F;        /* 本文 */
+  --text-sub: #2C3545;    /* サブ本文 */
+  --text-2nd: #46536B;    /* セカンダリ */
+  --muted: #6B7689;       /* ラベル・ミュート */
   --text-strong: #0B0D10; /* 見出し・最強調（ダークでは白） */
   --on-accent: #0B0D10;   /* オレンジ上のテキスト（両テーマ共通） */
   --err-bg: rgba(200, 50, 50, 0.08);
@@ -76,6 +76,8 @@ body {
   background-color: var(--bg);
   color: var(--text);
   font-family: 'Noto Sans JP', sans-serif;
+  /* ライト地では400が細く見える（可読性FB）。本文の基準ウェイトを1段上げる */
+  font-weight: 500;
   margin: 0;
   padding: 0;
   min-height: 100dvh;

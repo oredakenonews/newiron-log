@@ -119,7 +119,7 @@ export default function WelcomeModal() {
             padding: '10px 12px', marginBottom: 14,
           }}>
             <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 2, color: 'var(--muted)', marginBottom: 6 }}>TODAY'S NOTE</div>
-            <div style={{ fontSize: 13, lineHeight: 1.7, color: 'var(--text-sub)', whiteSpace: 'pre-line' }}>{note}</div>
+            <div style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--text-sub)', whiteSpace: 'pre-line' }}>{note}</div>
           </div>
 
           <button

@@ -3,7 +3,7 @@ import { useAuth } from '../../hooks/useAuth'
 import { localDateStr } from '../../lib/dates'
 import { hapticImpact, hapticError } from '../../lib/haptics'
 import { listSessions, addPlan, loadChat, saveChat } from '../../lib/localdb'
-import { sendChat, structurePlan, hasMemoryTrigger, extractAndSaveMemories } from '../../lib/aiClient'
+import { sendChat, structurePlan, extractAndSaveMemories } from '../../lib/aiClient'
 import { useCoach } from '../../lib/coachContext'
 
 const TRAINER_GREETINGS = {
@@ -18,10 +18,10 @@ const TRAINER_GREETINGS = {
   BILLY:   'YO！来てくれてサンキュー！一緒に楽しくやっていこうぜ！',
 }
 
-const QUICK_PROMPTS = [
-  '直近のセッションを振り返って',
-  '今日のメニューを相談したい',
-  '来週の計画を立てて',
+// 定型アクション（入力欄の上に常設。自由文を打たずに主要2操作が完結する）
+const QUICK_ACTIONS = [
+  { label: '結果をフィードバック', prompt: '直近のトレーニング結果を振り返って、良かった点と改善点を簡潔に教えて' },
+  { label: 'メニューを提案して', prompt: '直近の記録を踏まえて、次回のトレーニングメニューを具体的に提案して' },
 ]
 
 function hasPlan(text) {
@@ -53,6 +53,18 @@ export default function AITab() {
       chatLoadedRef.current = true
     })
   }, [])
+
+  // タブは常時マウントのため、設定でトレーナーが変わっても再マウントされない。
+  // trainer変化を検知してstateの履歴も即クリアする（旧キャラの発言が新キャラ名で再保存されるのを防ぐ）
+  const prevTrainerRef = useRef(trainer)
+  useEffect(() => {
+    if (prevTrainerRef.current !== trainer) {
+      prevTrainerRef.current = trainer
+      setMessages([])
+      setSavedPlanIdxes(new Set())
+      saveChat([], trainer)
+    }
+  }, [trainer])
 
   useEffect(() => {
     if (chatLoadedRef.current) saveChat(messages, trainer)
@@ -97,10 +109,9 @@ export default function AITab() {
         message: msg, history: messages.slice(-10), profile, recentWorkouts,
       })
       setMessages(prev => [...prev, { role: 'assistant', content }])
-      // 長期記憶の抽出・保存はバックグラウンド（UIを待たせない）
-      if (hasMemoryTrigger(msg)) {
-        extractAndSaveMemories({ message: msg, assistantResponse: content })
-      }
+      // 長期記憶の抽出・保存はバックグラウンド（UIを待たせない）。
+      // 旧キーワードゲートは発火率が低く「記憶が機能していない」FBが出たため毎回実行する
+      extractAndSaveMemories({ message: msg, assistantResponse: content })
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: 'エラーが発生しました。もう一度お試しください。' }])
     } finally {
@@ -209,29 +220,6 @@ export default function AITab() {
       {/* ── Messages ── */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px 8px' }}>
 
-        {messages.length === 0 && !isLoading && (
-          <div style={{ marginBottom: 8 }}>
-            <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>
-              QUICK START
-            </div>
-            {QUICK_PROMPTS.map((q, i) => (
-              <div
-                key={i}
-                onClick={() => doSend(q)}
-                style={{
-                  padding: '11px 14px', marginBottom: 6,
-                  border: '1px solid var(--border)', background: 'var(--card)',
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  cursor: 'pointer',
-                }}
-              >
-                <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>{q}</span>
-                <span style={{ color: accent, fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1, flexShrink: 0, marginLeft: 8 }}>ASK →</span>
-              </div>
-            ))}
-          </div>
-        )}
-
         {messages.map((msg, i) => (
           <div key={i} style={{ marginBottom: 10 }}>
             <div style={{
@@ -246,7 +234,7 @@ export default function AITab() {
               )}
               <div style={{
                 maxWidth: '75%', padding: '10px 14px',
-                fontSize: 14, lineHeight: 1.7,
+                fontSize: 15, lineHeight: 1.75,
                 ...(msg.role === 'user'
                   ? { background: '#FF6A1A', color: 'var(--on-accent)', fontWeight: 500 }
                   : { background: 'var(--card)', border: '1px solid var(--border)', borderLeft: `2px solid ${accent}`, color: 'var(--text)' }
@@ -313,9 +301,28 @@ export default function AITab() {
       <div style={{
         flexShrink: 0,
         borderTop: '1px solid var(--border)',
-        padding: '12px 16px',
+        padding: '10px 16px 12px',
         background: 'var(--bg)',
       }}>
+        {/* 定型アクション（自由文を打たずに主要操作が完結する） */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
+          {QUICK_ACTIONS.map((a, i) => (
+            <button
+              key={i}
+              onClick={() => doSend(a.prompt)}
+              disabled={isLoading}
+              style={{
+                flex: 1, padding: '9px 8px',
+                background: 'var(--card)', border: `1px solid ${accent}`,
+                color: accent, fontSize: 12, fontWeight: 700,
+                fontFamily: '"Noto Sans JP", system-ui',
+                cursor: isLoading ? 'default' : 'pointer',
+                opacity: isLoading ? 0.5 : 1,
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              }}
+            >{a.label}</button>
+          ))}
+        </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <input
             ref={inputRef}

@@ -16,7 +16,7 @@
   - エクスポート/インポート: `exportAll()` / `importAll()`（設定タブにJSONエクスポートあり）
 - **AIプロキシ**: `api/ai-chat.js`（Vercel Serverless Function、ステートレス）
   - クライアント（`src/lib/aiClient.js`）がprofile・直近記録・記憶を毎回送る
-  - `format:'structure'`=計画JSON化 / `format:'memory'`=記憶抽出（保存はクライアント）
+  - `format:'structure'`=計画JSON化 / `format:'memory'`=記憶抽出（保存はクライアント。v2.1でキーワードゲート廃止→毎メッセージ後にバックグラウンド抽出）
   - **設定済み: Vercel環境変数 `ANTHROPIC_API_KEY`**（2026-10-10・All Environments・Secretタイプのため値は再表示不可。キーはClaude Consoleの`newironlog-vercel`）
   - 保護: CORS許可オリジン限定 / レート制限（Upstash env設定時は永続・5分30回、未設定はメモリ版フォールバック）/ 簡易トークン（`AI_PROXY_TOKEN`+`VITE_AI_PROXY_TOKEN`をペアで設定時のみ有効）。App Attestは未実装（TODO）
   - ネイティブからは `https://newiron-log.vercel.app/api/ai-chat` を叩く（VITE_AI_ENDPOINTで上書き可）
@@ -120,6 +120,8 @@
 - 色は `src/index.css` のCSS変数のみ使う: `--bg` `--bg-deep` `--card` `--border` `--border2` `--border-dash` `--text` `--text-sub` `--text-2nd` `--muted` `--text-strong` `--on-accent` `--err-*`
 - アクセント: オレンジ`#FF6A1A`、グリーン`#5BC25B`は両テーマ共通のhexリテラル（JSで`${tone}22`等の文字列合成があるためvar化しない）
 - 新規UIにダーク時代のhex（#0B0D10/#13171F/#EEF1F6等）を直接書かない。デザインミラーのみ例外的にダークhexで代表
+- 本文Noto Sans JPの基準ウェイトは500（index.cssのbody。ライト地で400は細く見える）
+- トレーナー画像（public/gazou/*_bu.png）は市松焼き込みを除去し真の透過PNG化済み（scripts/remove-checkerboard.py。新画像追加時も同スクリプトで処理）
 - フォント: Oswald（数字・見出し）、Bebas Neue（ラベル・タグ）、JetBrains Mono（数値）、Noto Sans JP（本文）
 - 角丸なし・シャープ統一（border-radius: 0）
 - モバイルファースト・max-width 430px
@@ -138,7 +140,8 @@
   - ヘッダー: 大型キャラ切り抜き（右下・高さ148px透過PNG）＋吹き出し挨拶（あすけん風ヒーロー）
   - チャット: トレーナー画像アバター＋名前＋オンライン表示
   - プラン検出（3回以上のセット/回/kg表記）→「この計画を保存する」ボタン→planned_sessionsに保存
-  - チャット履歴はトレーナー刻印付きで保存。トレーナー変更後は旧履歴を引き継がない（人格ブリード防止）
+  - チャット履歴はトレーナー刻印付きで保存。トレーナー変更後は旧履歴を引き継がない（人格ブリード防止）。タブは常時マウントのためAITab内でtrainer変化も監視して即クリア
+  - 入力欄の上に定型アクション2ボタン常設（結果フィードバック／メニュー提案）
 - 設定タブ: プロフィール（表示名含む）・AIコーチ（トレーナー選択・コーチへのメモ・AI記憶）・種目管理・テーマ切替・エクスポート/インポート
 - オンボーディング: 質問役はアプリ（IL）。目標・歴＋パーソナリティ5問をスコアリングして相性の良いトレーナーを推薦（設定で変更可）
 

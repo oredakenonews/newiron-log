@@ -63,7 +63,7 @@ function buildSystemPrompt(profile, recentWorkouts, memories) {
   const persona = TRAINER_PERSONAS[trainerKey] || TRAINER_PERSONAS.RYOTA
 
   const profileLines = [
-    profile?.display_name && `名前: ${profile.display_name}さん（呼びかけに使う）`,
+    profile?.display_name && `ユーザーの名前: ${profile.display_name}（呼びかけに使う。「さん」等の敬称が既に含まれていれば二重に付けない）`,
     profile?.training_purpose && `目標: ${profile.training_purpose}`,
     profile?.user_level && `レベル: ${profile.user_level}`,
     profile?.current_weight_kg && `現在の体重: ${profile.current_weight_kg}kg`,
