@@ -6,6 +6,7 @@ import RecordTab from '../record/RecordTab'
 import HistoryTab from '../history/HistoryTab'
 import AITab from '../ai/AITab'
 import SettingsTab from '../settings/SettingsTab'
+import WelcomeModal from '../shared/WelcomeModal'
 
 const TAB_STYLE = {
   position: 'absolute', inset: 0,
@@ -26,7 +27,7 @@ export default function Layout() {
 
   return (
     <CoachProvider>
-      <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#0B0D10' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--bg)' }}>
         <TopBar />
         <main style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
           <div style={{ ...TAB_STYLE, display: pathname === '/'         ? 'block' : 'none' }}><RecordTab /></div>
@@ -35,6 +36,7 @@ export default function Layout() {
           <div style={{ ...TAB_STYLE, display: pathname === '/settings' ? 'block' : 'none' }}><SettingsTab /></div>
         </main>
         <BottomNav />
+        <WelcomeModal />
       </div>
     </CoachProvider>
   )

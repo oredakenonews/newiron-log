@@ -396,13 +396,6 @@ function RecordScreen() {
       ss + (set.done ? (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0) : 0), 0), 0);
   const totalSets = exercises.reduce((s, ex) => s + ex.sets.filter(x => x.done).length, 0);
   const allSets = exercises.reduce((s, ex) => s + ex.sets.length, 0);
-  const progress = allSets ? totalSets / allSets : 0;
-  const coachLine = progress === 0
-    ? lines.record_idle
-    : progress >= 1
-      ? lines.record_done
-      : lines.record_active({ doneSets: totalSets, totalSets: allSets });
-
   const updateSet = (exId, setIdx, newSet) => {
     setExercises(exs => exs.map(ex => ex.id === exId
       ? { ...ex, sets: ex.sets.map((s, i) => i === setIdx ? newSet : s) }
@@ -446,14 +439,7 @@ function RecordScreen() {
         exercises={exercises.length}
         duration="48分"
       />
-      <div style={{ padding: '12px 14px 0' }}>
-        <CoachStrip
-          message={coachLine}
-          sub={`${totalSets}/${allSets} SETS`}
-          action="チャットを開く"
-          onOpenChat={() => window.dispatchEvent(new CustomEvent('iron-open-chat'))}
-        />
-      </div>
+      {/* v2.1: 常時コメント帯（CoachStrip）は廃止。起動時のWelcomeModalに集約 */}
       <div style={{ padding: '14px 14px 100px' }}>
         <div style={{
           display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',

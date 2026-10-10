@@ -134,13 +134,13 @@ export default function AITab() {
   const greetingText = TRAINER_GREETINGS[trainer] ?? '今日も一緒に頑張ろう。'
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#0B0D10' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg)' }}>
 
       {toast && (
         <div style={{
           position: 'absolute', top: 'calc(env(safe-area-inset-top) + 56px)',
           left: '50%', transform: 'translateX(-50%)',
-          background: '#1F242E', border: '1px solid #5BC25B',
+          background: 'var(--border)', border: '1px solid #5BC25B',
           color: '#5BC25B', padding: '8px 18px',
           fontFamily: 'Bebas Neue', fontSize: 12, letterSpacing: 1,
           zIndex: 10, whiteSpace: 'nowrap',
@@ -150,8 +150,8 @@ export default function AITab() {
       {/* ── Header: 大型キャラ切り抜き＋吹き出し（あすけん風） ── */}
       <div style={{
         flexShrink: 0, position: 'relative', overflow: 'hidden',
-        borderBottom: '1px solid #1A1F28',
-        background: 'linear-gradient(180deg, #0E1118 0%, #0B0D10 100%)',
+        borderBottom: '1px solid var(--border2)',
+        background: 'linear-gradient(180deg, var(--bg-deep) 0%, var(--bg) 100%)',
         minHeight: 148,
       }}>
         {/* 背景のアクセント斜線 */}
@@ -168,19 +168,19 @@ export default function AITab() {
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{ fontFamily: 'Bebas Neue', fontSize: 9, letterSpacing: 1.5, color: accent }}>YOUR COACH · ONLINE</div>
-            <div style={{ width: 6, height: 6, borderRadius: 3, background: '#5BC25B', boxShadow: '0 0 0 1px #0B0D10' }} />
+            <div style={{ width: 6, height: 6, borderRadius: 3, background: '#5BC25B', boxShadow: '0 0 0 1px var(--bg)' }} />
           </div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 24, color: '#fff', letterSpacing: 1 }}>{trainer}</div>
+            <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 24, color: 'var(--text-strong)', letterSpacing: 1 }}>{trainer}</div>
             <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1.5, color: accent }}>{coach.tag}</div>
           </div>
           {/* 吹き出し */}
           <div style={{ position: 'relative' }}>
             <div style={{
-              background: '#13171F', border: '1px solid #1F242E',
+              background: 'var(--card)', border: '1px solid var(--border)',
               borderLeft: `2px solid ${accent}`,
               padding: '9px 12px',
-              fontSize: 13, lineHeight: 1.6, color: '#EEF1F6',
+              fontSize: 13, lineHeight: 1.6, color: 'var(--text)',
             }}>
               {greetingText}
             </div>
@@ -189,7 +189,7 @@ export default function AITab() {
               position: 'absolute', right: -6, top: '50%', marginTop: -6,
               width: 0, height: 0,
               borderTop: '6px solid transparent', borderBottom: '6px solid transparent',
-              borderLeft: '6px solid #1F242E',
+              borderLeft: '6px solid var(--border)',
             }} />
           </div>
         </div>
@@ -211,7 +211,7 @@ export default function AITab() {
 
         {messages.length === 0 && !isLoading && (
           <div style={{ marginBottom: 8 }}>
-            <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 2, color: '#7A8496', marginBottom: 8 }}>
+            <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>
               QUICK START
             </div>
             {QUICK_PROMPTS.map((q, i) => (
@@ -220,12 +220,12 @@ export default function AITab() {
                 onClick={() => doSend(q)}
                 style={{
                   padding: '11px 14px', marginBottom: 6,
-                  border: '1px solid #1F242E', background: '#13171F',
+                  border: '1px solid var(--border)', background: 'var(--card)',
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   cursor: 'pointer',
                 }}
               >
-                <span style={{ fontSize: 13, color: '#C3CCDC' }}>{q}</span>
+                <span style={{ fontSize: 13, color: 'var(--text-sub)' }}>{q}</span>
                 <span style={{ color: accent, fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1, flexShrink: 0, marginLeft: 8 }}>ASK →</span>
               </div>
             ))}
@@ -240,7 +240,7 @@ export default function AITab() {
               alignItems: 'flex-end', gap: 8,
             }}>
               {msg.role === 'assistant' && (
-                <div style={{ width: 28, height: 28, flexShrink: 0, background: '#0E1118', border: '1px solid #1F242E', overflow: 'hidden' }}>
+                <div style={{ width: 28, height: 28, flexShrink: 0, background: 'var(--bg-deep)', border: '1px solid var(--border)', overflow: 'hidden' }}>
                   <img src={trainerImg} alt={trainer} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                 </div>
               )}
@@ -248,8 +248,8 @@ export default function AITab() {
                 maxWidth: '75%', padding: '10px 14px',
                 fontSize: 14, lineHeight: 1.7,
                 ...(msg.role === 'user'
-                  ? { background: '#FF6A1A', color: '#0B0D10', fontWeight: 500 }
-                  : { background: '#13171F', border: '1px solid #1F242E', borderLeft: `2px solid ${accent}`, color: '#EEF1F6' }
+                  ? { background: '#FF6A1A', color: 'var(--on-accent)', fontWeight: 500 }
+                  : { background: 'var(--card)', border: '1px solid var(--border)', borderLeft: `2px solid ${accent}`, color: 'var(--text)' }
                 ),
               }}>
                 {msg.content}
@@ -289,10 +289,10 @@ export default function AITab() {
 
         {isLoading && (
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, marginBottom: 10 }}>
-            <div style={{ width: 28, height: 28, flexShrink: 0, background: '#0E1118', border: '1px solid #1F242E', overflow: 'hidden' }}>
+            <div style={{ width: 28, height: 28, flexShrink: 0, background: 'var(--bg-deep)', border: '1px solid var(--border)', overflow: 'hidden' }}>
               <img src={trainerImg} alt={trainer} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
-            <div style={{ padding: '12px 16px', background: '#13171F', border: '1px solid #1F242E', borderLeft: `2px solid ${accent}` }}>
+            <div style={{ padding: '12px 16px', background: 'var(--card)', border: '1px solid var(--border)', borderLeft: `2px solid ${accent}` }}>
               <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
                 {[0, 1, 2].map(j => (
                   <div key={j} style={{
@@ -312,9 +312,9 @@ export default function AITab() {
       {/* ── Input ── */}
       <div style={{
         flexShrink: 0,
-        borderTop: '1px solid #1F242E',
+        borderTop: '1px solid var(--border)',
         padding: '12px 16px',
-        background: '#0B0D10',
+        background: 'var(--bg)',
       }}>
         <div style={{ display: 'flex', gap: 8 }}>
           <input
@@ -326,8 +326,8 @@ export default function AITab() {
             placeholder="メッセージを入力..."
             style={{
               flex: 1, minWidth: 0, padding: '12px 14px',
-              background: '#13171F', border: '1px solid #1F242E',
-              color: '#EEF1F6', outline: 'none',
+              background: 'var(--card)', border: '1px solid var(--border)',
+              color: 'var(--text)', outline: 'none',
               fontFamily: '"Noto Sans JP", system-ui',
             }}
           />

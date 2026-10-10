@@ -52,7 +52,7 @@ export default function BottomNav() {
     <nav style={{
       position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)',
       width: '100%', maxWidth: 430,
-      background: '#0B0D10', borderTop: '1px solid #1A1F28',
+      background: 'var(--bg)', borderTop: '1px solid var(--border2)',
       paddingBottom: 'env(safe-area-inset-bottom)',
       display: 'flex', height: 'calc(64px + env(safe-area-inset-bottom))',
       zIndex: 50,
@@ -76,14 +76,14 @@ export default function BottomNav() {
                 display: 'flex', flexDirection: 'column', alignItems: 'center',
                 justifyContent: 'center', height: '100%',
                 gap: 4, paddingTop: 8,
-                color: isActive ? '#FF6A1A' : '#7A8496',
+                color: isActive ? '#FF6A1A' : 'var(--muted)',
               }}>
-                {tab.icon(isActive ? '#FF6A1A' : '#7A8496')}
+                {tab.icon(isActive ? '#FF6A1A' : 'var(--muted)')}
                 <span style={{
                   fontSize: 10,
                   fontFamily: '"Noto Sans JP", system-ui',
                   fontWeight: isActive ? 700 : 500,
-                  color: isActive ? '#FF6A1A' : '#7A8496',
+                  color: isActive ? '#FF6A1A' : 'var(--muted)',
                 }}>{tab.label}</span>
               </div>
             </>

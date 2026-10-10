@@ -2,10 +2,10 @@
   "appId": "com.oredakenonews.ironlog",
   "appName": "AIron.log",
   "webDir": "dist",
-  "backgroundColor": "#0B0D10",
+  "backgroundColor": "#F2F4F7",
   "ios": {
     "contentInset": "never",
-    "backgroundColor": "#0B0D10",
+    "backgroundColor": "#F2F4F7",
     "preferredContentMode": "mobile"
   },
   "plugins": {
@@ -20,8 +20,8 @@
       "showSpinner": false
     },
     "StatusBar": {
-      "style": "DARK",
-      "backgroundColor": "#0B0D10"
+      "style": "LIGHT",
+      "backgroundColor": "#F2F4F7"
     }
   }
 }

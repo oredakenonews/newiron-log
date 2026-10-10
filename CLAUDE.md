@@ -116,9 +116,10 @@
 5. **UI管理**: 設定 → AIコーチタブの「AI記憶」セクションで一覧表示・個別削除・全削除が可能
 
 ## デザインシステム
-- ダークテーマ: 背景`#0B0D10`、カード`#13171F`、深背景`#0E1118`、ボーダー`#1F242E`
-- アクセント: オレンジ`#FF6A1A`、グリーン`#5BC25B`、ミュート`#7A8496`
-- テキスト: 本文`#EEF1F6`、サブ`#C3CCDC`、セカンダリ`#9AA5BA`（2026-10-10可読性FBでコントラスト引き上げ。旧#E5E9F0/#B5BECF/#8693AA/#5A6477は使わない）
+- **テーマ: ライトが基本＋設定でダーク切替**（2026-10-10 FB反映。`src/lib/theme.js`、localStorage `iron-theme`、`:root[data-theme="dark"]`）
+- 色は `src/index.css` のCSS変数のみ使う: `--bg` `--bg-deep` `--card` `--border` `--border2` `--border-dash` `--text` `--text-sub` `--text-2nd` `--muted` `--text-strong` `--on-accent` `--err-*`
+- アクセント: オレンジ`#FF6A1A`、グリーン`#5BC25B`は両テーマ共通のhexリテラル（JSで`${tone}22`等の文字列合成があるためvar化しない）
+- 新規UIにダーク時代のhex（#0B0D10/#13171F/#EEF1F6等）を直接書かない。デザインミラーのみ例外的にダークhexで代表
 - フォント: Oswald（数字・見出し）、Bebas Neue（ラベル・タグ）、JetBrains Mono（数値）、Noto Sans JP（本文）
 - 角丸なし・シャープ統一（border-radius: 0）
 - モバイルファースト・max-width 430px
@@ -128,7 +129,8 @@
 ## 現在の状態
 - 認証・オンボーディング・4タブ実装済み
 - オンボーディング完了時にデフォルト種目21件をuser_exercisesに自動登録
-- 記録タブ: ホイールピッカーでセット入力、VolumeHeader下にCoachStrip表示（進捗に応じて文言変化）、AIが生成した今日の計画バナー表示
+- 起動時WelcomeModal（Layout配下・セッション毎1回）: 大型キャラ＋キャラのセリフ＋TODAY'S NOTE（今日の計画 or 前回記録から部位提案＋季節の一言。ローカル生成でAPI不使用）
+- 記録タブ: ホイールピッカーでセット入力、AIが生成した今日の計画バナー表示（常時CoachStripはv2.1で廃止→WelcomeModalに集約）
 - 履歴タブ: 今週サマリー（MiniBar）＋CoachStrip＋フィルター＋セッション詳細（編集モードあり）
   - セッション行に今日・脚の日はCoachQuoteを表示
   - 編集モード: セット重量/回数タップ→ホイールピッカー、セット追加/削除、種目追加/削除、DB保存
@@ -137,7 +139,8 @@
   - チャット: トレーナー画像アバター＋名前＋オンライン表示
   - プラン検出（3回以上のセット/回/kg表記）→「この計画を保存する」ボタン→planned_sessionsに保存
   - チャット履歴はトレーナー刻印付きで保存。トレーナー変更後は旧履歴を引き継がない（人格ブリード防止）
-- 設定タブ: プロフィール・AIコーチ（トレーナー選択・コーチへのメモ・AI記憶）・種目管理・エクスポート/インポート
+- 設定タブ: プロフィール（表示名含む）・AIコーチ（トレーナー選択・コーチへのメモ・AI記憶）・種目管理・テーマ切替・エクスポート/インポート
+- オンボーディング: 質問役はアプリ（IL）。目標・歴＋パーソナリティ5問をスコアリングして相性の良いトレーナーを推薦（設定で変更可）
 
 ## コーチ共存プレゼンス（src/lib/coachContext.jsx）
 全タブに共通のコーチ状態を提供するReact Context。
@@ -147,7 +150,7 @@
 - `CoachProvider`: Layout.jsxでラップ。`profiles.trainer_character`から導出
 - `useCoach()`: `{ coach: { name, tag, tone, letter }, trainerImg, trainerName, lines }` を返す（tagは熱血/理論派などのタイプ、toneは常に`#FF6A1A`）
 - `CoachAvatarShared`: 画像 or ハッチパターン+レター正方形アバター（pulse propでグリーンドット付加）
-- `CoachStrip`: 88pxアバター+トレーナー名+メッセージ+CTA。RecordTab・HistoryTabで使用
+- `CoachStrip`: 88pxアバター+トレーナー名+メッセージ+CTA。HistoryTabで使用（RecordTabからはv2.1で撤去）
 - `CoachQuote`: 32pxアバター+左ボーダー付き引用。HistoryTabのセッション行で使用
 - `TRAINER_LINES`: トレーナー9人それぞれの画面別セリフ（record_idle/record_active/record_done/history_summary/workout_*）。`useCoach().lines`が現在トレーナーの解決済みセットを返す
 

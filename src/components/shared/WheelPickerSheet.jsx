@@ -65,12 +65,12 @@ function Wheel({ values, value, onChange, suffix }) {
       }} />
       <div style={{
         position: 'absolute', top: 0, left: 0, right: 0, height: padH,
-        background: 'linear-gradient(180deg, #13171F 20%, transparent)',
+        background: 'linear-gradient(180deg, var(--card) 20%, transparent)',
         pointerEvents: 'none', zIndex: 3,
       }} />
       <div style={{
         position: 'absolute', bottom: 0, left: 0, right: 0, height: padH,
-        background: 'linear-gradient(0deg, #13171F 20%, transparent)',
+        background: 'linear-gradient(0deg, var(--card) 20%, transparent)',
         pointerEvents: 'none', zIndex: 3,
       }} />
       <div
@@ -91,7 +91,7 @@ function Wheel({ values, value, onChange, suffix }) {
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3,
               fontFamily: 'Oswald', fontWeight: sel ? 700 : 500,
               fontSize: sel ? 27 : 20,
-              color: sel ? '#fff' : '#7A8496',
+              color: sel ? 'var(--text-strong)' : 'var(--muted)',
               transition: 'font-size 0.15s, color 0.15s',
               letterSpacing: -0.5,
             }}>
@@ -130,34 +130,34 @@ export default function WheelPickerSheet({ open, exerciseName, setIdx, initial, 
     >
       <div
         onClick={e => e.stopPropagation()}
-        style={{ width: '100%', background: '#13171F', borderTop: '2px solid #FF6A1A', paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)' }}
+        style={{ width: '100%', background: 'var(--card)', borderTop: '2px solid #FF6A1A', paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)' }}
       >
         <div style={{
-          padding: '14px 18px 12px', borderBottom: '1px solid #1F242E',
+          padding: '14px 18px 12px', borderBottom: '1px solid var(--border)',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
           <div>
             <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1.5, color: '#FF6A1A' }}>
               SET {String(setIdx + 1).padStart(2, '0')}
             </div>
-            <div style={{ fontWeight: 700, fontSize: 15, color: '#fff', marginTop: 2 }}>{exerciseName}</div>
+            <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-strong)', marginTop: 2 }}>{exerciseName}</div>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1.5, color: '#7A8496' }}>VOLUME</div>
-            <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 22, color: '#fff', lineHeight: 1, marginTop: 2 }}>
+            <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1.5, color: 'var(--muted)' }}>VOLUME</div>
+            <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 22, color: 'var(--text-strong)', lineHeight: 1, marginTop: 2 }}>
               {volume.toLocaleString()}
-              <span style={{ fontSize: 11, color: '#9AA5BA', marginLeft: 3 }}>kg</span>
+              <span style={{ fontSize: 11, color: 'var(--text-2nd)', marginLeft: 3 }}>kg</span>
             </div>
           </div>
         </div>
 
         <div style={{ display: 'flex', padding: '12px 18px 4px' }}>
           {['WEIGHT', 'REPS'].map((l, i) => (
-            <div key={l} style={{ flex: 1, ...(i === 0 ? {} : { marginLeft: 24 }), fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2, color: '#9AA5BA', textAlign: 'center' }}>{l}</div>
+            <div key={l} style={{ flex: 1, ...(i === 0 ? {} : { marginLeft: 24 }), fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2, color: 'var(--text-2nd)', textAlign: 'center' }}>{l}</div>
           ))}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', padding: '0 18px', background: '#13171F' }}>
+        <div style={{ display: 'flex', alignItems: 'center', padding: '0 18px', background: 'var(--card)' }}>
           <Wheel values={WEIGHT_VALUES} value={w} onChange={setW} suffix="KG" />
           <div style={{ width: 24, textAlign: 'center', fontFamily: 'Oswald', fontWeight: 500, fontSize: 22, color: '#3A4253' }}>×</div>
           <Wheel values={REP_VALUES} value={r} onChange={setR} suffix="回" />
@@ -169,12 +169,12 @@ export default function WheelPickerSheet({ open, exerciseName, setIdx, initial, 
               key={d}
               onClick={() => { setW(nearestWeight(w + d)); hapticTick() }}
               style={{
-                flex: 1, background: '#0E1118', border: '1px solid #1F242E',
-                color: '#C3CCDC', fontFamily: 'JetBrains Mono', fontSize: 12,
+                flex: 1, background: 'var(--bg-deep)', border: '1px solid var(--border)',
+                color: 'var(--text-sub)', fontFamily: 'JetBrains Mono', fontSize: 12,
                 padding: '10px 0', cursor: 'pointer',
               }}
             >
-              {d > 0 ? `+${d}` : d}<span style={{ color: '#7A8496', marginLeft: 2 }}>kg</span>
+              {d > 0 ? `+${d}` : d}<span style={{ color: 'var(--muted)', marginLeft: 2 }}>kg</span>
             </button>
           ))}
         </div>
@@ -183,15 +183,15 @@ export default function WheelPickerSheet({ open, exerciseName, setIdx, initial, 
           <button
             onClick={onCancel}
             style={{
-              flex: 1, background: 'transparent', border: '1px solid #2A3142',
-              color: '#9AA5BA', fontFamily: 'Oswald', fontWeight: 600, fontSize: 15,
+              flex: 1, background: 'transparent', border: '1px solid var(--border-dash)',
+              color: 'var(--text-2nd)', fontFamily: 'Oswald', fontWeight: 600, fontSize: 15,
               letterSpacing: 1.5, padding: '14px 0', cursor: 'pointer',
             }}
           >キャンセル</button>
           <button
             onClick={() => { hapticImpact(); onConfirm({ weight: w, reps: r }) }}
             style={{
-              flex: 2, background: '#FF6A1A', border: 'none', color: '#0B0D10',
+              flex: 2, background: '#FF6A1A', border: 'none', color: 'var(--on-accent)',
               fontFamily: 'Oswald', fontWeight: 700, fontSize: 15, letterSpacing: 1.5,
               padding: '14px 0', cursor: 'pointer',
             }}

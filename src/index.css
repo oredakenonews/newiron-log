@@ -24,17 +24,43 @@
   src: url('/fonts/jetbrains-mono-latin-var.woff2') format('woff2');
 }
 
+/* テーマトークン。ライトが基本、data-theme="dark"で簡易ダーク（2026-10-10 FB反映）。
+   アクセント(#FF6A1A)・グリーン(#5BC25B)はJS側で文字列合成されるため両テーマ共通のhexリテラルのまま。 */
 :root {
-  --color-bg: #0B0D10;
-  --color-card: #13171F;
-  --color-card2: #0E1118;
-  --color-accent: #FF6A1A;
-  --color-border: #1F242E;
-  --color-border2: #1A1F28;
-  --color-text: #EEF1F6;
-  --color-muted: #7A8496;
-  --color-muted2: #9AA5BA;
-  --color-green: #5BC25B;
+  color-scheme: light;
+  --bg: #F2F4F7;          /* アプリ背景 */
+  --bg-deep: #E8ECF2;     /* 沈み込み面（入力・ピッカー等） */
+  --card: #FFFFFF;        /* カード面 */
+  --border: #D9DFE8;
+  --border2: #E3E8EF;
+  --border-dash: #C6CEDA;
+  --text: #1A212E;        /* 本文 */
+  --text-sub: #3D4656;    /* サブ本文 */
+  --text-2nd: #5D6880;    /* セカンダリ */
+  --muted: #8A94A6;       /* ラベル・ミュート */
+  --text-strong: #0B0D10; /* 見出し・最強調（ダークでは白） */
+  --on-accent: #0B0D10;   /* オレンジ上のテキスト（両テーマ共通） */
+  --err-bg: rgba(200, 50, 50, 0.08);
+  --err-border: #E3A8A8;
+  --err-text: #B33A3A;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #0B0D10;
+  --bg-deep: #0E1118;
+  --card: #13171F;
+  --border: #1F242E;
+  --border2: #1A1F28;
+  --border-dash: #2A3142;
+  --text: #EEF1F6;
+  --text-sub: #C3CCDC;
+  --text-2nd: #9AA5BA;
+  --muted: #7A8496;
+  --text-strong: #FFFFFF;
+  --err-bg: rgba(255, 80, 80, 0.08);
+  --err-border: #5A2A2A;
+  --err-text: #E08585;
 }
 
 * {
@@ -47,8 +73,8 @@ html {
 }
 
 body {
-  background-color: var(--color-bg);
-  color: var(--color-text);
+  background-color: var(--bg);
+  color: var(--text);
   font-family: 'Noto Sans JP', sans-serif;
   margin: 0;
   padding: 0;

@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { listExercises, addExerciseDefs } from '../../lib/localdb'
 
-const RYOTA_IMG = '/gazou/ryota_bu.png'
-
+// パーソナリティ質問でトレーナーとの相性をスコアリングする（TestFlight FB反映）。
+// 質問役は特定キャラではなくアプリ（IRON LOG）。タメ口が苦手な人に
+// タメ口キャラが当たらないよう、話し方の好みを最初に聞く。
 const QUESTIONS = [
   {
     key: 'goal',
-    question: 'はじめまして！俺、RYOTAです。一緒に最高の身体を作っていきましょう💪\n\nまず聞かせてください。今一番の目標は何ですか？',
+    question: 'ようこそ、IRON LOGへ。\nあなた専属のAIコーチを決めるために、いくつか質問させてください。\n\nまず、今一番の目標は何ですか？',
     options: [
       { value: 'muscle', label: '筋肉をつけたい（筋肥大）' },
       { value: 'diet', label: '体重を落としたい（ダイエット）' },
@@ -19,7 +20,7 @@ const QUESTIONS = [
   },
   {
     key: 'level',
-    question: 'いい目標だ！\n\nトレーニング歴はどのくらいですか？',
+    question: 'トレーニング歴はどのくらいですか？',
     options: [
       { value: 'beginner', label: 'これから始める / 始めたばかり' },
       { value: 'intermediate', label: '半年〜2年くらい' },
@@ -27,31 +28,78 @@ const QUESTIONS = [
     ],
   },
   {
-    key: 'frequency',
-    question: '週に何回トレーニングできそうですか？',
+    key: 'tone',
+    question: 'ここからはコーチとの相性チェックです。\n\nコーチの話し方、どれが心地いいですか？',
     options: [
-      { value: '1-2', label: '週1〜2回' },
-      { value: '3-4', label: '週3〜4回' },
-      { value: '5+', label: '週5回以上' },
+      { value: 'hot', label: '熱く励ましてくれるタメ口', scores: { RYOTA: 2, BILLY: 1, NANA: 1 } },
+      { value: 'polite', label: 'きちんとした敬語', scores: { HANA: 2, YUKI: 1 } },
+      { value: 'short', label: '短く、要点だけ', scores: { KENJI: 2, TORU: 1 } },
+      { value: 'logic', label: '理屈から丁寧に説明', scores: { DAIKI: 2, RACHELL: 1 } },
     ],
   },
   {
-    key: 'style',
-    question: '最後に、どんなサポートスタイルが好きですか？',
+    key: 'motivation',
+    question: 'きつい場面では、どうされたいですか？',
     options: [
-      { value: 'strict', label: '厳しくガンガン追い込んでほしい' },
-      { value: 'gentle', label: '優しく寄り添ってほしい' },
-      { value: 'data', label: 'データと理論で教えてほしい' },
-      { value: 'fun', label: '楽しく続けられるようにしてほしい' },
+      { value: 'push', label: '「もう一回！」と背中を押してほしい', scores: { RYOTA: 2, KENJI: 1 } },
+      { value: 'care', label: '「無理しないで」と気遣ってほしい', scores: { YUKI: 2, HANA: 1 } },
+      { value: 'data', label: '数字で成長を示して納得させてほしい', scores: { DAIKI: 2, RACHELL: 1 } },
+      { value: 'fun', label: '盛り上げて笑わせてほしい', scores: { BILLY: 2, NANA: 1 } },
+    ],
+  },
+  {
+    key: 'mood',
+    question: 'ジムでのあなたの気分に一番近いのは？',
+    options: [
+      { value: 'battle', label: '戦場。黙々とストイックに', scores: { KENJI: 2, TORU: 1 } },
+      { value: 'fes', label: 'フェス。音楽とノリで上げる', scores: { BILLY: 2, NANA: 1 } },
+      { value: 'lab', label: '研究室。フォームと数値を検証', scores: { DAIKI: 2, RACHELL: 1 } },
+      { value: 'rehab', label: 'リハビリ室。体と相談しながら', scores: { YUKI: 2, HANA: 1 } },
+    ],
+  },
+  {
+    key: 'career',
+    question: 'コーチの経歴、どれに惹かれますか？',
+    options: [
+      { value: 'veteran', label: '百戦錬磨のベテラン', scores: { TORU: 2, HANA: 1 } },
+      { value: 'peer', label: '同世代の勢いとノリ', scores: { NANA: 2, RYOTA: 1, BILLY: 1 } },
+      { value: 'global', label: '世界基準の資格と知識', scores: { RACHELL: 2, DAIKI: 1 } },
+      { value: 'heart', label: '経歴より人柄', scores: { YUKI: 2, TORU: 1 } },
+    ],
+  },
+  {
+    key: 'praise',
+    question: '最後の質問。褒められ方の好みは？',
+    options: [
+      { value: 'party', label: '全力で一緒に喜んでほしい', scores: { NANA: 2, BILLY: 1 } },
+      { value: 'curt', label: '一言「悪くない」で十分', scores: { KENJI: 2, TORU: 1 } },
+      { value: 'proof', label: '成長の根拠つきで認めてほしい', scores: { DAIKI: 2, RACHELL: 1 } },
+      { value: 'warm', label: '温かくねぎらってほしい', scores: { YUKI: 2, HANA: 1 } },
     ],
   },
 ]
 
-const TRAINER_ASSIGN = {
-  strict: 'RYOTA',
-  gentle: 'YUKI',
-  data: 'DAIKI',
-  fun: 'BILLY',
+const TRAINER_META = {
+  RYOTA:   { img: '/gazou/ryota_bu.png',   type: '熱血',     desc: '元ラグビー・陸上選手。熱く背中を押すタイプ' },
+  YUKI:    { img: '/gazou/yuki_bu.png',    type: '穏やか',   desc: '元看護師。体を気遣いながら寄り添うタイプ' },
+  DAIKI:   { img: '/gazou/daiki_bu.png',   type: '理論派',   desc: 'スポーツ科学修士。データと理論で導くタイプ' },
+  KENJI:   { img: '/gazou/kenji_bu.png',   type: 'ストイック', desc: '元自衛隊。言葉少なく限界に挑ませるタイプ' },
+  NANA:    { img: '/gazou/nana_bu.png',    type: 'ポジティブ', desc: 'フィットネスYouTuber。明るく全力で褒めるタイプ' },
+  HANA:    { img: '/gazou/hana_bu.png',    type: '丁寧',     desc: '理学療法士。必ず敬語、基本を大切にするタイプ' },
+  RACHELL: { img: '/gazou/rachell_bu.png', type: '国際派',   desc: 'NSCA-CSCS。世界基準のメソッドで鍛えるタイプ' },
+  TORU:    { img: '/gazou/toru_bu.png',    type: 'ベテラン', desc: 'トレーニング歴25年超。長い目で導くタイプ' },
+  BILLY:   { img: '/gazou/billybu.png',    type: 'エンタメ', desc: 'HIPHOPダンサー。ノリと勢いで楽しませるタイプ' },
+}
+
+// スコア合算→最高点のトレーナーを推薦（同点は質問設計上の優先順で安定）
+function recommendTrainer(totals) {
+  let best = 'RYOTA'
+  let bestScore = -1
+  for (const id of Object.keys(TRAINER_META)) {
+    const s = totals[id] || 0
+    if (s > bestScore) { best = id; bestScore = s }
+  }
+  return best
 }
 
 const DEFAULT_EXERCISES = [
@@ -86,6 +134,7 @@ export default function OnboardingChat() {
   const [answers, setAnswers] = useState({})
   const [isTyping, setIsTyping] = useState(false)
   const [finished, setFinished] = useState(false)
+  const [recommended, setRecommended] = useState(null)
   const bottomRef = useRef(null)
   const answeringRef = useRef(false)   // 連打による二重回答・二重登録防止
   const savedRef = useRef(false)       // 完了処理の成否（失敗時はgoToMainでリトライ）
@@ -131,15 +180,23 @@ export default function OnboardingChat() {
         showQuestion(nextStep)
       }, 600)
     } else {
-      // 完了処理
-      const trainer = TRAINER_ASSIGN[newAnswers.style] || 'RYOTA'
+      // 完了処理: スコアを合算して相性の良いトレーナーを推薦
+      const totals = {}
+      for (const question of QUESTIONS) {
+        const picked = question.options.find(o => o.value === newAnswers[question.key])
+        for (const [id, pt] of Object.entries(picked?.scores || {})) {
+          totals[id] = (totals[id] || 0) + pt
+        }
+      }
+      const trainer = recommendTrainer(totals)
+      setRecommended(trainer)
 
       setIsTyping(true)
       setTimeout(() => {
         setIsTyping(false)
         setMessages(prev => [...prev, {
           type: 'trainer',
-          text: `分かりました！\n\nあなたのトレーナーは...\n\n🔥 ${trainer} に決定！\n\n一緒に頑張っていきましょう！`,
+          text: `ありがとうございました。\nあなたと相性が良さそうなコーチが決まりました。`,
         }])
         setFinished(true)
       }, 1200)
@@ -154,7 +211,7 @@ export default function OnboardingChat() {
   }
 
   async function goToMain() {
-    const trainer = TRAINER_ASSIGN[answers.style] || 'RYOTA'
+    const trainer = recommended || 'RYOTA'
     const purposeMap = {
       muscle: '筋肥大', diet: 'ダイエット', strength: '筋力向上',
       health: '健康維持', sport: 'スポーツ強化',
@@ -172,13 +229,13 @@ export default function OnboardingChat() {
   const currentOptions = step < QUESTIONS.length ? QUESTIONS[step].options : []
 
   return (
-    <div className="flex flex-col min-h-dvh" style={{ background: '#0B0D10' }}>
+    <div className="flex flex-col min-h-dvh" style={{ background: 'var(--bg)' }}>
       {/* ヘッダー */}
-      <div className="px-4 pb-3 flex items-center gap-3" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 16px)', borderBottom: '1px solid #1F242E' }}>
-        <img src={RYOTA_IMG} alt="RYOTA" className="w-10 h-10 object-contain" style={{ background: '#13171F' }} />
+      <div className="px-4 pb-3 flex items-center gap-3" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 16px)', borderBottom: '1px solid var(--border)' }}>
+        <div className="w-10 h-10 flex items-center justify-center flex-shrink-0" style={{ background: '#FF6A1A', fontFamily: 'Oswald', fontWeight: 700, fontSize: 18, color: 'var(--on-accent)' }}>IL</div>
         <div>
-          <p className="font-bebas text-lg" style={{ color: '#FF6A1A' }}>RYOTA</p>
-          <p className="text-xs" style={{ color: '#9AA5BA' }}>カウンセリング中</p>
+          <p className="font-bebas text-lg" style={{ color: '#FF6A1A' }}>IRON LOG</p>
+          <p className="text-xs" style={{ color: 'var(--text-2nd)' }}>コーチ選びカウンセリング</p>
         </div>
       </div>
 
@@ -187,13 +244,13 @@ export default function OnboardingChat() {
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'} items-end gap-2`}>
             {msg.type === 'trainer' && (
-              <img src={RYOTA_IMG} alt="trainer" className="w-8 h-8 object-contain flex-shrink-0" style={{ background: '#13171F' }} />
+              <div className="w-8 h-8 flex items-center justify-center flex-shrink-0" style={{ background: '#FF6A1A', fontFamily: 'Oswald', fontWeight: 700, fontSize: 14, color: 'var(--on-accent)' }}>IL</div>
             )}
             <div
               className="max-w-[75%] px-4 py-3 text-sm whitespace-pre-line leading-relaxed"
               style={{
-                background: msg.type === 'user' ? '#FF6A1A' : '#13171F',
-                color: '#EEF1F6',
+                background: msg.type === 'user' ? '#FF6A1A' : 'var(--card)',
+                color: 'var(--text)',
                               }}
             >
               {msg.text}
@@ -203,11 +260,11 @@ export default function OnboardingChat() {
 
         {isTyping && (
           <div className="flex items-end gap-2">
-            <img src={RYOTA_IMG} alt="trainer" className="w-8 h-8 object-contain" style={{ background: '#13171F' }} />
-            <div className="px-4 py-3" style={{ background: '#13171F', borderRadius: 0 }}>
+            <div className="w-8 h-8 flex items-center justify-center flex-shrink-0" style={{ background: '#FF6A1A', fontFamily: 'Oswald', fontWeight: 700, fontSize: 14, color: 'var(--on-accent)' }}>IL</div>
+            <div className="px-4 py-3" style={{ background: 'var(--card)', borderRadius: 0 }}>
               <div className="flex gap-1">
                 {[0, 1, 2].map(i => (
-                  <div key={i} className="w-2 h-2 animate-bounce" style={{ background: '#9AA5BA', animationDelay: `${i * 0.2}s` }} />
+                  <div key={i} className="w-2 h-2 animate-bounce" style={{ background: 'var(--text-2nd)', animationDelay: `${i * 0.2}s` }} />
                 ))}
               </div>
             </div>
@@ -218,14 +275,14 @@ export default function OnboardingChat() {
 
       {/* 選択肢 or スタートボタン */}
       {!isTyping && !finished && (
-        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] px-4 pt-3" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)', background: '#0B0D10', borderTop: '1px solid #1F242E' }}>
+        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] px-4 pt-3" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)', background: 'var(--bg)', borderTop: '1px solid var(--border)' }}>
           <div className="space-y-2">
             {currentOptions.map((opt, i) => (
               <button
                 key={i}
                 onClick={() => handleAnswer(opt)}
                 className="w-full py-3 px-4 text-sm text-left"
-                style={{ background: '#13171F', border: '1px solid #1F242E', color: '#EEF1F6' }}
+                style={{ background: 'var(--card)', border: '1px solid var(--border)', color: 'var(--text)' }}
               >
                 {opt.label}
               </button>
@@ -234,15 +291,33 @@ export default function OnboardingChat() {
         </div>
       )}
 
-      {finished && !isTyping && (
-        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] px-4 pt-3" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)', background: '#0B0D10', borderTop: '1px solid #1F242E' }}>
+      {finished && !isTyping && recommended && (
+        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] px-4 pt-3" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)', background: 'var(--bg)', borderTop: '1px solid var(--border)' }}>
+          {/* 推薦コーチカード */}
+          <div className="flex items-center gap-3 mb-3 p-3" style={{ background: 'var(--card)', border: '1px solid #FF6A1A' }}>
+            <img
+              src={TRAINER_META[recommended].img}
+              alt={recommended}
+              className="object-contain flex-shrink-0"
+              style={{ width: 72, height: 72, background: 'var(--bg-deep)' }}
+            />
+            <div className="min-w-0">
+              <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1.5, color: '#FF6A1A' }}>YOUR COACH</div>
+              <div className="flex items-baseline gap-2">
+                <span style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 20, color: 'var(--text-strong)' }}>{recommended}</span>
+                <span style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1, color: '#FF6A1A' }}>{TRAINER_META[recommended].type}</span>
+              </div>
+              <div className="text-xs" style={{ color: 'var(--text-2nd)', marginTop: 2 }}>{TRAINER_META[recommended].desc}</div>
+            </div>
+          </div>
           <button
             onClick={goToMain}
             className="w-full py-4 font-bold text-white text-sm"
             style={{ background: '#FF6A1A' }}
           >
-            トレーニングを始める 🔥
+            このコーチで始める 🔥
           </button>
+          <p className="text-center text-xs mt-2" style={{ color: 'var(--muted)' }}>コーチは設定からいつでも変更できます</p>
         </div>
       )}
     </div>

@@ -21,7 +21,7 @@ export default function AddExerciseSheet({ open, userExercises, onClose, onAdd }
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          width: '100%', background: '#13171F', borderTop: '2px solid #FF6A1A',
+          width: '100%', background: 'var(--card)', borderTop: '2px solid #FF6A1A',
           maxHeight: '78%', display: 'flex', flexDirection: 'column',
           paddingBottom: 'env(safe-area-inset-bottom)',
         }}
@@ -29,17 +29,17 @@ export default function AddExerciseSheet({ open, userExercises, onClose, onAdd }
         <div style={{
           padding: '18px 20px 12px',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          borderBottom: '1px solid #1F242E',
+          borderBottom: '1px solid var(--border)',
         }}>
-          <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 22, letterSpacing: 0.5, color: '#fff' }}>種目を追加</div>
-          <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#7A8496', fontSize: 24, cursor: 'pointer', padding: 0, lineHeight: 1 }}>×</button>
+          <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 22, letterSpacing: 0.5, color: 'var(--text-strong)' }}>種目を追加</div>
+          <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'var(--muted)', fontSize: 24, cursor: 'pointer', padding: 0, lineHeight: 1 }}>×</button>
         </div>
         <div style={{ padding: '12px 20px' }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: 10,
-            background: '#0E1118', border: '1px solid #1F242E', padding: '10px 12px',
+            background: 'var(--bg-deep)', border: '1px solid var(--border)', padding: '10px 12px',
           }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7A8496" strokeWidth="2" strokeLinecap="square">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2" strokeLinecap="square">
               <circle cx="11" cy="11" r="7" /><path d="M16.5 16.5L21 21" />
             </svg>
             <input
@@ -48,7 +48,7 @@ export default function AddExerciseSheet({ open, userExercises, onClose, onAdd }
               placeholder="種目を検索"
               style={{
                 flex: 1, background: 'transparent', border: 'none',
-                color: '#fff', outline: 'none',
+                color: 'var(--text-strong)', outline: 'none',
                 fontFamily: '"Noto Sans JP", system-ui',
               }}
             />
@@ -56,14 +56,14 @@ export default function AddExerciseSheet({ open, userExercises, onClose, onAdd }
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px 12px' }}>
           {filtered.length === 0 && (
-            <p style={{ textAlign: 'center', color: '#7A8496', fontSize: 13, padding: '20px 0' }}>種目が見つかりません</p>
+            <p style={{ textAlign: 'center', color: 'var(--muted)', fontSize: 13, padding: '20px 0' }}>種目が見つかりません</p>
           )}
           {filtered.map((ex) => (
             <div
               key={ex.id}
               onClick={() => { onAdd(ex.name); onClose() }}
               style={{
-                padding: '14px 0', borderBottom: '1px solid #1A1F28',
+                padding: '14px 0', borderBottom: '1px solid var(--border2)',
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 cursor: 'pointer',
               }}
@@ -72,9 +72,9 @@ export default function AddExerciseSheet({ open, userExercises, onClose, onAdd }
                 <div style={{ fontSize: 10, fontFamily: 'Bebas Neue', letterSpacing: 1.5, color: '#FF6A1A', marginBottom: 2 }}>
                   {getCategory(ex.name)}
                 </div>
-                <div style={{ fontSize: 16, fontWeight: 500, color: '#fff' }}>{ex.name}</div>
+                <div style={{ fontSize: 16, fontWeight: 500, color: 'var(--text-strong)' }}>{ex.name}</div>
               </div>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7A8496" strokeWidth="2.4" strokeLinecap="square">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" strokeWidth="2.4" strokeLinecap="square">
                 <path d="M12 5v14M5 12h14" />
               </svg>
             </div>

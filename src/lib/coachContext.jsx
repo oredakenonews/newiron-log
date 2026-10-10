@@ -144,7 +144,7 @@ export function CoachAvatarShared({ size = 32, tone, letter, img, pulse = false 
   return (
     <div style={{
       width: size, height: size, flexShrink: 0,
-      background: '#0E1118', border: '1px solid #1F242E',
+      background: 'var(--bg-deep)', border: '1px solid var(--border)',
       position: 'relative', overflow: 'hidden',
     }}>
       {img ? (
@@ -167,7 +167,7 @@ export function CoachAvatarShared({ size = 32, tone, letter, img, pulse = false 
         <div style={{
           position: 'absolute', right: 2, bottom: 2,
           width: 6, height: 6, borderRadius: 3, background: '#5BC25B',
-          boxShadow: '0 0 0 1px #0B0D10',
+          boxShadow: '0 0 0 1px var(--card)',
         }} />
       )}
     </div>
@@ -180,7 +180,7 @@ export function CoachStrip({ message, sub, action, onOpenChat }) {
     <div
       style={{
         display: 'flex', gap: 12, alignItems: 'stretch',
-        background: '#13171F', border: '1px solid #1F242E',
+        background: 'var(--card)', border: '1px solid var(--border)',
         borderLeft: `3px solid ${coach.tone}`,
         padding: '12px',
         cursor: onOpenChat ? 'pointer' : 'default',
@@ -193,10 +193,10 @@ export function CoachStrip({ message, sub, action, onOpenChat }) {
       </div>
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-          <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1.5, color: '#fff' }}>{trainerName}</div>
-          {sub && <div style={{ fontFamily: 'JetBrains Mono', fontSize: 9, color: '#7A8496' }}>· {sub}</div>}
+          <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1.5, color: 'var(--text-strong)' }}>{trainerName}</div>
+          {sub && <div style={{ fontFamily: 'JetBrains Mono', fontSize: 9, color: 'var(--muted)' }}>· {sub}</div>}
         </div>
-        <div style={{ fontSize: 14, lineHeight: 1.55, color: '#EEF1F6', fontWeight: 500 }}>{message}</div>
+        <div style={{ fontSize: 14, lineHeight: 1.55, color: 'var(--text)', fontWeight: 500 }}>{message}</div>
         {action && (
           <div
             onClick={e => { e.stopPropagation(); onOpenChat?.() }}
@@ -213,7 +213,7 @@ export function CoachQuote({ text }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'flex-start', gap: 8,
-      marginTop: 8, fontSize: 13, color: '#C3CCDC', lineHeight: 1.55,
+      marginTop: 8, fontSize: 13, color: 'var(--text-sub)', lineHeight: 1.55,
     }}>
       <CoachAvatarShared size={32} tone={coach.tone} letter={coach.letter} img={trainerImg} />
       <div style={{ flex: 1, borderLeft: `2px solid ${coach.tone}`, paddingLeft: 10, paddingTop: 2 }}>
