@@ -10,7 +10,9 @@
     "preview": "vite preview",
     "ios:sync": "vite build && find dist -name '._*' -delete && cap sync ios",
     "ios:testflight": "zsh scripts/testflight.sh",
-    "ios:feedback": "node scripts/testflight-feedback.mjs"
+    "ios:feedback": "node scripts/testflight-feedback.mjs",
+    "ios:builds": "git tag -l 'build/*' --sort=-creatordate --format='%(refname:short)  %(*objectname:short)  %(contents:subject)'",
+    "ios:rollback": "zsh scripts/testflight-rollback.sh"
   },
   "dependencies": {
     "@capacitor/cli": "^8.5.3",

@@ -71,3 +71,17 @@ xcodebuild -exportArchive \
 
 rm -rf "$EXPORT_DIR"
 echo "✔ アップロード完了（ビルド $BUILD_NUMBER）。処理が終わると App Store Connect の TestFlight に出ます（10〜30分）"
+
+# ── ビルド番号⇔コミットの対応をgitタグで永続化（切り戻し用） ──
+# 一覧: npm run ios:builds / 切り戻し: npm run ios:rollback -- <ビルド番号>
+COMMIT=$(git rev-parse --short HEAD)
+if [[ -n "$(git status --porcelain)" ]]; then
+  TAG_MSG="TestFlight build $BUILD_NUMBER from $COMMIT (⚠ dirty working tree)"
+  echo "⚠ 未コミットの変更があるままビルドしました。タグはHEADを指しますが、配信物と完全一致しない可能性があります"
+else
+  TAG_MSG="TestFlight build $BUILD_NUMBER from $COMMIT"
+fi
+git tag -a "build/$BUILD_NUMBER" -m "$TAG_MSG"
+git push -q origin "build/$BUILD_NUMBER" \
+  && echo "✔ タグ build/$BUILD_NUMBER を作成・push（$COMMIT）" \
+  || echo "⚠ タグのpushに失敗。後で: git push origin build/$BUILD_NUMBER"

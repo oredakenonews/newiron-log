@@ -45,6 +45,11 @@
   - XcodeのApple IDセッションは使わない（CLIから壊れやすく、2026-10-10に実際に壊れていた）
   - App Store Connect: App「AIron.log」登録済み。内部テストグループ「Internal」（全ビルド自動アクセス）にテスター登録済み。初ビルド 1.0(202610101857) 配信済み（2026-10-10）
   - 輸出コンプライアンス: Info.plistに `ITSAppUsesNonExemptEncryption=false` 宣言済み（アップロード毎の質問なし）
+- **ビルドのバージョン管理・切り戻し**（2026-10-10導入。build/202610102028以前のビルドにはタグなし）
+  - `ios:testflight` 成功時に `build/<ビルド番号>` タグをHEADに自動作成・push（ビルド⇔コミット対応の永続化）
+  - `npm run ios:builds`: ビルド履歴（タグ一覧）を新しい順に表示
+  - `npm run ios:rollback -- <ビルド番号>`: そのビルドのコードをチェックアウトして**新しいビルド番号**で再アップロード→元ブランチへ自動復帰（TestFlightは旧ビルド番号を再配信できないため）。作業ツリーが汚れていると拒否
+  - Web版の切り戻し: Vercelダッシュボードの Instant Rollback（またはタグをmainへ戻してpush）
 - **フィードバック取り込み: `npm run ios:feedback`**（scripts/testflight-feedback.mjs。TestFlightのコメント・スクショ・クラッシュを `testflight-feedback/`[git管理外] に feedback.md＋画像・ログとして保存。前回比の新着に🆕）
 - シミュレータ実行: `npx cap run ios` または Xcodeで `ios/App/App.xcodeproj` を開く
 - appId: `com.oredakenonews.ironlog` / 表示名: **AIron.log**（com.ironlog.appは他者が登録済みで使用不可だった。アプリ内UIのワードマークはIRON LOGのまま）
