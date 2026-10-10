@@ -4,7 +4,7 @@
 筋トレ記録アプリ（iOS: AIron.log）。React + Vite + Capacitor構成。
 
 ## ⚠️ v2アーキテクチャ（2026-10-10 mainへマージ・本番反映済み）
-**Supabase依存を廃止し、ローカルファースト化した。** 以下のCLAUDE.md中のSupabase関連記述（テーブル・Edge Function・認証）はv1時代の説明（参照用）であり、現行コードには該当しない。
+**Supabase依存を廃止し、ローカルファースト化した。** 本番Web・AIプロキシ・TestFlight初ビルドまで稼働確認済み。mainとv2-local-firstは同一コミットを維持する（v2ブランチで作業→mainへff-merge）。 以下のCLAUDE.md中のSupabase関連記述（テーブル・Edge Function・認証）はv1時代の説明（参照用）であり、現行コードには該当しない。
 
 - **認証なし**: ログイン/サインアップ画面は削除。初回起動→オンボーディング→メイン
 - **データは全て端末内**: `src/lib/localdb.js` が唯一のデータ層
@@ -39,7 +39,12 @@
 
 ## iOSアプリ（Capacitor）
 - `npm run ios:sync` でWeb資産を同期（ビルド＋exFATの`._*`掃除＋cap sync）
-- **TestFlight配信: `npm run ios:testflight`**（scripts/testflight.sh。アーカイブ→App Store Connectへ自動アップロード。ビルド番号は日時で自動採番。署名はXcode登録のApple ID）
+- **TestFlight配信: `npm run ios:testflight`**（scripts/testflight.sh。ビルド→アーカイブ→App Store Connectアップロードまで全自動。ビルド番号は日時で自動採番）
+  - 認証: App Store Connect APIキー（**Adminロール必須**。非Adminは「クラウド管理の配布証明書」権限がなくexportArchiveが失敗する）
+  - 設定: `.env.asc`（gitignore済み）に `ASC_KEY_ID` / `ASC_ISSUER_ID`。`.p8` は `~/.appstoreconnect/private_keys/AuthKey_<KEYID>.p8`、Issuer IDの控えは `~/.appstoreconnect/issuer_id`
+  - XcodeのApple IDセッションは使わない（CLIから壊れやすく、2026-10-10に実際に壊れていた）
+  - App Store Connect: App「AIron.log」登録済み。内部テストグループ「Internal」（全ビルド自動アクセス）にテスター登録済み。初ビルド 1.0(202610101857) 配信済み（2026-10-10）
+  - 輸出コンプライアンス: Info.plistに `ITSAppUsesNonExemptEncryption=false` 宣言済み（アップロード毎の質問なし）
 - シミュレータ実行: `npx cap run ios` または Xcodeで `ios/App/App.xcodeproj` を開く
 - appId: `com.oredakenonews.ironlog` / 表示名: **AIron.log**（com.ironlog.appは他者が登録済みで使用不可だった。アプリ内UIのワードマークはIRON LOGのまま）
 - プラグイン: Haptics（ホイールピッカー・ボタンの触覚FB）/ Keyboard（resize: native）/ StatusBar / SplashScreen
@@ -240,7 +245,10 @@ newiron-log/
 ## 今後やること
 - フリーミアム・Stripe連携（¥980/月 Pro）
 - トレーナーキャラのイラスト（現在はbu画像を使用）
-- 体重グラフ（body_weights活用）
+- 体重グラフ（v2ではローカルに体重履歴コレクションを追加して実装）
 - CoachStripタップ→AIタブ遷移後にチャット自動オープン（現在は遷移のみ）
 - hasPlan検出ロジック強化（誤検知対策: format:'detect'パラメータ追加）
 - クイックプロンプトのパーソナライズ（トレーナー×モード×直近記録から動的生成）
+- AIプロキシ保護の有効化（任意）: Upstash（Vercel Storage→Upstash Redis無料枠でenv自動設定）/ `AI_PROXY_TOKEN`+`VITE_AI_PROXY_TOKEN`ペア設定。App Attestは未実装
+- v1遺産の整理: Supabaseプロジェクト（データは`backups/`にエクスポート済み、放置で7日後自動停止）/ 旧Anthropicキー`newironlog`の失効（Claude Consoleで手動）
+- Claude Consoleで支出上限の設定（コスト防御、未設定）
