@@ -31,7 +31,7 @@ const TRAINERS = [
 function Section({ title, children }) {
   return (
     <div style={{ marginBottom: 18 }}>
-      <div style={{ padding: '8px 18px', fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2, color: '#5A6477' }}>{title}</div>
+      <div style={{ padding: '8px 18px', fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2, color: '#7A8496' }}>{title}</div>
       <div style={{ background: '#13171F', borderTop: '1px solid #1F242E', borderBottom: '1px solid #1F242E' }}>
         {children}
       </div>
@@ -179,7 +179,7 @@ export default function SettingsTab() {
   const inputStyle = {
     width: '100%', padding: '10px 14px',
     background: '#0E1118', border: '1px solid #1F242E',
-    color: '#E5E9F0', outline: 'none',
+    color: '#EEF1F6', outline: 'none',
     fontFamily: '"Noto Sans JP", system-ui',
   }
 
@@ -199,13 +199,7 @@ export default function SettingsTab() {
         }}>{initial}</div>
         <div style={{ flex: 1 }}>
           <div style={{ fontWeight: 700, fontSize: 18, color: '#fff' }}>{username}</div>
-          <div style={{ fontSize: 11, color: '#8693AA', fontFamily: 'JetBrains Mono', marginTop: 2 }}>FREE PLAN</div>
         </div>
-        <button style={{
-          background: '#FF6A1A', color: '#0B0D10', border: 'none',
-          padding: '8px 12px', fontFamily: 'Oswald', fontWeight: 700, fontSize: 12, letterSpacing: 1,
-          cursor: 'pointer',
-        }}>PRO →</button>
       </div>
 
       {/* section tabs */}
@@ -222,7 +216,7 @@ export default function SettingsTab() {
               flex: 1, padding: '12px 0',
               background: 'transparent', border: 'none',
               borderBottom: activeSection === s.id ? '2px solid #FF6A1A' : '2px solid transparent',
-              color: activeSection === s.id ? '#FF6A1A' : '#5A6477',
+              color: activeSection === s.id ? '#FF6A1A' : '#7A8496',
               fontFamily: 'Bebas Neue', fontSize: 13, letterSpacing: 1,
               cursor: 'pointer',
             }}
@@ -242,7 +236,7 @@ export default function SettingsTab() {
                 { key: 'goal_weight_kg', label: '目標体重 (kg)', placeholder: '65' },
               ].map(({ key, label, placeholder }) => (
                 <div key={key} style={{ padding: '12px 18px', borderBottom: '1px solid #1A1F28', borderRight: '1px solid #1A1F28' }}>
-                  <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1.5, color: '#5A6477', marginBottom: 6 }}>{label}</div>
+                  <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1.5, color: '#7A8496', marginBottom: 6 }}>{label}</div>
                   <input
                     type="number"
                     inputMode="decimal"
@@ -255,7 +249,7 @@ export default function SettingsTab() {
               ))}
             </div>
             <div style={{ padding: '12px 18px', borderBottom: '1px solid #1A1F28' }}>
-              <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1.5, color: '#5A6477', marginBottom: 8 }}>性別</div>
+              <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1.5, color: '#7A8496', marginBottom: 8 }}>性別</div>
               <select
                 value={form.gender}
                 onChange={e => setForm(f => ({ ...f, gender: e.target.value }))}
@@ -278,7 +272,7 @@ export default function SettingsTab() {
                   style={{
                     padding: '8px 16px',
                     background: form.training_purpose === p.value ? '#FF6A1A' : '#0E1118',
-                    color: form.training_purpose === p.value ? '#0B0D10' : '#8693AA',
+                    color: form.training_purpose === p.value ? '#0B0D10' : '#9AA5BA',
                     border: form.training_purpose === p.value ? 'none' : '1px solid #1F242E',
                     fontFamily: '"Noto Sans JP", system-ui', fontSize: 13, fontWeight: 500,
                     cursor: 'pointer',
@@ -306,7 +300,7 @@ export default function SettingsTab() {
       {activeSection === 'trainer' && (
         <div style={{ padding: '14px' }}>
 
-          <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2, color: '#5A6477', marginBottom: 8 }}>コーチへのメモ</div>
+          <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2, color: '#7A8496', marginBottom: 8 }}>コーチへのメモ</div>
           <textarea
             value={form.coach_notes}
             onChange={e => setForm(f => ({ ...f, coach_notes: e.target.value }))}
@@ -319,10 +313,10 @@ export default function SettingsTab() {
           />
 
           {/* AI記憶 */}
-          <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2, color: '#5A6477', marginBottom: 8, marginTop: 4 }}>AI記憶</div>
+          <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2, color: '#7A8496', marginBottom: 8, marginTop: 4 }}>AI記憶</div>
           <div style={{ background: '#13171F', border: '1px solid #1F242E', marginBottom: 20 }}>
             {memories.length === 0 ? (
-              <div style={{ padding: '14px 16px', fontSize: 12, color: '#5A6477', textAlign: 'center' }}>
+              <div style={{ padding: '14px 16px', fontSize: 12, color: '#7A8496', textAlign: 'center' }}>
                 チャットで話した内容が自動的に記録されます
               </div>
             ) : (
@@ -339,11 +333,11 @@ export default function SettingsTab() {
                     }}>
                       {{ injury: '怪我', goal: '目標', preference: '好み', habit: '習慣', note: 'メモ' }[m.memory_type] || m.memory_type}
                     </div>
-                    <div style={{ flex: 1, fontSize: 13, color: '#B5BECF', lineHeight: 1.5 }}>{m.content}</div>
+                    <div style={{ flex: 1, fontSize: 13, color: '#C3CCDC', lineHeight: 1.5 }}>{m.content}</div>
                     <button
                       onClick={() => deleteMemory(m.id)}
                       disabled={deletingMemoryId === m.id}
-                      style={{ background: 'none', border: 'none', color: '#5A6477', cursor: 'pointer', padding: 4, flexShrink: 0, opacity: deletingMemoryId === m.id ? 0.4 : 1 }}
+                      style={{ background: 'none', border: 'none', color: '#7A8496', cursor: 'pointer', padding: 4, flexShrink: 0, opacity: deletingMemoryId === m.id ? 0.4 : 1 }}
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                         <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -356,7 +350,7 @@ export default function SettingsTab() {
                   style={{
                     width: '100%', padding: '10px 0',
                     background: 'transparent', border: 'none',
-                    color: '#5A6477', fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1.5,
+                    color: '#7A8496', fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1.5,
                     cursor: 'pointer',
                   }}
                 >全て削除</button>
@@ -364,7 +358,7 @@ export default function SettingsTab() {
             )}
           </div>
 
-          <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2, color: '#5A6477', marginBottom: 8 }}>トレーナー選択</div>
+          <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2, color: '#7A8496', marginBottom: 8 }}>トレーナー選択</div>
           <div style={{ marginBottom: 14 }}>
             {TRAINERS.map(t => (
               <div
@@ -381,7 +375,7 @@ export default function SettingsTab() {
                 <img src={t.img} alt={t.name} style={{ width: 48, height: 48, objectFit: 'contain', background: '#0E1118' }} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 16, color: form.trainer_character === t.id ? '#FF6A1A' : '#fff' }}>{t.name}</div>
-                  <div style={{ fontSize: 11, color: '#8693AA', marginTop: 2 }}>{t.desc}</div>
+                  <div style={{ fontSize: 11, color: '#9AA5BA', marginTop: 2 }}>{t.desc}</div>
                 </div>
                 {form.trainer_character === t.id && (
                   <div style={{
@@ -434,7 +428,7 @@ export default function SettingsTab() {
 
           <div style={{ background: '#13171F', border: '1px solid #1F242E' }}>
             {exercises.length === 0 && (
-              <p style={{ textAlign: 'center', color: '#5A6477', fontSize: 13, padding: '30px 0' }}>種目を追加しましょう</p>
+              <p style={{ textAlign: 'center', color: '#7A8496', fontSize: 13, padding: '30px 0' }}>種目を追加しましょう</p>
             )}
             {exercises.map((ex, i) => (
               <div
@@ -453,7 +447,7 @@ export default function SettingsTab() {
                 </div>
                 <button
                   onClick={() => deleteExercise(ex.id)}
-                  style={{ background: 'none', border: 'none', color: '#5A6477', cursor: 'pointer', padding: 4 }}
+                  style={{ background: 'none', border: 'none', color: '#7A8496', cursor: 'pointer', padding: 4 }}
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <polyline points="3 6 5 6 21 6" />
@@ -475,7 +469,7 @@ export default function SettingsTab() {
           style={{
             width: '100%', padding: '14px 0',
             background: 'transparent', border: '1px solid #1F242E',
-            color: '#5A6477', fontFamily: 'Bebas Neue', fontSize: 14, letterSpacing: 1.5,
+            color: '#7A8496', fontFamily: 'Bebas Neue', fontSize: 14, letterSpacing: 1.5,
             cursor: 'pointer',
           }}
         >データをエクスポート（JSON）</button>
@@ -492,11 +486,11 @@ export default function SettingsTab() {
           style={{
             width: '100%', padding: '14px 0', marginTop: 10,
             background: 'transparent', border: '1px solid #1F242E',
-            color: '#5A6477', fontFamily: 'Bebas Neue', fontSize: 14, letterSpacing: 1.5,
+            color: '#7A8496', fontFamily: 'Bebas Neue', fontSize: 14, letterSpacing: 1.5,
             cursor: 'pointer', opacity: importing ? 0.5 : 1,
           }}
         >{importing ? 'インポート中…' : 'データをインポート（JSON）'}</button>
-        <p style={{ marginTop: 8, fontSize: 11, color: '#5A6477', lineHeight: 1.6 }}>
+        <p style={{ marginTop: 8, fontSize: 11, color: '#7A8496', lineHeight: 1.6 }}>
           Web版から移行する場合は、Web版の設定で「データをエクスポート」したJSONファイルをここで読み込んでください。現在のデータは置き換えられます。
         </p>
       </div>

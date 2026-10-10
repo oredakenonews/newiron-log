@@ -91,7 +91,7 @@ function Wheel({ values, value, onChange, suffix }) {
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3,
               fontFamily: 'Oswald', fontWeight: sel ? 700 : 500,
               fontSize: sel ? 27 : 20,
-              color: sel ? '#fff' : '#5A6477',
+              color: sel ? '#fff' : '#7A8496',
               transition: 'font-size 0.15s, color 0.15s',
               letterSpacing: -0.5,
             }}>
@@ -143,17 +143,17 @@ export default function WheelPickerSheet({ open, exerciseName, setIdx, initial, 
             <div style={{ fontWeight: 700, fontSize: 15, color: '#fff', marginTop: 2 }}>{exerciseName}</div>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1.5, color: '#5A6477' }}>VOLUME</div>
+            <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1.5, color: '#7A8496' }}>VOLUME</div>
             <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 22, color: '#fff', lineHeight: 1, marginTop: 2 }}>
               {volume.toLocaleString()}
-              <span style={{ fontSize: 11, color: '#8693AA', marginLeft: 3 }}>kg</span>
+              <span style={{ fontSize: 11, color: '#9AA5BA', marginLeft: 3 }}>kg</span>
             </div>
           </div>
         </div>
 
         <div style={{ display: 'flex', padding: '12px 18px 4px' }}>
           {['WEIGHT', 'REPS'].map((l, i) => (
-            <div key={l} style={{ flex: 1, ...(i === 0 ? {} : { marginLeft: 24 }), fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2, color: '#8693AA', textAlign: 'center' }}>{l}</div>
+            <div key={l} style={{ flex: 1, ...(i === 0 ? {} : { marginLeft: 24 }), fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2, color: '#9AA5BA', textAlign: 'center' }}>{l}</div>
           ))}
         </div>
 
@@ -170,11 +170,11 @@ export default function WheelPickerSheet({ open, exerciseName, setIdx, initial, 
               onClick={() => { setW(nearestWeight(w + d)); hapticTick() }}
               style={{
                 flex: 1, background: '#0E1118', border: '1px solid #1F242E',
-                color: '#B5BECF', fontFamily: 'JetBrains Mono', fontSize: 12,
+                color: '#C3CCDC', fontFamily: 'JetBrains Mono', fontSize: 12,
                 padding: '10px 0', cursor: 'pointer',
               }}
             >
-              {d > 0 ? `+${d}` : d}<span style={{ color: '#5A6477', marginLeft: 2 }}>kg</span>
+              {d > 0 ? `+${d}` : d}<span style={{ color: '#7A8496', marginLeft: 2 }}>kg</span>
             </button>
           ))}
         </div>
@@ -184,7 +184,7 @@ export default function WheelPickerSheet({ open, exerciseName, setIdx, initial, 
             onClick={onCancel}
             style={{
               flex: 1, background: 'transparent', border: '1px solid #2A3142',
-              color: '#8693AA', fontFamily: 'Oswald', fontWeight: 600, fontSize: 15,
+              color: '#9AA5BA', fontFamily: 'Oswald', fontWeight: 600, fontSize: 15,
               letterSpacing: 1.5, padding: '14px 0', cursor: 'pointer',
             }}
           >キャンセル</button>

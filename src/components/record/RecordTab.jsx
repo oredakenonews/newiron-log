@@ -48,14 +48,14 @@ function VolumeHeader({ exercises, onSave, saving, saved }) {
       }} />
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 6, position: 'relative' }}>
         <div style={{ fontFamily: 'Bebas Neue', fontSize: 12, letterSpacing: 2, color: '#FF6A1A' }}>TODAY'S VOLUME</div>
-        <div style={{ fontFamily: 'JetBrains Mono', fontSize: 11, color: '#5A6477', letterSpacing: 0.5 }}>{todayLabel()}</div>
+        <div style={{ fontFamily: 'JetBrains Mono', fontSize: 11, color: '#7A8496', letterSpacing: 0.5 }}>{todayLabel()}</div>
       </div>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 14, position: 'relative', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
           <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 52, lineHeight: 1, color: '#fff', letterSpacing: -1 }}>
             {doneVol.toLocaleString()}
           </div>
-          <div style={{ fontFamily: 'Oswald', fontWeight: 500, fontSize: 20, color: '#8693AA', letterSpacing: 1 }}>KG</div>
+          <div style={{ fontFamily: 'Oswald', fontWeight: 500, fontSize: 20, color: '#9AA5BA', letterSpacing: 1 }}>KG</div>
         </div>
         <button
           onClick={onSave}
@@ -75,8 +75,8 @@ function VolumeHeader({ exercises, onSave, saving, saved }) {
             flex: 1, paddingLeft: i === 0 ? 0 : 14,
             borderLeft: i === 0 ? 'none' : '1px solid #1F242E',
           }}>
-            <div style={{ fontSize: 10, color: '#5A6477', letterSpacing: 1.5, fontFamily: 'Bebas Neue', marginBottom: 2 }}>{label}</div>
-            <div style={{ fontFamily: 'Oswald', fontWeight: 600, fontSize: 22, color: '#E5E9F0' }}>{val}</div>
+            <div style={{ fontSize: 10, color: '#7A8496', letterSpacing: 1.5, fontFamily: 'Bebas Neue', marginBottom: 2 }}>{label}</div>
+            <div style={{ fontFamily: 'Oswald', fontWeight: 600, fontSize: 22, color: '#EEF1F6' }}>{val}</div>
           </div>
         ))}
       </div>
@@ -98,7 +98,7 @@ function SetRow({ set, idx, onOpenPicker, onToggleDone, onRemoveSet }) {
         background: done ? '#1F2D1F' : '#181C24',
         border: done ? '1px solid #2C5A2C' : '1px solid #252B36',
         fontFamily: 'Oswald', fontWeight: 700, fontSize: 13,
-        color: done ? '#5BC25B' : '#8693AA',
+        color: done ? '#5BC25B' : '#9AA5BA',
       }}>{idx + 1}</div>
 
       <div
@@ -113,7 +113,7 @@ function SetRow({ set, idx, onOpenPicker, onToggleDone, onRemoveSet }) {
         }}
       >
         {set.weight !== '' && set.weight !== undefined ? set.weight : '—'}
-        <span style={{ fontFamily: 'Bebas Neue', fontWeight: 400, fontSize: 11, color: '#5A6477', letterSpacing: 1 }}>KG</span>
+        <span style={{ fontFamily: 'Bebas Neue', fontWeight: 400, fontSize: 11, color: '#7A8496', letterSpacing: 1 }}>KG</span>
       </div>
 
       <span style={{ fontFamily: 'Oswald', fontWeight: 500, fontSize: 18, color: '#3A4253' }}>×</span>
@@ -130,7 +130,7 @@ function SetRow({ set, idx, onOpenPicker, onToggleDone, onRemoveSet }) {
         }}
       >
         {set.reps !== '' && set.reps !== undefined ? set.reps : '—'}
-        <span style={{ fontFamily: 'Bebas Neue', fontWeight: 400, fontSize: 11, color: '#5A6477', letterSpacing: 1 }}>回</span>
+        <span style={{ fontFamily: 'Bebas Neue', fontWeight: 400, fontSize: 11, color: '#7A8496', letterSpacing: 1 }}>回</span>
       </div>
 
       <button
@@ -139,7 +139,7 @@ function SetRow({ set, idx, onOpenPicker, onToggleDone, onRemoveSet }) {
           width: 40, height: 40, flexShrink: 0,
           background: done ? '#FF6A1A' : 'transparent',
           border: done ? '1px solid #FF6A1A' : '1px solid #2A3142',
-          color: done ? '#0B0D10' : '#5A6477',
+          color: done ? '#0B0D10' : '#7A8496',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           cursor: 'pointer', padding: 0,
         }}
@@ -194,13 +194,13 @@ function ExerciseCard({ ex, expanded, onToggleExpand, onOpenPicker, onAddSet, on
         <div style={{ textAlign: 'right', flexShrink: 0 }}>
           <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 20, color: '#fff', lineHeight: 1 }}>
             {totalVol.toLocaleString()}
-            <span style={{ fontSize: 11, color: '#5A6477', marginLeft: 3 }}>kg</span>
+            <span style={{ fontSize: 11, color: '#7A8496', marginLeft: 3 }}>kg</span>
           </div>
-          <div style={{ fontSize: 10, color: '#5A6477', fontFamily: 'JetBrains Mono', marginTop: 4 }}>
+          <div style={{ fontSize: 10, color: '#7A8496', fontFamily: 'JetBrains Mono', marginTop: 4 }}>
             {doneCount}/{(ex.sets || []).length} SETS
           </div>
         </div>
-        <div style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s', color: '#5A6477', flexShrink: 0 }}>
+        <div style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0)', transition: 'transform 0.2s', color: '#7A8496', flexShrink: 0 }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="square">
             <path d="M6 9l6 6 6-6" />
           </svg>
@@ -224,7 +224,7 @@ function ExerciseCard({ ex, expanded, onToggleExpand, onOpenPicker, onAddSet, on
               onClick={() => onAddSet(ex.id)}
               style={{
                 flex: 1, background: 'transparent', border: '1px dashed #2A3142',
-                color: '#8693AA', fontFamily: 'Bebas Neue', fontSize: 14, letterSpacing: 1.5,
+                color: '#9AA5BA', fontFamily: 'Bebas Neue', fontSize: 14, letterSpacing: 1.5,
                 padding: '12px 0', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
               }}
@@ -235,7 +235,7 @@ function ExerciseCard({ ex, expanded, onToggleExpand, onOpenPicker, onAddSet, on
               onClick={() => onRemove(ex.id)}
               style={{
                 background: 'transparent', border: '1px solid #2A3142',
-                color: '#5A6477', fontFamily: 'Bebas Neue', fontSize: 14, letterSpacing: 1.5,
+                color: '#7A8496', fontFamily: 'Bebas Neue', fontSize: 14, letterSpacing: 1.5,
                 padding: '12px 14px', cursor: 'pointer',
               }}
             >削除</button>
@@ -263,11 +263,11 @@ function PlanBanner({ plan, onLoad }) {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 2, color: '#5BC25B' }}>TODAY'S PLAN</div>
-          <div style={{ fontFamily: 'JetBrains Mono', fontSize: 10, color: '#5A6477' }}>
+          <div style={{ fontFamily: 'JetBrains Mono', fontSize: 10, color: '#7A8496' }}>
             {(plan.exercises || []).length} exercises
           </div>
         </div>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5A6477" strokeWidth="2.4" strokeLinecap="square"
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7A8496" strokeWidth="2.4" strokeLinecap="square"
           style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s' }}>
           <path d="M9 6l6 6-6 6" />
         </svg>
@@ -282,8 +282,8 @@ function PlanBanner({ plan, onLoad }) {
                 padding: '4px 0', borderBottom: '1px solid #1A1F28',
                 fontSize: 12,
               }}>
-                <div style={{ color: '#E5E9F0', fontWeight: 500, flex: 1 }}>{ex.name}</div>
-                <div style={{ fontFamily: 'JetBrains Mono', fontSize: 10, color: '#5A6477' }}>
+                <div style={{ color: '#EEF1F6', fontWeight: 500, flex: 1 }}>{ex.name}</div>
+                <div style={{ fontFamily: 'JetBrains Mono', fontSize: 10, color: '#7A8496' }}>
                   {(ex.sets || []).length}セット
                   {ex.sets?.[0]?.weight ? ` / ${ex.sets[0].weight}kg` : ''}
                   {ex.sets?.[0]?.reps ? ` × ${ex.sets[0].reps}回` : ''}
@@ -543,10 +543,10 @@ export default function RecordTab() {
           display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
           padding: '0 4px 10px',
         }}>
-          <div style={{ fontFamily: 'Bebas Neue', fontSize: 14, letterSpacing: 2, color: '#8693AA' }}>
+          <div style={{ fontFamily: 'Bebas Neue', fontSize: 14, letterSpacing: 2, color: '#9AA5BA' }}>
             TODAY'S WORKOUT
           </div>
-          <div style={{ fontFamily: 'JetBrains Mono', fontSize: 10, color: '#5A6477' }}>
+          <div style={{ fontFamily: 'JetBrains Mono', fontSize: 10, color: '#7A8496' }}>
             {exercises.length} exercises
           </div>
         </div>

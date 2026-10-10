@@ -211,10 +211,10 @@ export async function deleteAllMemories() {
 
 // ---- chat履歴 ----
 // トレーナーを刻印して保存し、トレーナー変更後は旧履歴を返さない
-// （前キャラの人格が会話履歴経由でAIの返答に混ざるのを防ぐ）
+// （前キャラの人格が会話履歴経由でAIの返答に混ざるのを防ぐ）。
+// 刻印のない旧形式はどのトレーナー・モードで生成されたか不明（人格汚染の可能性）のため破棄する
 export async function loadChat(trainer) {
   const data = await load('chat', [])
-  if (Array.isArray(data)) return data // 旧形式（刻印なし）はそのまま返す
   if (data && Array.isArray(data.messages)) {
     if (trainer && data.trainer && data.trainer !== trainer) return []
     return data.messages

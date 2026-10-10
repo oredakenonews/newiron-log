@@ -32,14 +32,14 @@ export default function AddExerciseSheet({ open, userExercises, onClose, onAdd }
           borderBottom: '1px solid #1F242E',
         }}>
           <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 22, letterSpacing: 0.5, color: '#fff' }}>種目を追加</div>
-          <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#5A6477', fontSize: 24, cursor: 'pointer', padding: 0, lineHeight: 1 }}>×</button>
+          <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#7A8496', fontSize: 24, cursor: 'pointer', padding: 0, lineHeight: 1 }}>×</button>
         </div>
         <div style={{ padding: '12px 20px' }}>
           <div style={{
             display: 'flex', alignItems: 'center', gap: 10,
             background: '#0E1118', border: '1px solid #1F242E', padding: '10px 12px',
           }}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5A6477" strokeWidth="2" strokeLinecap="square">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7A8496" strokeWidth="2" strokeLinecap="square">
               <circle cx="11" cy="11" r="7" /><path d="M16.5 16.5L21 21" />
             </svg>
             <input
@@ -56,7 +56,7 @@ export default function AddExerciseSheet({ open, userExercises, onClose, onAdd }
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: '0 20px 12px' }}>
           {filtered.length === 0 && (
-            <p style={{ textAlign: 'center', color: '#5A6477', fontSize: 13, padding: '20px 0' }}>種目が見つかりません</p>
+            <p style={{ textAlign: 'center', color: '#7A8496', fontSize: 13, padding: '20px 0' }}>種目が見つかりません</p>
           )}
           {filtered.map((ex) => (
             <div
@@ -74,7 +74,7 @@ export default function AddExerciseSheet({ open, userExercises, onClose, onAdd }
                 </div>
                 <div style={{ fontSize: 16, fontWeight: 500, color: '#fff' }}>{ex.name}</div>
               </div>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5A6477" strokeWidth="2.4" strokeLinecap="square">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7A8496" strokeWidth="2.4" strokeLinecap="square">
                 <path d="M12 5v14M5 12h14" />
               </svg>
             </div>

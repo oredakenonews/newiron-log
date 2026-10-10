@@ -76,14 +76,14 @@ export default function BottomNav() {
                 display: 'flex', flexDirection: 'column', alignItems: 'center',
                 justifyContent: 'center', height: '100%',
                 gap: 4, paddingTop: 8,
-                color: isActive ? '#FF6A1A' : '#5A6477',
+                color: isActive ? '#FF6A1A' : '#7A8496',
               }}>
-                {tab.icon(isActive ? '#FF6A1A' : '#5A6477')}
+                {tab.icon(isActive ? '#FF6A1A' : '#7A8496')}
                 <span style={{
                   fontSize: 10,
                   fontFamily: '"Noto Sans JP", system-ui',
                   fontWeight: isActive ? 700 : 500,
-                  color: isActive ? '#FF6A1A' : '#5A6477',
+                  color: isActive ? '#FF6A1A' : '#7A8496',
                 }}>{tab.label}</span>
               </div>
             </>

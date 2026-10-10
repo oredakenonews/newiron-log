@@ -35,7 +35,7 @@ function MiniBar({ values, max }) {
         return (
           <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
             <div style={{ width: '100%', height: h, background: isToday ? '#FF6A1A' : (v > 0 ? '#2A3142' : '#181C24') }} />
-            <div style={{ fontSize: 8, fontFamily: 'JetBrains Mono', color: isToday ? '#FF6A1A' : '#5A6477' }}>
+            <div style={{ fontSize: 8, fontFamily: 'JetBrains Mono', color: isToday ? '#FF6A1A' : '#7A8496' }}>
               {['月', '火', '水', '木', '金', '土', '日'][i]}
             </div>
           </div>
@@ -72,8 +72,8 @@ function HistoryRow({ session, isToday, onClick }) {
       )}
       <div style={{ width: 56, flexShrink: 0, borderRight: '1px solid #1F242E', paddingRight: 14 }}>
         <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 28, color: '#fff', lineHeight: 1 }}>{day}</div>
-        <div style={{ fontFamily: 'Bebas Neue', fontSize: 12, color: '#5A6477', letterSpacing: 1, marginTop: 2 }}>{monthStr}</div>
-        <div style={{ fontSize: 10, color: isSun ? '#FF6A1A' : '#8693AA', marginTop: 4, fontWeight: 700 }}>
+        <div style={{ fontFamily: 'Bebas Neue', fontSize: 12, color: '#7A8496', letterSpacing: 1, marginTop: 2 }}>{monthStr}</div>
+        <div style={{ fontSize: 10, color: isSun ? '#FF6A1A' : '#9AA5BA', marginTop: 4, fontWeight: 700 }}>
           {dayLabel}曜日
         </div>
       </div>
@@ -91,7 +91,7 @@ function HistoryRow({ session, isToday, onClick }) {
         </div>
         <div style={{
           display: 'flex', gap: 14, marginBottom: 6, flexWrap: 'wrap',
-          fontFamily: 'JetBrains Mono', fontSize: 11, color: '#8693AA',
+          fontFamily: 'JetBrains Mono', fontSize: 11, color: '#9AA5BA',
         }}>
           <span style={{ display: 'inline-flex', alignItems: 'baseline', gap: 3 }}>
             <span style={{ color: '#fff', fontWeight: 700, fontSize: 13, fontFamily: 'Oswald' }}>{volume.toLocaleString()}</span>kg
@@ -104,7 +104,7 @@ function HistoryRow({ session, isToday, onClick }) {
           </span>
         </div>
         {highlights.map((hl, i) => (
-          <div key={i} style={{ fontSize: 11, color: '#8693AA', display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+          <div key={i} style={{ fontSize: 11, color: '#9AA5BA', display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
             <div style={{ width: 4, height: 4, background: '#3A4253' }} />
             {hl}
           </div>
@@ -211,14 +211,14 @@ function SessionDetail({ session, onClose, onSessionUpdated }) {
         display: 'flex', alignItems: 'center', gap: 12,
         background: '#13171F',
       }}>
-        <button onClick={isEditing ? cancelEdit : onClose} style={{ background: 'none', border: 'none', color: '#5A6477', cursor: 'pointer', padding: 0, flexShrink: 0 }}>
+        <button onClick={isEditing ? cancelEdit : onClose} style={{ background: 'none', border: 'none', color: '#7A8496', cursor: 'pointer', padding: 0, flexShrink: 0 }}>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="square">
             <path d="M15 18l-6-6 6-6" />
           </svg>
         </button>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 20, color: '#fff' }}>{session.date}</div>
-          <div style={{ fontFamily: 'JetBrains Mono', fontSize: 11, color: '#5A6477', marginTop: 2 }}>
+          <div style={{ fontFamily: 'JetBrains Mono', fontSize: 11, color: '#7A8496', marginTop: 2 }}>
             {volume.toLocaleString()}kg · {(session.exercises || []).length} exercises
           </div>
         </div>
@@ -227,7 +227,7 @@ function SessionDetail({ session, onClose, onSessionUpdated }) {
             onClick={startEdit}
             style={{
               background: 'transparent', border: '1px solid #1F242E',
-              color: '#8693AA', fontFamily: 'Bebas Neue', fontSize: 12, letterSpacing: 1,
+              color: '#9AA5BA', fontFamily: 'Bebas Neue', fontSize: 12, letterSpacing: 1,
               padding: '6px 12px', cursor: 'pointer', flexShrink: 0,
             }}
           >編集</button>
@@ -237,7 +237,7 @@ function SessionDetail({ session, onClose, onSessionUpdated }) {
               onClick={cancelEdit}
               style={{
                 background: 'transparent', border: '1px solid #2A3142',
-                color: '#8693AA', fontFamily: 'Bebas Neue', fontSize: 12, letterSpacing: 1,
+                color: '#9AA5BA', fontFamily: 'Bebas Neue', fontSize: 12, letterSpacing: 1,
                 padding: '6px 12px', cursor: 'pointer',
               }}
             >キャンセル</button>
@@ -268,14 +268,14 @@ function SessionDetail({ session, onClose, onSessionUpdated }) {
                 {isEditing && (
                   <button
                     onClick={() => removeExercise(exIdx)}
-                    style={{ background: 'none', border: 'none', color: '#5A6477', cursor: 'pointer', padding: '4px 6px', fontSize: 16, lineHeight: 1, flexShrink: 0 }}
+                    style={{ background: 'none', border: 'none', color: '#7A8496', cursor: 'pointer', padding: '4px 6px', fontSize: 16, lineHeight: 1, flexShrink: 0 }}
                   >×</button>
                 )}
               </div>
               <div style={{ padding: '8px 16px 12px' }}>
                 {(ex.sets || []).map((s, setIdx) => (
                   <div key={setIdx} style={{ display: 'flex', gap: 8, padding: '6px 0', borderBottom: '1px solid #1A1F28', alignItems: 'center' }}>
-                    <div style={{ width: 22, fontFamily: 'Oswald', fontSize: 13, color: s.done ? '#5BC25B' : '#8693AA', fontWeight: 700, flexShrink: 0 }}>{setIdx + 1}</div>
+                    <div style={{ width: 22, fontFamily: 'Oswald', fontSize: 13, color: s.done ? '#5BC25B' : '#9AA5BA', fontWeight: 700, flexShrink: 0 }}>{setIdx + 1}</div>
 
                     {isEditing ? (
                       <>
@@ -288,7 +288,7 @@ function SessionDetail({ session, onClose, onSessionUpdated }) {
                             fontFamily: 'Oswald', fontWeight: 700, fontSize: 16, color: '#fff',
                           }}
                         >
-                          {s.weight || '—'}<span style={{ fontSize: 10, color: '#5A6477' }}>kg</span>
+                          {s.weight || '—'}<span style={{ fontSize: 10, color: '#7A8496' }}>kg</span>
                         </div>
                         <div style={{ color: '#3A4253', fontFamily: 'Oswald', fontSize: 16, flexShrink: 0 }}>×</div>
                         <div
@@ -300,21 +300,21 @@ function SessionDetail({ session, onClose, onSessionUpdated }) {
                             fontFamily: 'Oswald', fontWeight: 700, fontSize: 16, color: '#fff',
                           }}
                         >
-                          {s.reps || '—'}<span style={{ fontSize: 10, color: '#5A6477' }}>回</span>
+                          {s.reps || '—'}<span style={{ fontSize: 10, color: '#7A8496' }}>回</span>
                         </div>
                         <button
                           onClick={() => removeSet(exIdx, setIdx)}
-                          style={{ background: 'none', border: 'none', color: '#5A6477', cursor: 'pointer', padding: '4px 6px', fontSize: 16, lineHeight: 1, flexShrink: 0 }}
+                          style={{ background: 'none', border: 'none', color: '#7A8496', cursor: 'pointer', padding: '4px 6px', fontSize: 16, lineHeight: 1, flexShrink: 0 }}
                         >×</button>
                       </>
                     ) : (
                       <>
                         <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 16, color: '#fff' }}>
-                          {s.weight}<span style={{ fontSize: 10, color: '#5A6477', marginLeft: 2 }}>kg</span>
+                          {s.weight}<span style={{ fontSize: 10, color: '#7A8496', marginLeft: 2 }}>kg</span>
                         </div>
                         <div style={{ color: '#3A4253', fontFamily: 'Oswald', fontSize: 16 }}>×</div>
                         <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 16, color: '#fff' }}>
-                          {s.reps}<span style={{ fontSize: 10, color: '#5A6477', marginLeft: 2 }}>回</span>
+                          {s.reps}<span style={{ fontSize: 10, color: '#7A8496', marginLeft: 2 }}>回</span>
                         </div>
                         {s.done && (
                           <div style={{ marginLeft: 'auto', color: '#5BC25B' }}>
@@ -334,7 +334,7 @@ function SessionDetail({ session, onClose, onSessionUpdated }) {
                     style={{
                       width: '100%', marginTop: 8,
                       background: 'transparent', border: '1px dashed #2A3142',
-                      color: '#8693AA', fontFamily: 'Bebas Neue', fontSize: 13, letterSpacing: 1.5,
+                      color: '#9AA5BA', fontFamily: 'Bebas Neue', fontSize: 13, letterSpacing: 1.5,
                       padding: '8px 0', cursor: 'pointer',
                     }}
                   >+ SET 追加</button>
@@ -349,7 +349,7 @@ function SessionDetail({ session, onClose, onSessionUpdated }) {
               style={{
                 width: '100%', padding: '12px 0',
                 background: 'transparent', border: '1px dashed #2A3142',
-                color: '#8693AA', fontFamily: 'Bebas Neue', fontSize: 14, letterSpacing: 2,
+                color: '#9AA5BA', fontFamily: 'Bebas Neue', fontSize: 14, letterSpacing: 2,
                 cursor: 'pointer', marginBottom: 14,
               }}
             >+ 種目を追加</button>
@@ -358,7 +358,7 @@ function SessionDetail({ session, onClose, onSessionUpdated }) {
           {session.memo && !isEditing && (
             <div style={{ background: '#13171F', border: '1px solid #1F242E', padding: '14px 16px' }}>
               <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1.5, color: '#FF6A1A', marginBottom: 8 }}>MEMO</div>
-              <p style={{ fontSize: 14, color: '#B5BECF', lineHeight: 1.6, margin: 0 }}>{session.memo}</p>
+              <p style={{ fontSize: 14, color: '#C3CCDC', lineHeight: 1.6, margin: 0 }}>{session.memo}</p>
             </div>
           )}
         </div>
@@ -436,12 +436,12 @@ export default function HistoryTab() {
             <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2, color: '#FF6A1A' }}>THIS WEEK</div>
             <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 32, color: '#fff', lineHeight: 1, marginTop: 2 }}>
               {thisWeekTotal.toLocaleString()}
-              <span style={{ fontSize: 14, color: '#8693AA', marginLeft: 4 }}>KG</span>
+              <span style={{ fontSize: 14, color: '#9AA5BA', marginLeft: 4 }}>KG</span>
             </div>
           </div>
           <div style={{ textAlign: 'right' }}>
-            <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1.5, color: '#5A6477' }}>SESSIONS</div>
-            <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 22, color: '#E5E9F0' }}>
+            <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1.5, color: '#7A8496' }}>SESSIONS</div>
+            <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 22, color: '#EEF1F6' }}>
               {weekVolumes.filter(v => v > 0).length}
             </div>
           </div>
@@ -468,7 +468,7 @@ export default function HistoryTab() {
             style={{
               padding: '6px 12px', flexShrink: 0,
               background: selectedFilter === f ? '#fff' : '#13171F',
-              color: selectedFilter === f ? '#0B0D10' : '#8693AA',
+              color: selectedFilter === f ? '#0B0D10' : '#9AA5BA',
               fontFamily: 'Bebas Neue', fontSize: 13, letterSpacing: 1,
               border: selectedFilter === f ? 'none' : '1px solid #1F242E',
               cursor: 'pointer',
@@ -479,7 +479,7 @@ export default function HistoryTab() {
 
       <div style={{ paddingBottom: 20 }}>
         {filteredSessions.length === 0 && (
-          <p style={{ textAlign: 'center', color: '#5A6477', fontSize: 13, padding: '40px 0' }}>記録がありません</p>
+          <p style={{ textAlign: 'center', color: '#7A8496', fontSize: 13, padding: '40px 0' }}>記録がありません</p>
         )}
         {filteredSessions.map((session, idx) => {
           const isLeg = (session.exercises || []).some(ex => getCat(ex.name) === 'LEGS')

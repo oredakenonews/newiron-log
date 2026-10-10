@@ -178,7 +178,7 @@ export default function OnboardingChat() {
         <img src={RYOTA_IMG} alt="RYOTA" className="w-10 h-10 object-contain" style={{ background: '#13171F' }} />
         <div>
           <p className="font-bebas text-lg" style={{ color: '#FF6A1A' }}>RYOTA</p>
-          <p className="text-xs" style={{ color: '#8693AA' }}>カウンセリング中</p>
+          <p className="text-xs" style={{ color: '#9AA5BA' }}>カウンセリング中</p>
         </div>
       </div>
 
@@ -193,7 +193,7 @@ export default function OnboardingChat() {
               className="max-w-[75%] px-4 py-3 text-sm whitespace-pre-line leading-relaxed"
               style={{
                 background: msg.type === 'user' ? '#FF6A1A' : '#13171F',
-                color: '#E5E9F0',
+                color: '#EEF1F6',
                               }}
             >
               {msg.text}
@@ -207,7 +207,7 @@ export default function OnboardingChat() {
             <div className="px-4 py-3" style={{ background: '#13171F', borderRadius: 0 }}>
               <div className="flex gap-1">
                 {[0, 1, 2].map(i => (
-                  <div key={i} className="w-2 h-2 animate-bounce" style={{ background: '#8693AA', animationDelay: `${i * 0.2}s` }} />
+                  <div key={i} className="w-2 h-2 animate-bounce" style={{ background: '#9AA5BA', animationDelay: `${i * 0.2}s` }} />
                 ))}
               </div>
             </div>
@@ -225,7 +225,7 @@ export default function OnboardingChat() {
                 key={i}
                 onClick={() => handleAnswer(opt)}
                 className="w-full py-3 px-4 text-sm text-left"
-                style={{ background: '#13171F', border: '1px solid #1F242E', color: '#E5E9F0' }}
+                style={{ background: '#13171F', border: '1px solid #1F242E', color: '#EEF1F6' }}
               >
                 {opt.label}
               </button>

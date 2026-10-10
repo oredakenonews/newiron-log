@@ -34,16 +34,11 @@ export default function TopBar() {
           }}>IRON LOG</div>
           <div style={{
             fontFamily: 'Bebas Neue', fontSize: 9, letterSpacing: 2,
-            color: '#5A6477', marginTop: 2,
+            color: '#7A8496', marginTop: 2,
           }}>{en}</div>
         </div>
       </div>
-      <div style={{
-        fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1.5,
-        color: '#FF6A1A', padding: '4px 8px',
-        border: '1px solid #2D1F12',
-        background: 'rgba(255,106,26,0.08)',
-      }}>FREE</div>
+      {/* プラン表記はフリーミアム実装時に再設計する（散在FBにより撤去） */}
     </div>
   )
 }

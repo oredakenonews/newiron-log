@@ -186,12 +186,12 @@ function CoachStrip({ message, sub, action, onActionClick, onOpenChat }) {
           }}>{trainerName}</div>
           {sub && (
             <div style={{
-              fontFamily: 'JetBrains Mono', fontSize: 9, color: '#5A6477',
+              fontFamily: 'JetBrains Mono', fontSize: 9, color: '#7A8496',
             }}>· {sub}</div>
           )}
         </div>
         <div style={{
-          fontSize: 13, lineHeight: 1.55, color: '#E5E9F0',
+          fontSize: 14, lineHeight: 1.55, color: '#EEF1F6',
           fontWeight: 500,
         }}>{message}</div>
         {action && (
@@ -216,7 +216,7 @@ function CoachQuote({ text }) {
     <div style={{
       display: 'flex', alignItems: 'flex-start', gap: 8,
       marginTop: 8,
-      fontSize: 12, color: '#B5BECF',
+      fontSize: 13, color: '#C3CCDC',
       lineHeight: 1.55,
     }}>
       <CoachAvatarShared size={32} tone={coach.tone} letter={coach.letter} />

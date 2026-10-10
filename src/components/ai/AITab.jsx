@@ -180,7 +180,7 @@ export default function AITab() {
               background: '#13171F', border: '1px solid #1F242E',
               borderLeft: `2px solid ${accent}`,
               padding: '9px 12px',
-              fontSize: 12, lineHeight: 1.6, color: '#E5E9F0',
+              fontSize: 13, lineHeight: 1.6, color: '#EEF1F6',
             }}>
               {greetingText}
             </div>
@@ -211,7 +211,7 @@ export default function AITab() {
 
         {messages.length === 0 && !isLoading && (
           <div style={{ marginBottom: 8 }}>
-            <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 2, color: '#5A6477', marginBottom: 8 }}>
+            <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 2, color: '#7A8496', marginBottom: 8 }}>
               QUICK START
             </div>
             {QUICK_PROMPTS.map((q, i) => (
@@ -225,7 +225,7 @@ export default function AITab() {
                   cursor: 'pointer',
                 }}
               >
-                <span style={{ fontSize: 13, color: '#B5BECF' }}>{q}</span>
+                <span style={{ fontSize: 13, color: '#C3CCDC' }}>{q}</span>
                 <span style={{ color: accent, fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1, flexShrink: 0, marginLeft: 8 }}>ASK →</span>
               </div>
             ))}
@@ -246,10 +246,10 @@ export default function AITab() {
               )}
               <div style={{
                 maxWidth: '75%', padding: '10px 14px',
-                fontSize: 13, lineHeight: 1.7,
+                fontSize: 14, lineHeight: 1.7,
                 ...(msg.role === 'user'
                   ? { background: '#FF6A1A', color: '#0B0D10', fontWeight: 500 }
-                  : { background: '#13171F', border: '1px solid #1F242E', borderLeft: `2px solid ${accent}`, color: '#E5E9F0' }
+                  : { background: '#13171F', border: '1px solid #1F242E', borderLeft: `2px solid ${accent}`, color: '#EEF1F6' }
                 ),
               }}>
                 {msg.content}
@@ -327,7 +327,7 @@ export default function AITab() {
             style={{
               flex: 1, minWidth: 0, padding: '12px 14px',
               background: '#13171F', border: '1px solid #1F242E',
-              color: '#E5E9F0', outline: 'none',
+              color: '#EEF1F6', outline: 'none',
               fontFamily: '"Noto Sans JP", system-ui',
             }}
           />

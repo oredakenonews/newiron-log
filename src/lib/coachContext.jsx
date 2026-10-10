@@ -194,9 +194,9 @@ export function CoachStrip({ message, sub, action, onOpenChat }) {
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
           <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1.5, color: '#fff' }}>{trainerName}</div>
-          {sub && <div style={{ fontFamily: 'JetBrains Mono', fontSize: 9, color: '#5A6477' }}>· {sub}</div>}
+          {sub && <div style={{ fontFamily: 'JetBrains Mono', fontSize: 9, color: '#7A8496' }}>· {sub}</div>}
         </div>
-        <div style={{ fontSize: 13, lineHeight: 1.55, color: '#E5E9F0', fontWeight: 500 }}>{message}</div>
+        <div style={{ fontSize: 14, lineHeight: 1.55, color: '#EEF1F6', fontWeight: 500 }}>{message}</div>
         {action && (
           <div
             onClick={e => { e.stopPropagation(); onOpenChat?.() }}
@@ -213,7 +213,7 @@ export function CoachQuote({ text }) {
   return (
     <div style={{
       display: 'flex', alignItems: 'flex-start', gap: 8,
-      marginTop: 8, fontSize: 12, color: '#B5BECF', lineHeight: 1.55,
+      marginTop: 8, fontSize: 13, color: '#C3CCDC', lineHeight: 1.55,
     }}>
       <CoachAvatarShared size={32} tone={coach.tone} letter={coach.letter} img={trainerImg} />
       <div style={{ flex: 1, borderLeft: `2px solid ${coach.tone}`, paddingLeft: 10, paddingTop: 2 }}>

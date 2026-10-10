@@ -37,7 +37,7 @@ function VolumeHeader({ volume, sets, exercises, duration }) {
           color: '#FF6A1A',
         }}>TODAY'S VOLUME</div>
         <div style={{
-          fontFamily: 'JetBrains Mono', fontSize: 11, color: '#5A6477',
+          fontFamily: 'JetBrains Mono', fontSize: 11, color: '#7A8496',
           letterSpacing: 0.5,
         }}>2026.05.08 / 木</div>
       </div>
@@ -50,7 +50,7 @@ function VolumeHeader({ volume, sets, exercises, duration }) {
           color: '#fff', letterSpacing: -1,
         }}>{volume.toLocaleString()}</div>
         <div style={{
-          fontFamily: 'Oswald', fontWeight: 500, fontSize: 22, color: '#8693AA',
+          fontFamily: 'Oswald', fontWeight: 500, fontSize: 22, color: '#9AA5BA',
           letterSpacing: 1,
         }}>KG</div>
       </div>
@@ -67,12 +67,12 @@ function VolumeHeader({ volume, sets, exercises, duration }) {
             borderLeft: i === 0 ? 'none' : '1px solid #1F242E',
           }}>
             <div style={{
-              fontSize: 10, color: '#5A6477', letterSpacing: 1.5,
+              fontSize: 10, color: '#7A8496', letterSpacing: 1.5,
               fontFamily: 'Bebas Neue', marginBottom: 2,
             }}>{label}</div>
             <div style={{
               fontFamily: 'Oswald', fontWeight: 600, fontSize: 22,
-              color: '#E5E9F0',
+              color: '#EEF1F6',
             }}>{val}</div>
           </div>
         ))}
@@ -109,13 +109,13 @@ function SetRow({ set, idx, onOpenPicker, onComplete, onRemoveSet }) {
         background: done ? '#1F2D1F' : '#181C24',
         border: done ? '1px solid #2C5A2C' : '1px solid #252B36',
         fontFamily: 'Oswald', fontWeight: 700, fontSize: 13,
-        color: done ? '#5BC25B' : '#8693AA',
+        color: done ? '#5BC25B' : '#9AA5BA',
       }}>{idx + 1}</div>
       <div onClick={() => onOpenPicker(idx)} style={cellStyle(false)}>
         {set.weight}
         <span style={{
           fontFamily: 'Bebas Neue', fontWeight: 400, fontSize: 11,
-          color: '#5A6477', letterSpacing: 1,
+          color: '#7A8496', letterSpacing: 1,
         }}>KG</span>
       </div>
       <span style={dotStyle}>×</span>
@@ -123,7 +123,7 @@ function SetRow({ set, idx, onOpenPicker, onComplete, onRemoveSet }) {
         {set.reps}
         <span style={{
           fontFamily: 'Bebas Neue', fontWeight: 400, fontSize: 11,
-          color: '#5A6477', letterSpacing: 1,
+          color: '#7A8496', letterSpacing: 1,
         }}>回</span>
       </div>
       <button
@@ -132,7 +132,7 @@ function SetRow({ set, idx, onOpenPicker, onComplete, onRemoveSet }) {
           width: 40, height: 40, flexShrink: 0,
           background: done ? '#FF6A1A' : 'transparent',
           border: done ? '1px solid #FF6A1A' : '1px solid #2A3142',
-          color: done ? '#0B0D10' : '#5A6477',
+          color: done ? '#0B0D10' : '#7A8496',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           cursor: 'pointer', padding: 0,
         }}
@@ -172,7 +172,7 @@ const inputStyle = ({ flex = 1, align = 'left' } = {}) => ({
   outline: 'none',
 });
 const unitStyle = {
-  fontFamily: 'Bebas Neue', fontSize: 13, color: '#5A6477',
+  fontFamily: 'Bebas Neue', fontSize: 13, color: '#7A8496',
   letterSpacing: 1, width: 14,
 };
 const dotStyle = {
@@ -217,16 +217,16 @@ function ExerciseCard({ ex, onOpenPicker, onAddSet, onToggleSetDone, onRemoveSet
             fontFamily: 'Oswald', fontWeight: 700, fontSize: 20, color: '#fff',
             lineHeight: 1,
           }}>{totalVol.toLocaleString()}<span style={{
-            fontSize: 11, color: '#5A6477', marginLeft: 3,
+            fontSize: 11, color: '#7A8496', marginLeft: 3,
           }}>kg</span></div>
           <div style={{
-            fontSize: 10, color: '#5A6477', fontFamily: 'JetBrains Mono',
+            fontSize: 10, color: '#7A8496', fontFamily: 'JetBrains Mono',
             marginTop: 4,
           }}>{doneCount}/{ex.sets.length} SETS</div>
         </div>
         <div style={{
           transform: expanded ? 'rotate(180deg)' : 'rotate(0)',
-          transition: 'transform 0.2s', color: '#5A6477',
+          transition: 'transform 0.2s', color: '#7A8496',
         }}>
           <Ico.ChevD s={14} />
         </div>
@@ -250,7 +250,7 @@ function ExerciseCard({ ex, onOpenPicker, onAddSet, onToggleSetDone, onRemoveSet
                 flex: 1,
                 background: 'transparent',
                 border: '1px dashed #2A3142',
-                color: '#8693AA',
+                color: '#9AA5BA',
                 fontFamily: 'Bebas Neue',
                 fontSize: 14, letterSpacing: 1.5,
                 padding: '10px 0', cursor: 'pointer',
@@ -264,7 +264,7 @@ function ExerciseCard({ ex, onOpenPicker, onAddSet, onToggleSetDone, onRemoveSet
               style={{
                 background: 'transparent',
                 border: '1px solid #2A3142',
-                color: '#5A6477',
+                color: '#7A8496',
                 fontFamily: 'Bebas Neue', fontSize: 14, letterSpacing: 1.5,
                 padding: '10px 14px', cursor: 'pointer',
               }}
@@ -307,7 +307,7 @@ function AddExerciseSheet({ open, onClose, onAdd }) {
             letterSpacing: 0.5, color: '#fff',
           }}>種目を追加</div>
           <button onClick={onClose} style={{
-            background: 'transparent', border: 'none', color: '#5A6477',
+            background: 'transparent', border: 'none', color: '#7A8496',
             fontSize: 24, cursor: 'pointer', padding: 0, lineHeight: 1,
           }}>×</button>
         </div>
@@ -317,7 +317,7 @@ function AddExerciseSheet({ open, onClose, onAdd }) {
             background: '#0E1118', border: '1px solid #1F242E',
             padding: '10px 12px',
           }}>
-            <div style={{ color: '#5A6477' }}><Ico.Search s={16} /></div>
+            <div style={{ color: '#7A8496' }}><Ico.Search s={16} /></div>
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -349,7 +349,7 @@ function AddExerciseSheet({ open, onClose, onAdd }) {
                 }}>{p.cat}</div>
                 <div style={{ fontSize: 16, fontWeight: 500, color: '#fff' }}>{p.name}</div>
               </div>
-              <div style={{ color: '#5A6477' }}><Ico.Plus s={18} /></div>
+              <div style={{ color: '#7A8496' }}><Ico.Plus s={18} /></div>
             </div>
           ))}
         </div>
@@ -461,10 +461,10 @@ function RecordScreen() {
         }}>
           <div style={{
             fontFamily: 'Bebas Neue', fontSize: 14, letterSpacing: 2,
-            color: '#8693AA',
+            color: '#9AA5BA',
           }}>WORKOUT — CHEST DAY</div>
           <div style={{
-            fontFamily: 'JetBrains Mono', fontSize: 10, color: '#5A6477',
+            fontFamily: 'JetBrains Mono', fontSize: 10, color: '#7A8496',
           }}>{exercises.length} exercises</div>
         </div>
         {exercises.map(ex => (

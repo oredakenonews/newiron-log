@@ -41,12 +41,12 @@ function FeedTurn({ icon, label, message, metric, unit, accent, big, onAsk }) {
               }}>{metric}</div>
               <div style={{
                 fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1,
-                color: '#5A6477',
+                color: '#7A8496',
               }}>{unit}</div>
             </div>
           )}
           <div style={{
-            fontSize: 13, lineHeight: 1.65, color: '#E5E9F0',
+            fontSize: 13, lineHeight: 1.65, color: '#EEF1F6',
             fontWeight: 500,
           }}>{message}</div>
           {onAsk && (
@@ -119,7 +119,7 @@ function AIScreen() {
               background: '#13171F', border: '1px solid #1F242E',
               borderLeft: `2px solid ${coach.tone}`,
               padding: '9px 12px',
-              fontSize: 12, lineHeight: 1.6, color: '#E5E9F0',
+              fontSize: 13, lineHeight: 1.6, color: '#EEF1F6',
             }}>
               {lines.greeting}
             </div>
@@ -195,7 +195,7 @@ function AIScreen() {
         }} onClick={() => openChat(null)}>
           <CoachAvatarShared size={36} tone={coach.tone} letter={coach.letter} />
           <div style={{
-            flex: 1, fontSize: 12, color: '#8693AA',
+            flex: 1, fontSize: 12, color: '#9AA5BA',
           }}>{trainerName} に質問する...</div>
           <div style={{
             fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1.5,
@@ -214,7 +214,7 @@ function AIScreen() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
             <div style={{ color: '#FF6A1A' }}><Ico.Crown s={13} /></div>
             <div style={{
-              fontSize: 11, color: '#8693AA',
+              fontSize: 11, color: '#9AA5BA',
               whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             }}>
               無料は週3回まで · Pro で質問・プラン無制限

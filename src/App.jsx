@@ -13,7 +13,7 @@ function Loading() {
           <div style={{ width: 32, height: 32, background: '#FF6A1A', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Oswald', fontWeight: 700, fontSize: 18, color: '#0B0D10' }}>IL</div>
           <p style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 28, color: '#fff', letterSpacing: 1, margin: 0 }}>IRON LOG</p>
         </div>
-        <p style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2, color: '#5A6477', margin: 0 }}>LOADING...</p>
+        <p style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2, color: '#7A8496', margin: 0 }}>LOADING...</p>
       </div>
     </div>
   )
