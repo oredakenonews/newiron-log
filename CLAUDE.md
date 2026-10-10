@@ -45,6 +45,7 @@
   - XcodeのApple IDセッションは使わない（CLIから壊れやすく、2026-10-10に実際に壊れていた）
   - App Store Connect: App「AIron.log」登録済み。内部テストグループ「Internal」（全ビルド自動アクセス）にテスター登録済み。初ビルド 1.0(202610101857) 配信済み（2026-10-10）
   - 輸出コンプライアンス: Info.plistに `ITSAppUsesNonExemptEncryption=false` 宣言済み（アップロード毎の質問なし）
+- **フィードバック取り込み: `npm run ios:feedback`**（scripts/testflight-feedback.mjs。TestFlightのコメント・スクショ・クラッシュを `testflight-feedback/`[git管理外] に feedback.md＋画像・ログとして保存。前回比の新着に🆕）
 - シミュレータ実行: `npx cap run ios` または Xcodeで `ios/App/App.xcodeproj` を開く
 - appId: `com.oredakenonews.ironlog` / 表示名: **AIron.log**（com.ironlog.appは他者が登録済みで使用不可だった。アプリ内UIのワードマークはIRON LOGのまま）
 - プラグイン: Haptics（ホイールピッカー・ボタンの触覚FB）/ Keyboard（resize: native）/ StatusBar / SplashScreen
