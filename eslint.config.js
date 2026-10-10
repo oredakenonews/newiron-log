@@ -8,7 +8,13 @@ export default [
   // '**/._*' はexFATボリューム上にmacOSが作るAppleDoubleファイル
   { ignores: ['dist', 'ios', 'node_modules', 'design_handoff_coach_copresence', 'supabase/functions', '**/._*'] },
   {
-    files: ['**/*.{js,jsx}'],
+    // Vercel serverless functions はNode環境
+    files: ['api/**/*.js'],
+    languageOptions: { ecmaVersion: 2023, globals: globals.node, parserOptions: { sourceType: 'module' } },
+    rules: { ...js.configs.recommended.rules },
+  },
+  {
+    files: ['src/**/*.{js,jsx}', '*.{js,jsx}'],
     languageOptions: {
       ecmaVersion: 2023,
       globals: globals.browser,

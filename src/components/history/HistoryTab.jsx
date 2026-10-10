@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
 import { getCategory, FILTER_CATS } from '../../lib/categories'
+import { listSessions, listExercises, updateSessionExercises } from '../../lib/localdb'
 import { localDateStr, getWeekDates } from '../../lib/dates'
 import { hapticSuccess, hapticError } from '../../lib/haptics'
 import WheelPickerSheet from '../shared/WheelPickerSheet'
@@ -130,8 +130,7 @@ function SessionDetail({ session, onClose, onSessionUpdated }) {
 
   useEffect(() => {
     if (user) {
-      supabase.from('user_exercises').select('*').eq('user_id', user.id).order('order')
-        .then(({ data }) => setUserExercises(data || []))
+      listExercises().then(setUserExercises)
     }
   }, [user])
 
@@ -154,15 +153,15 @@ function SessionDetail({ session, onClose, onSessionUpdated }) {
   async function saveEdit() {
     setSaving(true)
     const cleanExercises = editExercises.map(({ _id, ...ex }) => ex)
-    const { error } = await supabase.from('workout_sessions')
-      .update({ exercises: cleanExercises })
-      .eq('id', session.id)
-    setSaving(false)
-    if (error) {
+    try {
+      await updateSessionExercises(session.id, cleanExercises)
+    } catch {
+      setSaving(false)
       hapticError()
-      window.alert('保存に失敗しました。通信環境を確認してください。')
+      window.alert('保存に失敗しました。')
       return
     }
+    setSaving(false)
     hapticSuccess()
     setIsEditing(false)
     onSessionUpdated({ ...session, exercises: cleanExercises })
@@ -412,12 +411,7 @@ export default function HistoryTab() {
   }, [user])
 
   async function loadSessions() {
-    const { data } = await supabase
-      .from('workout_sessions').select('*')
-      .eq('user_id', user.id)
-      .order('date', { ascending: false })
-      .limit(50)
-    setSessions(data || [])
+    setSessions(await listSessions(50))
   }
 
   const weekDates = getWeekDates()

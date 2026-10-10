@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
 import { getCategory } from '../../lib/categories'
+import {
+  listExercises, listSessions, getSessionByDate, upsertSession,
+  getPendingPlan, markPlanDone,
+} from '../../lib/localdb'
 import { localDateStr } from '../../lib/dates'
 import { hapticImpact, hapticSuccess, hapticError } from '../../lib/haptics'
 import WheelPickerSheet from '../shared/WheelPickerSheet'
@@ -353,28 +356,19 @@ export default function RecordTab() {
   }, [exercises, user])
 
   async function loadUserExercises() {
-    const { data } = await supabase
-      .from('user_exercises').select('*').eq('user_id', user.id).order('order')
-    setUserExercises(data || [])
+    setUserExercises(await listExercises())
   }
 
   async function loadTodayPlan() {
-    const { data } = await supabase
-      .from('planned_sessions').select('*')
-      .eq('user_id', user.id).eq('planned_date', localDateStr()).eq('status', 'pending')
-      .order('created_at', { ascending: false }).limit(1).maybeSingle()
-    if (data) setPlannedSession(data)
+    const plan = await getPendingPlan(localDateStr())
+    if (plan) setPlannedSession(plan)
   }
 
   // 直近セッションから種目ごとの前回重量・回数を拾う（新規セットの初期値に使用）
   async function loadLastWeights() {
-    const { data } = await supabase
-      .from('workout_sessions').select('date, exercises')
-      .eq('user_id', user.id)
-      .lt('date', localDateStr())
-      .order('date', { ascending: false }).limit(15)
+    const sessions = (await listSessions(15)).filter(s => s.date < localDateStr())
     const map = {}
-    for (const session of data || []) {
+    for (const session of sessions) {
       for (const ex of session.exercises || []) {
         if (map[ex.name]) continue
         const lastSet = (ex.sets || []).filter(s => parseFloat(s.weight) > 0).pop()
@@ -385,9 +379,7 @@ export default function RecordTab() {
   }
 
   async function loadTodaySession() {
-    const { data } = await supabase
-      .from('workout_sessions').select('*')
-      .eq('user_id', user.id).eq('date', localDateStr()).maybeSingle()
+    const data = await getSessionByDate(localDateStr())
 
     // 未保存の下書きがあればそちらを優先（保存成功時に消しているので、存在＝未保存変更）
     let draft = null
@@ -477,24 +469,15 @@ export default function RecordTab() {
     if (saving) return
     setSaving(true)
     setSaveError('')
-    const payload = {
-      user_id: user.id, date: localDateStr(),
-      exercises: exercises.map(({ id: _id, ...ex }) => ex),
-      cardio: [], memo: '',
-    }
     try {
-      // UNIQUE(user_id, date)制約があるためupsertで1クエリ・レース条件なし
-      const { data: upserted, error } = await supabase
-        .from('workout_sessions')
-        .upsert(payload, { onConflict: 'user_id,date' })
-        .select('id').single()
-      if (error) throw error
-      const sessionId = upserted?.id
+      // v2: 端末内保存（同一日付は上書き）。ネットワーク不要なので即時・確実
+      const session = await upsertSession({
+        date: localDateStr(),
+        exercises: exercises.map(({ id: _id, ...ex }) => ex),
+      })
 
-      if (plannedSession && sessionId) {
-        await supabase.from('planned_sessions')
-          .update({ status: 'done', linked_session_id: sessionId })
-          .eq('id', plannedSession.id)
+      if (plannedSession && session?.id) {
+        await markPlanDone(plannedSession.id, session.id)
         setPlannedSession(null)
       }
 
@@ -505,9 +488,9 @@ export default function RecordTab() {
       setSaved(true)
       setTimeout(() => setSaved(false), 2000)
     } catch {
-      // 失敗時は下書きが残っているので入力は失われない
+      // ストレージ書き込み失敗（容量等）。下書きは残っている
       hapticError()
-      setSaveError('保存に失敗しました。通信環境を確認してください（入力は端末に保持されています）')
+      setSaveError('保存に失敗しました（入力は下書きとして保持されています）')
       setTimeout(() => setSaveError(''), 4000)
     } finally {
       setSaving(false)

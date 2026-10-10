@@ -1,5 +1,4 @@
 import { createContext, useContext, useState, useMemo, useEffect } from 'react'
-import { supabase } from './supabase'
 import { useAuth } from '../hooks/useAuth'
 
 export const COACHES_SHARED = {
@@ -48,7 +47,7 @@ const CoachContext = createContext({
 })
 
 export function CoachProvider({ children }) {
-  const { user, profile } = useAuth()
+  const { profile, saveProfile } = useAuth()
   const [mode, setModeLocal] = useState('spartan')
 
   useEffect(() => {
@@ -57,9 +56,7 @@ export function CoachProvider({ children }) {
 
   async function setMode(newMode) {
     setModeLocal(newMode)
-    if (user) {
-      await supabase.from('profiles').update({ coach_mode: newMode }).eq('id', user.id)
-    }
+    await saveProfile({ coach_mode: newMode })
   }
 
   const trainerImg = TRAINER_IMAGES[profile?.trainer_character] ?? TRAINER_IMAGES.RYOTA
@@ -67,7 +64,7 @@ export function CoachProvider({ children }) {
 
   const value = useMemo(
     () => ({ mode, setMode, coach: COACHES_SHARED[mode] ?? COACHES_SHARED.spartan, trainerImg, trainerName }),
-    [mode, user, trainerImg, trainerName]
+    [mode, trainerImg, trainerName]
   )
 
   return <CoachContext.Provider value={value}>{children}</CoachContext.Provider>

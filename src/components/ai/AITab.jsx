@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
-import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
 import { localDateStr } from '../../lib/dates'
 import { hapticImpact, hapticError } from '../../lib/haptics'
+import { listSessions, addPlan, loadChat, saveChat } from '../../lib/localdb'
+import { sendChat, structurePlan, hasMemoryTrigger, extractAndSaveMemories } from '../../lib/aiClient'
 import { useCoach, CoachAvatarShared, COACHES_SHARED } from '../../lib/coachContext'
 
 const TRAINER_GREETINGS = {
@@ -55,21 +56,12 @@ function ModePill() {
   )
 }
 
-// チャット履歴をアプリ再起動後も保持する（直近30件）
-function chatKey(userId) { return `iron-chat-${userId}` }
-function loadChat(userId) {
-  try {
-    const raw = localStorage.getItem(chatKey(userId))
-    if (raw) return JSON.parse(raw).slice(-30)
-  } catch { /* 壊れた履歴は捨てる */ }
-  return []
-}
-
 export default function AITab() {
   const { user, profile } = useAuth()
   const { coach, mode, trainerImg } = useCoach()
   const [recentWorkouts, setRecentWorkouts] = useState([])
-  const [messages, setMessages] = useState(() => user ? loadChat(user.id) : [])
+  const [messages, setMessages] = useState([])
+  const chatLoadedRef = useRef(false)
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [savingPlanIdx, setSavingPlanIdx] = useState(null)
@@ -81,21 +73,34 @@ export default function AITab() {
   const trainer = profile?.trainer_character || 'RYOTA'
   const accent = coach.tone
 
-  // 履歴の永続化
+  // チャット履歴の復元・永続化（端末内）
   useEffect(() => {
-    if (!user) return
-    try {
-      localStorage.setItem(chatKey(user.id), JSON.stringify(messages.slice(-30)))
-    } catch { /* noop */ }
-  }, [messages, user])
+    loadChat().then(saved => {
+      if (saved.length) setMessages(saved)
+      chatLoadedRef.current = true
+    })
+  }, [])
+
+  useEffect(() => {
+    if (chatLoadedRef.current) saveChat(messages)
+  }, [messages])
 
   useEffect(() => {
     if (user) {
-      supabase.from('workout_sessions').select('date, exercises')
-        .eq('user_id', user.id).order('date', { ascending: false }).limit(12)
-        .then(({ data }) => setRecentWorkouts(data || []))
+      listSessions(12).then(list =>
+        setRecentWorkouts(list.map(s => ({ date: s.date, exercises: s.exercises })))
+      )
     }
   }, [user])
+
+  // 記録保存時に直近記録を更新（AIの文脈を最新に保つ）
+  useEffect(() => {
+    const h = () => listSessions(12).then(list =>
+      setRecentWorkouts(list.map(s => ({ date: s.date, exercises: s.exercises })))
+    )
+    window.addEventListener('iron-session-saved', h)
+    return () => window.removeEventListener('iron-session-saved', h)
+  }, [])
 
   useEffect(() => {
     const h = () => inputRef.current?.focus()
@@ -115,11 +120,14 @@ export default function AITab() {
     setMessages(next)
     setIsLoading(true)
     try {
-      const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: { message: msg, history: messages.slice(-10), profile, recentWorkouts, coachMode: mode },
+      const content = await sendChat({
+        message: msg, history: messages.slice(-10), profile, recentWorkouts, coachMode: mode,
       })
-      if (error) throw error
-      setMessages(prev => [...prev, { role: 'assistant', content: data.content }])
+      setMessages(prev => [...prev, { role: 'assistant', content }])
+      // 長期記憶の抽出・保存はバックグラウンド（UIを待たせない）
+      if (hasMemoryTrigger(msg)) {
+        extractAndSaveMemories({ message: msg, assistantResponse: content })
+      }
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: 'エラーが発生しました。もう一度お試しください。' }])
     } finally {
@@ -130,22 +138,12 @@ export default function AITab() {
   async function savePlan(content, idx) {
     setSavingPlanIdx(idx)
     try {
-      const { data, error } = await supabase.functions.invoke('ai-chat', {
-        body: { message: content, history: [], profile, recentWorkouts, coachMode: mode, format: 'structure' },
-      })
-      if (error) throw error
-      const plan = JSON.parse(data.content)
+      const plan = await structurePlan({ message: content, profile, coachMode: mode })
       if (!plan.exercises?.length) throw new Error('exercises empty')
       // AIが返す日付が欠落・過去日の場合は今日に補正
       const today = localDateStr()
       const plannedDate = (plan.planned_date && plan.planned_date >= today) ? plan.planned_date : today
-      const { error: insErr } = await supabase.from('planned_sessions').insert({
-        user_id: profile.id,
-        planned_date: plannedDate,
-        exercises: plan.exercises,
-        cardio: [], memo: '', status: 'pending',
-      })
-      if (insErr) throw insErr
+      await addPlan({ planned_date: plannedDate, exercises: plan.exercises })
       hapticImpact()
       setSavedPlanIdxes(prev => new Set([...prev, idx]))
       window.dispatchEvent(new CustomEvent('iron-plan-saved'))

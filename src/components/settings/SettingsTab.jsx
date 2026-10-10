@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
 import { useCoach } from '../../lib/coachContext'
 import { getCategory } from '../../lib/categories'
 import { hapticSuccess, hapticError } from '../../lib/haptics'
+import {
+  listExercises, addExerciseDef, removeExerciseDef,
+  listMemories, deleteMemory as dbDeleteMemory, deleteAllMemories as dbDeleteAllMemories,
+  exportAll,
+} from '../../lib/localdb'
 
 const PURPOSES = [
   { value: 'muscle', label: '筋肥大' },
@@ -37,7 +41,7 @@ function Section({ title, children }) {
 }
 
 export default function SettingsTab() {
-  const { user, profile, refreshProfile } = useAuth()
+  const { user, profile, saveProfile } = useAuth()
   // コーチモードは共有Contextで管理（AIタブのModePillと同一ソース）。
   // 旧実装はformに持っていたため、AIタブで切替→設定で保存すると古い値で巻き戻るバグがあった。
   const { mode, setMode } = useCoach()
@@ -78,54 +82,45 @@ export default function SettingsTab() {
   }, [user, activeSection])
 
   async function loadMemories() {
-    const now = new Date().toISOString()
-    const { data } = await supabase
-      .from('ai_memories')
-      .select('id, memory_type, content')
-      .eq('user_id', user.id)
-      .or(`expires_at.is.null,expires_at.gt.${now}`)
-      .order('created_at', { ascending: false })
-    setMemories(data || [])
+    setMemories(await listMemories())
   }
 
   async function deleteMemory(id) {
     setDeletingMemoryId(id)
-    const { error } = await supabase.from('ai_memories').delete().eq('id', id)
-    if (!error) setMemories(prev => prev.filter(m => m.id !== id))
+    await dbDeleteMemory(id)
+    setMemories(prev => prev.filter(m => m.id !== id))
     setDeletingMemoryId(null)
   }
 
   async function deleteAllMemories() {
     if (!window.confirm('AIの記憶をすべて削除しますか？この操作は取り消せません。')) return
-    const { error } = await supabase.from('ai_memories').delete().eq('user_id', user.id)
-    if (!error) setMemories([])
+    await dbDeleteAllMemories()
+    setMemories([])
   }
 
   async function loadExercises() {
-    const { data } = await supabase.from('user_exercises').select('*').eq('user_id', user.id).order('order')
-    setExercises(data || [])
+    setExercises(await listExercises())
   }
 
-  async function saveProfile() {
+  async function saveProfileForm() {
     setSaving(true)
-    const { error } = await supabase.from('profiles').update({
-      height_cm: form.height_cm ? parseFloat(form.height_cm) : null,
-      age: form.age ? parseInt(form.age) : null,
-      gender: form.gender || null,
-      current_weight_kg: form.current_weight_kg ? parseFloat(form.current_weight_kg) : null,
-      goal_weight_kg: form.goal_weight_kg ? parseFloat(form.goal_weight_kg) : null,
-      training_purpose: form.training_purpose || null,
-      trainer_character: form.trainer_character,
-      coach_notes: form.coach_notes || null,
-      updated_at: new Date().toISOString(),
-    }).eq('id', user.id)
-    if (error) {
+    try {
+      await saveProfile({
+        height_cm: form.height_cm ? parseFloat(form.height_cm) : null,
+        age: form.age ? parseInt(form.age) : null,
+        gender: form.gender || null,
+        current_weight_kg: form.current_weight_kg ? parseFloat(form.current_weight_kg) : null,
+        goal_weight_kg: form.goal_weight_kg ? parseFloat(form.goal_weight_kg) : null,
+        training_purpose: form.training_purpose || null,
+        trainer_character: form.trainer_character,
+        coach_notes: form.coach_notes || null,
+      })
+    } catch {
       setSaving(false)
       hapticError()
-      window.alert('保存に失敗しました。通信環境を確認してください。')
+      window.alert('保存に失敗しました。')
       return
     }
-    await refreshProfile()
     setSaving(false)
     hapticSuccess()
     setSaved(true)
@@ -134,25 +129,31 @@ export default function SettingsTab() {
 
   async function addExercise() {
     if (!newExName.trim()) return
-    const { data } = await supabase.from('user_exercises').insert({
-      user_id: user.id, name: newExName.trim(), order: exercises.length,
-    }).select().single()
-    if (data) setExercises(prev => [...prev, data])
+    const ex = await addExerciseDef(newExName.trim())
+    setExercises(prev => [...prev, ex])
     setNewExName('')
   }
 
   async function deleteExercise(id) {
     const ex = exercises.find(e => e.id === id)
     if (!window.confirm(`「${ex?.name}」を種目リストから削除しますか？`)) return
-    const { error } = await supabase.from('user_exercises').delete().eq('id', id)
-    if (!error) setExercises(prev => prev.filter(e => e.id !== id))
+    await removeExerciseDef(id)
+    setExercises(prev => prev.filter(e => e.id !== id))
   }
 
-  async function handleSignOut() {
-    await supabase.auth.signOut()
+  // 全データをJSONでエクスポート（機種変更・バックアップ用）
+  async function handleExport() {
+    const data = await exportAll()
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `ironlog-backup-${new Date().toISOString().split('T')[0]}.json`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
-  const username = profile?.display_name || user?.email?.split('@')[0]?.toUpperCase() || 'USER'
+  const username = profile?.display_name || 'YOU'
   const initial = username[0] || 'U'
 
   const inputStyle = {
@@ -268,7 +269,7 @@ export default function SettingsTab() {
           </Section>
 
           <button
-            onClick={saveProfile}
+            onClick={saveProfileForm}
             disabled={saving}
             style={{
               width: '100%', padding: '14px 0',
@@ -406,7 +407,7 @@ export default function SettingsTab() {
             ))}
           </div>
           <button
-            onClick={saveProfile}
+            onClick={saveProfileForm}
             disabled={saving}
             style={{
               width: '100%', padding: '14px 0',
@@ -480,14 +481,14 @@ export default function SettingsTab() {
       {/* logout */}
       <div style={{ padding: '0 14px', marginTop: 24 }}>
         <button
-          onClick={handleSignOut}
+          onClick={handleExport}
           style={{
             width: '100%', padding: '14px 0',
             background: 'transparent', border: '1px solid #1F242E',
             color: '#5A6477', fontFamily: 'Bebas Neue', fontSize: 14, letterSpacing: 1.5,
             cursor: 'pointer',
           }}
-        >ログアウト</button>
+        >データをエクスポート（JSON）</button>
       </div>
     </div>
   )

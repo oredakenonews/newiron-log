@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
+import { listExercises, addExerciseDefs } from '../../lib/localdb'
 
 const RYOTA_IMG = '/gazou/ryota_bu.png'
 
@@ -79,7 +79,7 @@ const DEFAULT_EXERCISES = [
 ]
 
 export default function OnboardingChat() {
-  const { user, refreshProfile } = useAuth()
+  const { saveProfile } = useAuth()
   const navigate = useNavigate()
   const [step, setStep] = useState(0)
   const [messages, setMessages] = useState([])
@@ -144,75 +144,28 @@ export default function OnboardingChat() {
         setFinished(true)
       }, 1200)
 
-      // Supabaseに保存
-      const purposeMap = {
-        muscle: '筋肥大',
-        diet: 'ダイエット',
-        strength: '筋力向上',
-        health: '健康維持',
-        sport: 'スポーツ強化',
+      // ローカル保存（v2: サーバ不要・失敗しない）
+      const existing = await listExercises()
+      if (existing.length === 0) {
+        await addExerciseDefs(DEFAULT_EXERCISES)
       }
-      const levelMap = {
-        beginner: 'beginner',
-        intermediate: 'intermediate',
-        advanced: 'advanced',
-      }
-
-      try {
-        // 先にデフォルト種目を登録し、成功してからonboarding_doneを立てる
-        // （逆順だと種目登録失敗時に空の状態でオンボーディングが完了してしまう）
-        const { count } = await supabase
-          .from('user_exercises')
-          .select('id', { count: 'exact', head: true })
-          .eq('user_id', user.id)
-
-        if (!count) {
-          const { error: exErr } = await supabase.from('user_exercises').insert(
-            DEFAULT_EXERCISES.map((ex, i) => ({
-              user_id: user.id,
-              name: ex.name,
-              weight_min: ex.weight_min,
-              reps_step: ex.reps_step,
-              reps_max: ex.reps_max,
-              order: i,
-            }))
-          )
-          if (exErr) throw exErr
-        }
-
-        const { error: profErr } = await supabase.from('profiles').update({
-          training_purpose: purposeMap[newAnswers.goal] || newAnswers.goal,
-          user_level: levelMap[newAnswers.level] || 'beginner',
-          trainer_character: trainer,
-          onboarding_done: true,
-          updated_at: new Date().toISOString(),
-        }).eq('id', user.id)
-        if (profErr) throw profErr
-
-        savedRef.current = true
-      } catch {
-        // goToMainで再試行する
-      }
+      savedRef.current = true
     }
   }
 
   async function goToMain() {
-    if (!savedRef.current) {
-      // 完了処理が失敗していた場合はここでリトライ
-      const trainer = TRAINER_ASSIGN[answers.style] || 'RYOTA'
-      const { error } = await supabase.from('profiles').update({
-        trainer_character: trainer,
-        onboarding_done: true,
-        updated_at: new Date().toISOString(),
-      }).eq('id', user.id)
-      if (error) {
-        window.alert('通信エラーが発生しました。もう一度お試しください。')
-        return
-      }
-      savedRef.current = true
+    const trainer = TRAINER_ASSIGN[answers.style] || 'RYOTA'
+    const purposeMap = {
+      muscle: '筋肥大', diet: 'ダイエット', strength: '筋力向上',
+      health: '健康維持', sport: 'スポーツ強化',
     }
-    // 共有AuthContextのprofileを更新してからルートへ（AuthGuardの判定に反映させる）
-    await refreshProfile()
+    // onboarding_doneはここで立てる（立てた瞬間にガードが/へ通すため、ボタン押下時に実行）
+    await saveProfile({
+      training_purpose: purposeMap[answers.goal] || answers.goal || null,
+      user_level: answers.level || 'beginner',
+      trainer_character: trainer,
+      onboarding_done: true,
+    })
     navigate('/')
   }
 
@@ -221,7 +174,7 @@ export default function OnboardingChat() {
   return (
     <div className="flex flex-col min-h-dvh" style={{ background: '#0B0D10' }}>
       {/* ヘッダー */}
-      <div className="px-4 pt-6 pb-3 flex items-center gap-3" style={{ borderBottom: '1px solid #1F242E' }}>
+      <div className="px-4 pb-3 flex items-center gap-3" style={{ paddingTop: 'calc(env(safe-area-inset-top) + 16px)', borderBottom: '1px solid #1F242E' }}>
         <img src={RYOTA_IMG} alt="RYOTA" className="w-10 h-10 object-contain" style={{ background: '#13171F' }} />
         <div>
           <p className="font-bebas text-lg" style={{ color: '#FF6A1A' }}>RYOTA</p>
@@ -265,7 +218,7 @@ export default function OnboardingChat() {
 
       {/* 選択肢 or スタートボタン */}
       {!isTyping && !finished && (
-        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] px-4 pb-6 pt-3" style={{ background: '#0B0D10', borderTop: '1px solid #1F242E' }}>
+        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] px-4 pt-3" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)', background: '#0B0D10', borderTop: '1px solid #1F242E' }}>
           <div className="space-y-2">
             {currentOptions.map((opt, i) => (
               <button
@@ -282,7 +235,7 @@ export default function OnboardingChat() {
       )}
 
       {finished && !isTyping && (
-        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] px-4 pb-6 pt-3" style={{ background: '#0B0D10', borderTop: '1px solid #1F242E' }}>
+        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] px-4 pt-3" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 16px)', background: '#0B0D10', borderTop: '1px solid #1F242E' }}>
           <button
             onClick={goToMain}
             className="w-full py-4 font-bold text-white text-sm"
