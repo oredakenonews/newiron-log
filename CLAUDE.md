@@ -18,11 +18,11 @@
   - クライアント（`src/lib/aiClient.js`）がprofile・直近記録・記憶を毎回送る
   - `format:'structure'`=計画JSON化 / `format:'memory'`=記憶抽出（保存はクライアント）
   - **設定済み: Vercel環境変数 `ANTHROPIC_API_KEY`**（2026-10-10・All Environments・Secretタイプのため値は再表示不可。キーはClaude Consoleの`newironlog-vercel`）
-  - 簡易レート制限あり。App Attest等の本格的な保護は未実装（TODO）
+  - 保護: CORS許可オリジン限定 / レート制限（Upstash env設定時は永続・5分30回、未設定はメモリ版フォールバック）/ 簡易トークン（`AI_PROXY_TOKEN`+`VITE_AI_PROXY_TOKEN`をペアで設定時のみ有効）。App Attestは未実装（TODO）
   - ネイティブからは `https://newiron-log.vercel.app/api/ai-chat` を叩く（VITE_AI_ENDPOINTで上書き可）
 - **useAuth**: API互換のまま中身をローカル化（user={id:'local'}固定、saveProfile(patch)追加）
 - `supabase/functions/` はv1の遺産として残置（デプロイ済みEdge Functionの参照用）
-- テスト: `node scripts/test-localdb.mjs`（データ層15項目）
+- テスト: `node scripts/test-localdb.mjs`（データ層15項目）/ `node scripts/test-ai-chat.mjs`（AIプロキシ28項目・外部APIはモック）
 
 ## URL
 - 本番: https://newiron-log.vercel.app

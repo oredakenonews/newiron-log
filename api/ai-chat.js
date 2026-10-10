@@ -124,8 +124,8 @@ function stripJsonFence(raw) {
   return raw.trim().replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/\s*```$/i, '').trim()
 }
 
-// 簡易レート制限（ウォームなインスタンス内のみ有効なベストエフォート。
-// 本格的な保護はApp Attest / Upstash等の導入を検討 — 既知のTODO）
+// メモリ内レート制限（ウォームなインスタンス内のみ有効なベストエフォート。
+// Upstash未設定時のフォールバック）
 const hits = new Map()
 function rateLimited(ip) {
   const now = Date.now()
@@ -136,18 +136,67 @@ function rateLimited(ip) {
   return arr.length > 30
 }
 
+// 永続レート制限（Upstash Redis REST）。UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN
+// を設定すると、インスタンスをまたいで5分30回の上限を共有できる。
+// 未設定・通信失敗時は null を返し、メモリ版にフォールバックする。
+async function rateLimitedUpstash(ip) {
+  const url = process.env.UPSTASH_REDIS_REST_URL
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN
+  if (!url || !token) return null
+  try {
+    const windowSec = 300
+    const key = `il:rl:${ip}:${Math.floor(Date.now() / (windowSec * 1000))}`
+    const r = await fetch(`${url}/pipeline`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      body: JSON.stringify([['INCR', key], ['EXPIRE', key, String(windowSec)]]),
+    })
+    if (!r.ok) return null
+    const data = await r.json()
+    const count = data?.[0]?.result
+    return typeof count === 'number' ? count > 30 : null
+  } catch {
+    return null
+  }
+}
+
+// 許可オリジン。同一オリジンのWeb（本番サイト自身）はそもそもCORS対象外なので、
+// ここで意味を持つのはネイティブWebViewと開発環境のクロスオリジンアクセス。
+const ALLOWED_ORIGINS = new Set([
+  'https://newiron-log.vercel.app',
+  'capacitor://localhost', // iOS Capacitor
+  'https://localhost',     // Android Capacitor
+  'http://localhost:5173', // vite dev
+  'http://localhost:4173', // vite preview
+])
+const PREVIEW_ORIGIN_SUFFIX = '-oredakenonews-projects.vercel.app'
+
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*')
-  res.setHeader('Access-Control-Allow-Headers', 'content-type')
+  const origin = req.headers.origin
+  if (origin && (ALLOWED_ORIGINS.has(origin) || origin.endsWith(PREVIEW_ORIGIN_SUFFIX))) {
+    res.setHeader('Access-Control-Allow-Origin', origin)
+  }
+  res.setHeader('Vary', 'Origin')
+  res.setHeader('Access-Control-Allow-Headers', 'content-type, x-il-token')
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
   if (req.method === 'OPTIONS') return res.status(204).end()
   if (req.method !== 'POST') return res.status(405).json({ error: 'method not allowed' })
+
+  // 簡易クライアントトークン（AI_PROXY_TOKEN設定時のみ有効）。
+  // バンドルから抽出可能なため認証ではなく、URLを見つけただけの無差別アクセスを弾く用途。
+  const requiredToken = process.env.AI_PROXY_TOKEN
+  if (requiredToken && req.headers['x-il-token'] !== requiredToken) {
+    return res.status(401).json({ error: 'unauthorized' })
+  }
 
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) return res.status(500).json({ error: 'API key not configured' })
 
   const ip = (req.headers['x-forwarded-for'] || '').split(',')[0].trim() || 'unknown'
-  if (rateLimited(ip)) return res.status(429).json({ error: 'rate limited' })
+  const durable = await rateLimitedUpstash(ip)
+  if (durable === true || (durable === null && rateLimited(ip))) {
+    return res.status(429).json({ error: 'rate limited' })
+  }
 
   try {
     const { message, history, profile, recentWorkouts, coachMode, memories, format } = req.body || {}

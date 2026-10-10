@@ -6,10 +6,16 @@ import { listMemories, applyMemoryUpdates } from './localdb'
 const AI_URL = import.meta.env.VITE_AI_ENDPOINT
   || (Capacitor.isNativePlatform() ? 'https://newiron-log.vercel.app/api/ai-chat' : '/api/ai-chat')
 
+// サーバ側AI_PROXY_TOKENとペアで設定する簡易トークン（未設定なら送らない）
+const AI_TOKEN = import.meta.env.VITE_AI_PROXY_TOKEN
+
 async function post(body) {
   const res = await fetch(AI_URL, {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: {
+      'content-type': 'application/json',
+      ...(AI_TOKEN ? { 'x-il-token': AI_TOKEN } : {}),
+    },
     body: JSON.stringify(body),
   })
   if (!res.ok) throw new Error(`ai-chat ${res.status}`)
