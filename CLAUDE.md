@@ -38,7 +38,8 @@
 - Capacitor（iOSネイティブラップ。`ios/`ディレクトリ、`capacitor.config.json`）
 
 ## iOSアプリ（Capacitor）
-- `npm run build && npx cap sync ios` でWeb資産を同期
+- `npm run ios:sync` でWeb資産を同期（ビルド＋exFATの`._*`掃除＋cap sync）
+- **TestFlight配信: `npm run ios:testflight`**（scripts/testflight.sh。アーカイブ→App Store Connectへ自動アップロード。ビルド番号は日時で自動採番。署名はXcode登録のApple ID）
 - シミュレータ実行: `npx cap run ios` または Xcodeで `ios/App/App.xcodeproj` を開く
 - appId: `com.oredakenonews.ironlog` / 表示名: **AIron.log**（com.ironlog.appは他者が登録済みで使用不可だった。アプリ内UIのワードマークはIRON LOGのまま）
 - プラグイン: Haptics（ホイールピッカー・ボタンの触覚FB）/ Keyboard（resize: native）/ StatusBar / SplashScreen
