@@ -30,3 +30,4 @@ dist-ssr
 # macOS AppleDouble (exFAT)
 ._*
 **/._*
+backups/
