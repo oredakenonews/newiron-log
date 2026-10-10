@@ -32,45 +32,49 @@ export default function SignupForm() {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center px-6" style={{ background: '#0f0f0f' }}>
+    <div className="min-h-dvh flex flex-col items-center justify-center px-6" style={{ background: '#0B0D10' }}>
       <div className="w-full max-w-sm">
-        <h1 className="font-bebas text-5xl text-center mb-2" style={{ color: '#f97316' }}>IRON LOG</h1>
-        <p className="text-center text-sm mb-10" style={{ color: '#888' }}>アカウントを作成する</p>
+        <h1 className="font-bebas text-5xl text-center mb-2" style={{ color: '#FF6A1A' }}>IRON LOG</h1>
+        <p className="text-center text-sm mb-10" style={{ color: '#8693AA' }}>アカウントを作成する</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm mb-1" style={{ color: '#888' }}>メールアドレス</label>
+            <label className="block text-sm mb-1" style={{ color: '#8693AA' }}>メールアドレス</label>
             <input
               type="email"
+              autoComplete="email"
+              inputMode="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
-              className="w-full px-4 py-3 rounded-xl text-sm outline-none border"
-              style={{ background: '#1a1a1a', borderColor: '#2a2a2a', color: '#f5f5f5' }}
+              className="w-full px-4 py-3 text-sm outline-none border"
+              style={{ background: '#13171F', borderColor: '#1F242E', color: '#E5E9F0' }}
               placeholder="example@mail.com"
             />
           </div>
           <div>
-            <label className="block text-sm mb-1" style={{ color: '#888' }}>パスワード</label>
+            <label className="block text-sm mb-1" style={{ color: '#8693AA' }}>パスワード</label>
             <input
               type="password"
+              autoComplete="new-password"
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
-              className="w-full px-4 py-3 rounded-xl text-sm outline-none border"
-              style={{ background: '#1a1a1a', borderColor: '#2a2a2a', color: '#f5f5f5' }}
+              className="w-full px-4 py-3 text-sm outline-none border"
+              style={{ background: '#13171F', borderColor: '#1F242E', color: '#E5E9F0' }}
               placeholder="6文字以上"
             />
           </div>
           <div>
-            <label className="block text-sm mb-1" style={{ color: '#888' }}>パスワード（確認）</label>
+            <label className="block text-sm mb-1" style={{ color: '#8693AA' }}>パスワード（確認）</label>
             <input
               type="password"
+              autoComplete="new-password"
               value={confirm}
               onChange={e => setConfirm(e.target.value)}
               required
-              className="w-full px-4 py-3 rounded-xl text-sm outline-none border"
-              style={{ background: '#1a1a1a', borderColor: '#2a2a2a', color: '#f5f5f5' }}
+              className="w-full px-4 py-3 text-sm outline-none border"
+              style={{ background: '#13171F', borderColor: '#1F242E', color: '#E5E9F0' }}
               placeholder="••••••••"
             />
           </div>
@@ -82,15 +86,15 @@ export default function SignupForm() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 rounded-xl font-bold text-white text-sm disabled:opacity-50"
-            style={{ background: '#f97316' }}
+            className="w-full py-3 font-bold text-white text-sm disabled:opacity-50"
+            style={{ background: '#FF6A1A' }}
           >
             {loading ? '登録中...' : '新規登録'}
           </button>
         </form>
 
         <div className="mt-6 text-center">
-          <Link to="/login" className="text-sm" style={{ color: '#888' }}>
+          <Link to="/login" className="text-sm" style={{ color: '#8693AA' }}>
             すでにアカウントをお持ちの方
           </Link>
         </div>

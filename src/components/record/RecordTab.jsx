@@ -3,14 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
 import { getCategory } from '../../lib/categories'
-import WheelPickerSheet, { WEIGHT_VALUES, REP_VALUES, nearestWeight } from '../shared/WheelPickerSheet'
+import { localDateStr } from '../../lib/dates'
+import { hapticImpact, hapticSuccess, hapticError } from '../../lib/haptics'
+import WheelPickerSheet from '../shared/WheelPickerSheet'
 import AddExerciseSheet from '../shared/AddExerciseSheet'
 import { useCoach, CoachStrip, COACH_LINES } from '../../lib/coachContext'
 
-
-function today() {
-  return new Date().toISOString().split('T')[0]
-}
 
 function todayLabel() {
   const d = new Date()
@@ -23,6 +21,11 @@ function todayLabel() {
 
 let nextId = 1
 function genId() { return nextId++ }
+
+// 未保存入力の下書き（アプリがバックグラウンドでkillされても消えないように）
+function draftKey(userId) {
+  return `iron-draft-${userId}-${localDateStr()}`
+}
 
 function VolumeHeader({ exercises, onSave, saving, saved }) {
   const doneVol = exercises.reduce((t, ex) =>
@@ -57,7 +60,7 @@ function VolumeHeader({ exercises, onSave, saving, saved }) {
           style={{
             background: saved ? '#5BC25B' : '#FF6A1A', border: 'none', color: '#0B0D10',
             fontFamily: 'Oswald', fontWeight: 700, fontSize: 13, letterSpacing: 1.5,
-            padding: '6px 14px', cursor: 'pointer', opacity: saving ? 0.6 : 1,
+            padding: '10px 16px', cursor: 'pointer', opacity: saving ? 0.6 : 1,
           }}
         >
           {saving ? 'SAVING...' : saved ? 'SAVED ✓' : 'SAVE'}
@@ -78,7 +81,7 @@ function VolumeHeader({ exercises, onSave, saving, saved }) {
   )
 }
 
-function SetRow({ set, idx, exId, onOpenPicker, onToggleDone, onRemoveSet }) {
+function SetRow({ set, idx, onOpenPicker, onToggleDone, onRemoveSet }) {
   const done = !!set.done
   return (
     <div style={{
@@ -130,7 +133,7 @@ function SetRow({ set, idx, exId, onOpenPicker, onToggleDone, onRemoveSet }) {
       <button
         onClick={() => onToggleDone(idx)}
         style={{
-          width: 36, height: 36, flexShrink: 0,
+          width: 40, height: 40, flexShrink: 0,
           background: done ? '#FF6A1A' : 'transparent',
           border: done ? '1px solid #FF6A1A' : '1px solid #2A3142',
           color: done ? '#0B0D10' : '#5A6477',
@@ -146,7 +149,7 @@ function SetRow({ set, idx, exId, onOpenPicker, onToggleDone, onRemoveSet }) {
       <button
         onClick={() => onRemoveSet(idx)}
         style={{
-          width: 28, height: 28, flexShrink: 0,
+          width: 36, height: 40, flexShrink: 0,
           background: 'transparent', border: 'none',
           color: '#3A4253',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -208,7 +211,6 @@ function ExerciseCard({ ex, expanded, onToggleExpand, onOpenPicker, onAddSet, on
               key={i}
               set={s}
               idx={i}
-              exId={ex.id}
               onOpenPicker={(setIdx) => onOpenPicker(ex.id, setIdx)}
               onToggleDone={(setIdx) => onToggleDone(ex.id, setIdx)}
               onRemoveSet={(setIdx) => onRemoveSet(ex.id, setIdx)}
@@ -220,7 +222,7 @@ function ExerciseCard({ ex, expanded, onToggleExpand, onOpenPicker, onAddSet, on
               style={{
                 flex: 1, background: 'transparent', border: '1px dashed #2A3142',
                 color: '#8693AA', fontFamily: 'Bebas Neue', fontSize: 14, letterSpacing: 1.5,
-                padding: '10px 0', cursor: 'pointer',
+                padding: '12px 0', cursor: 'pointer',
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
               }}
             >
@@ -231,7 +233,7 @@ function ExerciseCard({ ex, expanded, onToggleExpand, onOpenPicker, onAddSet, on
               style={{
                 background: 'transparent', border: '1px solid #2A3142',
                 color: '#5A6477', fontFamily: 'Bebas Neue', fontSize: 14, letterSpacing: 1.5,
-                padding: '10px 14px', cursor: 'pointer',
+                padding: '12px 14px', cursor: 'pointer',
               }}
             >削除</button>
           </div>
@@ -310,16 +312,20 @@ export default function RecordTab() {
   const [plannedSession, setPlannedSession] = useState(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const [showAddSheet, setShowAddSheet] = useState(false)
   const [expandedId, setExpandedId] = useState(null)
   const [picker, setPicker] = useState(null)
-  const saveTimerRef = useRef(null)
+  const [lastWeights, setLastWeights] = useState({})
+  const draftTimerRef = useRef(null)
+  const loadedRef = useRef(false)
 
   useEffect(() => {
     if (user) {
       loadTodaySession()
       loadUserExercises()
       loadTodayPlan()
+      loadLastWeights()
     }
   }, [user])
 
@@ -328,6 +334,23 @@ export default function RecordTab() {
     window.addEventListener('iron-plan-saved', h)
     return () => window.removeEventListener('iron-plan-saved', h)
   }, [user])
+
+  // 入力内容を常に下書きとしてlocalStorageへ退避する。
+  // iOSはバックグラウンドのアプリを頻繁にkillするため、手動SAVE頼みだと記録が消える。
+  useEffect(() => {
+    if (!user || !loadedRef.current) return
+    clearTimeout(draftTimerRef.current)
+    draftTimerRef.current = setTimeout(() => {
+      try {
+        if (exercises.length > 0) {
+          localStorage.setItem(draftKey(user.id), JSON.stringify({ exercises, ts: Date.now() }))
+        } else {
+          localStorage.removeItem(draftKey(user.id))
+        }
+      } catch { /* ストレージ不可でも入力は継続できる */ }
+    }, 400)
+    return () => clearTimeout(draftTimerRef.current)
+  }, [exercises, user])
 
   async function loadUserExercises() {
     const { data } = await supabase
@@ -338,16 +361,47 @@ export default function RecordTab() {
   async function loadTodayPlan() {
     const { data } = await supabase
       .from('planned_sessions').select('*')
-      .eq('user_id', user.id).eq('planned_date', today()).eq('status', 'pending')
-      .order('created_at', { ascending: false }).limit(1).single()
+      .eq('user_id', user.id).eq('planned_date', localDateStr()).eq('status', 'pending')
+      .order('created_at', { ascending: false }).limit(1).maybeSingle()
     if (data) setPlannedSession(data)
+  }
+
+  // 直近セッションから種目ごとの前回重量・回数を拾う（新規セットの初期値に使用）
+  async function loadLastWeights() {
+    const { data } = await supabase
+      .from('workout_sessions').select('date, exercises')
+      .eq('user_id', user.id)
+      .lt('date', localDateStr())
+      .order('date', { ascending: false }).limit(15)
+    const map = {}
+    for (const session of data || []) {
+      for (const ex of session.exercises || []) {
+        if (map[ex.name]) continue
+        const lastSet = (ex.sets || []).filter(s => parseFloat(s.weight) > 0).pop()
+        if (lastSet) map[ex.name] = { weight: lastSet.weight, reps: lastSet.reps }
+      }
+    }
+    setLastWeights(map)
   }
 
   async function loadTodaySession() {
     const { data } = await supabase
       .from('workout_sessions').select('*')
-      .eq('user_id', user.id).eq('date', today()).single()
-    if (data) {
+      .eq('user_id', user.id).eq('date', localDateStr()).maybeSingle()
+
+    // 未保存の下書きがあればそちらを優先（保存成功時に消しているので、存在＝未保存変更）
+    let draft = null
+    try {
+      const raw = localStorage.getItem(draftKey(user.id))
+      if (raw) draft = JSON.parse(raw)
+    } catch { /* 壊れた下書きは無視 */ }
+
+    if (draft?.exercises?.length) {
+      const maxId = Math.max(0, ...draft.exercises.map(e => e.id || 0))
+      nextId = maxId + 1
+      setExercises(draft.exercises)
+      setExpandedId(draft.exercises[0].id)
+    } else if (data) {
       const loaded = (data.exercises || []).map((ex, i) => ({
         ...ex,
         id: i + 1,
@@ -357,11 +411,14 @@ export default function RecordTab() {
       setExercises(loaded)
       if (loaded.length > 0) setExpandedId(loaded[0].id)
     }
+    loadedRef.current = true
   }
 
   function addExercise(name) {
     const id = genId()
-    const newEx = { id, name, sets: [{ weight: '', reps: '', done: false }] }
+    // 前回の重量・回数があれば初期値としてプリセット（ゼロからホイールを回さなくて済む）
+    const last = lastWeights[name]
+    const newEx = { id, name, sets: [{ weight: last?.weight ?? '', reps: last?.reps ?? '', done: false }] }
     setExercises(prev => [...prev, newEx])
     setExpandedId(id)
   }
@@ -384,6 +441,7 @@ export default function RecordTab() {
   }
 
   function toggleDone(exId, setIdx) {
+    hapticImpact()
     setExercises(prev => prev.map(ex =>
       ex.id !== exId ? ex : {
         ...ex,
@@ -399,7 +457,10 @@ export default function RecordTab() {
   }
 
   function removeExercise(exId) {
-    setExercises(prev => prev.filter(ex => ex.id !== exId))
+    const ex = exercises.find(e => e.id === exId)
+    const hasInput = ex && ex.sets.some(s => s.weight !== '' || s.done)
+    if (hasInput && !window.confirm(`「${ex.name}」を今日の記録から削除しますか？`)) return
+    setExercises(prev => prev.filter(e => e.id !== exId))
   }
 
   function loadPlan() {
@@ -413,36 +474,44 @@ export default function RecordTab() {
   }
 
   async function saveSession() {
+    if (saving) return
     setSaving(true)
+    setSaveError('')
     const payload = {
-      user_id: user.id, date: today(),
-      exercises: exercises.map(({ id, ...ex }) => ex),
+      user_id: user.id, date: localDateStr(),
+      exercises: exercises.map(({ id: _id, ...ex }) => ex),
       cardio: [], memo: '',
     }
-    const { data: existing } = await supabase
-      .from('workout_sessions').select('id')
-      .eq('user_id', user.id).eq('date', today()).single()
+    try {
+      // UNIQUE(user_id, date)制約があるためupsertで1クエリ・レース条件なし
+      const { data: upserted, error } = await supabase
+        .from('workout_sessions')
+        .upsert(payload, { onConflict: 'user_id,date' })
+        .select('id').single()
+      if (error) throw error
+      const sessionId = upserted?.id
 
-    let sessionId = null
-    if (existing) {
-      await supabase.from('workout_sessions').update(payload).eq('id', existing.id)
-      sessionId = existing.id
-    } else {
-      const { data: inserted } = await supabase
-        .from('workout_sessions').insert(payload).select('id').single()
-      sessionId = inserted?.id
+      if (plannedSession && sessionId) {
+        await supabase.from('planned_sessions')
+          .update({ status: 'done', linked_session_id: sessionId })
+          .eq('id', plannedSession.id)
+        setPlannedSession(null)
+      }
+
+      // 保存成功 → 下書きを破棄し、履歴タブへ更新を通知
+      try { localStorage.removeItem(draftKey(user.id)) } catch { /* noop */ }
+      window.dispatchEvent(new CustomEvent('iron-session-saved'))
+      hapticSuccess()
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2000)
+    } catch {
+      // 失敗時は下書きが残っているので入力は失われない
+      hapticError()
+      setSaveError('保存に失敗しました。通信環境を確認してください（入力は端末に保持されています）')
+      setTimeout(() => setSaveError(''), 4000)
+    } finally {
+      setSaving(false)
     }
-
-    if (plannedSession && sessionId) {
-      await supabase.from('planned_sessions')
-        .update({ status: 'done', linked_session_id: sessionId })
-        .eq('id', plannedSession.id)
-      setPlannedSession(null)
-    }
-
-    setSaving(false)
-    setSaved(true)
-    setTimeout(() => setSaved(false), 2000)
   }
 
   const doneSets = exercises.reduce((t, ex) => t + (ex.sets || []).filter(s => s.done).length, 0)
@@ -454,9 +523,24 @@ export default function RecordTab() {
       ? COACH_LINES[mode].record_done
       : COACH_LINES[mode].record_active({ doneSets, totalSets: allSets })
 
+  // ピッカー初期値: 未入力セットは前回トレーニングの同種目の重量をプリセット
+  const pickerEx = picker ? exercises.find(e => e.id === picker.exId) : null
+  const pickerSet = pickerEx?.sets[picker?.setIdx]
+  const pickerInitial = pickerSet && (pickerSet.weight !== '' && pickerSet.weight !== undefined)
+    ? pickerSet
+    : (pickerEx && lastWeights[pickerEx.name]) || pickerSet
+
   return (
     <div style={{ background: '#0B0D10', minHeight: '100%' }}>
       <VolumeHeader exercises={exercises} onSave={saveSession} saving={saving} saved={saved} />
+
+      {saveError && (
+        <div style={{
+          margin: '12px 14px 0', padding: '10px 14px',
+          background: 'rgba(255,80,80,0.08)', border: '1px solid #5A2A2A',
+          color: '#E08585', fontSize: 12, lineHeight: 1.5,
+        }}>{saveError}</div>
+      )}
 
       <div style={{ padding: '12px 14px 0' }}>
         <CoachStrip
@@ -523,9 +607,9 @@ export default function RecordTab() {
         <WheelPickerSheet
           key={`${picker.exId}-${picker.setIdx}`}
           open={!!picker}
-          exerciseName={exercises.find(e => e.id === picker.exId)?.name || ''}
+          exerciseName={pickerEx?.name || ''}
           setIdx={picker.setIdx}
-          initial={exercises.find(e => e.id === picker.exId)?.sets[picker.setIdx]}
+          initial={pickerInitial}
           onCancel={() => setPicker(null)}
           onConfirm={({ weight, reps }) => {
             updateSet(picker.exId, picker.setIdx, weight, reps)

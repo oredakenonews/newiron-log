@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
+import { useCoach } from '../../lib/coachContext'
 import { getCategory } from '../../lib/categories'
+import { hapticSuccess, hapticError } from '../../lib/haptics'
 
 const PURPOSES = [
   { value: 'muscle', label: '筋肥大' },
@@ -36,10 +38,13 @@ function Section({ title, children }) {
 
 export default function SettingsTab() {
   const { user, profile, refreshProfile } = useAuth()
+  // コーチモードは共有Contextで管理（AIタブのModePillと同一ソース）。
+  // 旧実装はformに持っていたため、AIタブで切替→設定で保存すると古い値で巻き戻るバグがあった。
+  const { mode, setMode } = useCoach()
   const [form, setForm] = useState({
     height_cm: '', age: '', gender: '', current_weight_kg: '',
     goal_weight_kg: '', training_purpose: '', trainer_character: 'RYOTA',
-    coach_mode: 'spartan', coach_notes: '',
+    coach_notes: '',
   })
   const [exercises, setExercises] = useState([])
   const [saving, setSaving] = useState(false)
@@ -59,7 +64,6 @@ export default function SettingsTab() {
         goal_weight_kg: profile.goal_weight_kg || '',
         training_purpose: profile.training_purpose || '',
         trainer_character: profile.trainer_character || 'RYOTA',
-        coach_mode: profile.coach_mode || 'spartan',
         coach_notes: profile.coach_notes || '',
       })
     }
@@ -86,14 +90,15 @@ export default function SettingsTab() {
 
   async function deleteMemory(id) {
     setDeletingMemoryId(id)
-    await supabase.from('ai_memories').delete().eq('id', id)
-    setMemories(prev => prev.filter(m => m.id !== id))
+    const { error } = await supabase.from('ai_memories').delete().eq('id', id)
+    if (!error) setMemories(prev => prev.filter(m => m.id !== id))
     setDeletingMemoryId(null)
   }
 
   async function deleteAllMemories() {
-    await supabase.from('ai_memories').delete().eq('user_id', user.id)
-    setMemories([])
+    if (!window.confirm('AIの記憶をすべて削除しますか？この操作は取り消せません。')) return
+    const { error } = await supabase.from('ai_memories').delete().eq('user_id', user.id)
+    if (!error) setMemories([])
   }
 
   async function loadExercises() {
@@ -103,7 +108,7 @@ export default function SettingsTab() {
 
   async function saveProfile() {
     setSaving(true)
-    await supabase.from('profiles').update({
+    const { error } = await supabase.from('profiles').update({
       height_cm: form.height_cm ? parseFloat(form.height_cm) : null,
       age: form.age ? parseInt(form.age) : null,
       gender: form.gender || null,
@@ -111,12 +116,18 @@ export default function SettingsTab() {
       goal_weight_kg: form.goal_weight_kg ? parseFloat(form.goal_weight_kg) : null,
       training_purpose: form.training_purpose || null,
       trainer_character: form.trainer_character,
-      coach_mode: form.coach_mode,
       coach_notes: form.coach_notes || null,
       updated_at: new Date().toISOString(),
     }).eq('id', user.id)
+    if (error) {
+      setSaving(false)
+      hapticError()
+      window.alert('保存に失敗しました。通信環境を確認してください。')
+      return
+    }
     await refreshProfile()
     setSaving(false)
+    hapticSuccess()
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
@@ -131,8 +142,10 @@ export default function SettingsTab() {
   }
 
   async function deleteExercise(id) {
-    await supabase.from('user_exercises').delete().eq('id', id)
-    setExercises(prev => prev.filter(e => e.id !== id))
+    const ex = exercises.find(e => e.id === id)
+    if (!window.confirm(`「${ex?.name}」を種目リストから削除しますか？`)) return
+    const { error } = await supabase.from('user_exercises').delete().eq('id', id)
+    if (!error) setExercises(prev => prev.filter(e => e.id !== id))
   }
 
   async function handleSignOut() {
@@ -211,6 +224,7 @@ export default function SettingsTab() {
                   <div style={{ fontFamily: 'Bebas Neue', fontSize: 10, letterSpacing: 1.5, color: '#5A6477', marginBottom: 6 }}>{label}</div>
                   <input
                     type="number"
+                    inputMode="decimal"
                     value={form[key]}
                     onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
                     placeholder={placeholder}
@@ -278,11 +292,11 @@ export default function SettingsTab() {
               { id: 'spartan', label: 'スパルタ', sub: 'HARD', color: '#FF6A1A' },
               { id: 'gentle',  label: 'やさしい', sub: 'SOFT', color: '#5BC25B' },
             ].map(opt => {
-              const active = form.coach_mode === opt.id
+              const active = mode === opt.id
               return (
                 <button
                   key={opt.id}
-                  onClick={() => setForm(f => ({ ...f, coach_mode: opt.id }))}
+                  onClick={() => setMode(opt.id)}
                   style={{
                     flex: 1, padding: '10px 0',
                     background: active ? opt.color : 'transparent',

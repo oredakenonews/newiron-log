@@ -1,15 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
+import { localDateStr } from '../../lib/dates'
+import { hapticImpact, hapticError } from '../../lib/haptics'
 import { useCoach, CoachAvatarShared, COACHES_SHARED } from '../../lib/coachContext'
-
-const TRAINER_IMAGES = {
-  RYOTA: '/gazou/ryota_bu.png', DAIKI: '/gazou/daiki_bu.png',
-  YUKI: '/gazou/yuki_bu.png',   KENJI: '/gazou/kenji_bu.png',
-  NANA: '/gazou/nana_bu.png',   HANA: '/gazou/hana_bu.png',
-  RACHELL: '/gazou/rachell_bu.png', TORU: '/gazou/toru_bu.png',
-  BILLY: '/gazou/billybu.png',
-}
 
 const TRAINER_GREETINGS = {
   RYOTA:   { spartan: '限界まで追い込んだか！？まだ余力があるなら全然足りてないぞ！', gentle: 'お疲れ！今日もよく来たな。この調子で一緒に頑張っていこう！' },
@@ -61,11 +55,21 @@ function ModePill() {
   )
 }
 
+// チャット履歴をアプリ再起動後も保持する（直近30件）
+function chatKey(userId) { return `iron-chat-${userId}` }
+function loadChat(userId) {
+  try {
+    const raw = localStorage.getItem(chatKey(userId))
+    if (raw) return JSON.parse(raw).slice(-30)
+  } catch { /* 壊れた履歴は捨てる */ }
+  return []
+}
+
 export default function AITab() {
   const { user, profile } = useAuth()
-  const { coach, mode } = useCoach()
+  const { coach, mode, trainerImg } = useCoach()
   const [recentWorkouts, setRecentWorkouts] = useState([])
-  const [messages, setMessages] = useState([])
+  const [messages, setMessages] = useState(() => user ? loadChat(user.id) : [])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [savingPlanIdx, setSavingPlanIdx] = useState(null)
@@ -75,8 +79,15 @@ export default function AITab() {
   const inputRef = useRef(null)
 
   const trainer = profile?.trainer_character || 'RYOTA'
-  const trainerImg = TRAINER_IMAGES[trainer] || TRAINER_IMAGES.RYOTA
   const accent = coach.tone
+
+  // 履歴の永続化
+  useEffect(() => {
+    if (!user) return
+    try {
+      localStorage.setItem(chatKey(user.id), JSON.stringify(messages.slice(-30)))
+    } catch { /* noop */ }
+  }, [messages, user])
 
   useEffect(() => {
     if (user) {
@@ -125,17 +136,23 @@ export default function AITab() {
       if (error) throw error
       const plan = JSON.parse(data.content)
       if (!plan.exercises?.length) throw new Error('exercises empty')
-      await supabase.from('planned_sessions').insert({
+      // AIが返す日付が欠落・過去日の場合は今日に補正
+      const today = localDateStr()
+      const plannedDate = (plan.planned_date && plan.planned_date >= today) ? plan.planned_date : today
+      const { error: insErr } = await supabase.from('planned_sessions').insert({
         user_id: profile.id,
-        planned_date: plan.planned_date,
+        planned_date: plannedDate,
         exercises: plan.exercises,
         cardio: [], memo: '', status: 'pending',
       })
+      if (insErr) throw insErr
+      hapticImpact()
       setSavedPlanIdxes(prev => new Set([...prev, idx]))
       window.dispatchEvent(new CustomEvent('iron-plan-saved'))
       setToast('計画を保存しました')
       setTimeout(() => setToast(''), 2500)
     } catch {
+      hapticError()
       setToast('保存に失敗しました')
       setTimeout(() => setToast(''), 2500)
     } finally {

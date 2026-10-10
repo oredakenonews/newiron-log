@@ -14,6 +14,32 @@
 - Vercel（デプロイ）
 - React Router v6
 - Anthropic API（claude-haiku-4-5-20251001）→ Supabase Edge Function経由
+- Capacitor（iOSネイティブラップ。`ios/`ディレクトリ、`capacitor.config.json`）
+
+## iOSアプリ（Capacitor）
+- `npm run build && npx cap sync ios` でWeb資産を同期
+- シミュレータ実行: `npx cap run ios` または Xcodeで `ios/App/App.xcodeproj` を開く
+- appId: `com.oredakenonews.ironlog` / 表示名: **AIron.log**（com.ironlog.appは他者が登録済みで使用不可だった。アプリ内UIのワードマークはIRON LOGのまま）
+- プラグイン: Haptics（ホイールピッカー・ボタンの触覚FB）/ Keyboard（resize: native）/ StatusBar / SplashScreen
+- ハプティクスは `src/lib/haptics.js` 経由（Webではno-op。直接@capacitor/hapticsをimportしない）
+- アイコン・スプラッシュ: `ios/App/App/Assets.xcassets`（ダークブランド版を生成済み）
+- 英字フォント（Oswald/Bebas Neue/JetBrains Mono）は `public/fonts/` にセルフホスト。Noto Sans JPのみGoogle Fonts CDN
+- `.env.local` にVITE_SUPABASE_URL/VITE_SUPABASE_ANON_KEYが必要（gitignore済み。Vercelは環境変数で設定済み）
+
+## 日付の扱い（重要）
+- 日付文字列（YYYY-MM-DD）は必ず `src/lib/dates.js` の `localDateStr()` / `getWeekDates()` を使う
+- `new Date().toISOString().split('T')[0]` は**UTCになるため禁止**（JST 0:00〜8:59に前日扱いになるバグの元）
+
+## クロスタブ同期イベント
+- `iron-plan-saved`: AIタブで計画保存 → RecordTabが計画バナーを再読込
+- `iron-session-saved`: RecordTabで保存成功 → HistoryTabがセッション一覧を再読込
+- `iron-open-chat`: チャットシートを開く（AITabが購読）
+
+## データ保護（記録タブ）
+- 入力内容は400msデバウンスで `localStorage`（`iron-draft-{userId}-{date}`）に下書き保存
+- 保存成功時に下書き削除。マウント時は下書きがあればDBより優先して復元
+- 保存失敗時はエラー表示（下書きが残るため入力は失われない）
+- AIチャット履歴も `iron-chat-{userId}` に直近30件を永続化
 
 ## 画面構成
 - /login, /signup, /reset-password（認証）
@@ -168,10 +194,13 @@ newiron-log/
 
 ## 注意事項
 - iOS Safariのauto-zoom防止のためinput/select/textareaにfont-size:16px強制（index.css）
-- useAuth.jsのfetchProfileはtry/finallyでloading=falseを保証
+- **認証はAuthProvider（src/hooks/useAuth.js）で全体共有**。main.jsxでラップ済み。useAuth()は必ずProvider配下で呼ぶ（profile・coach_modeの単一ソース）
+- コーチモードはuseCoach()のmode/setModeが唯一のソース。SettingsTabのformには持たせない（巻き戻りバグ防止）
+- Supabaseクエリで0行があり得る箇所は`.single()`ではなく`.maybeSingle()`を使う
 - overflow-x:hiddenをbodyと#root両方に設定済み
 - Supabase無料プランのため7日間アクセスなしで自動停止する点に注意
 - CoachProviderはLayout.jsx内（認証済みルートのみ）に配置。useCoach()はAuth確定後のみ呼ぶこと
+- lint: `npm run lint`（eslint.config.js。exFATの`._*`ファイルはignore済み）
 
 ## デザイン・コード同期ルール
 

@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../hooks/useAuth'
 import { getCategory, FILTER_CATS } from '../../lib/categories'
+import { localDateStr, getWeekDates } from '../../lib/dates'
+import { hapticSuccess, hapticError } from '../../lib/haptics'
 import WheelPickerSheet from '../shared/WheelPickerSheet'
 import AddExerciseSheet from '../shared/AddExerciseSheet'
 import { useCoach, CoachStrip, CoachQuote, COACH_LINES } from '../../lib/coachContext'
@@ -17,18 +19,6 @@ function calcVolume(session) {
       s + (parseFloat(set.weight) || 0) * (parseInt(set.reps) || 0), 0), 0)
 }
 
-function getWeekDates() {
-  const now = new Date()
-  const day = now.getDay()
-  const mon = new Date(now)
-  mon.setDate(now.getDate() - ((day + 6) % 7))
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(mon)
-    d.setDate(mon.getDate() + i)
-    return d.toISOString().split('T')[0]
-  })
-}
-
 function getDayLabel(date) {
   const d = new Date(date + 'T00:00:00')
   return ['日', '月', '火', '水', '木', '金', '土'][d.getDay()]
@@ -39,8 +29,9 @@ function MiniBar({ values, max }) {
     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, height: 56 }}>
       {values.map((v, i) => {
         const h = Math.max(4, max > 0 ? (v / max) * 56 : 4)
-        const today = i === new Date().getDay() === 1 ? 6 : (new Date().getDay() + 6) % 7
-        const isToday = i === today
+        // 月曜始まりのインデックスに変換（日曜=6）
+        const todayIdx = (new Date().getDay() + 6) % 7
+        const isToday = i === todayIdx
         return (
           <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
             <div style={{ width: '100%', height: h, background: isToday ? '#FF6A1A' : (v > 0 ? '#2A3142' : '#181C24') }} />
@@ -163,10 +154,16 @@ function SessionDetail({ session, onClose, onSessionUpdated }) {
   async function saveEdit() {
     setSaving(true)
     const cleanExercises = editExercises.map(({ _id, ...ex }) => ex)
-    await supabase.from('workout_sessions')
+    const { error } = await supabase.from('workout_sessions')
       .update({ exercises: cleanExercises })
       .eq('id', session.id)
     setSaving(false)
+    if (error) {
+      hapticError()
+      window.alert('保存に失敗しました。通信環境を確認してください。')
+      return
+    }
+    hapticSuccess()
     setIsEditing(false)
     onSessionUpdated({ ...session, exercises: cleanExercises })
   }
@@ -401,10 +398,17 @@ export default function HistoryTab() {
   const [sessions, setSessions] = useState([])
   const [selectedFilter, setSelectedFilter] = useState('すべて')
   const [selectedSession, setSelectedSession] = useState(null)
-  const todayStr = new Date().toISOString().split('T')[0]
+  const todayStr = localDateStr()
 
   useEffect(() => {
     if (user) loadSessions()
+  }, [user])
+
+  // 記録タブで保存されたら再読込（全タブ常駐マウントのため、イベントで同期する）
+  useEffect(() => {
+    const h = () => { if (user) loadSessions() }
+    window.addEventListener('iron-session-saved', h)
+    return () => window.removeEventListener('iron-session-saved', h)
   }, [user])
 
   async function loadSessions() {

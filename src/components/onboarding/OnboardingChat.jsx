@@ -86,8 +86,9 @@ export default function OnboardingChat() {
   const [answers, setAnswers] = useState({})
   const [isTyping, setIsTyping] = useState(false)
   const [finished, setFinished] = useState(false)
-  const [assignedTrainer, setAssignedTrainer] = useState('RYOTA')
   const bottomRef = useRef(null)
+  const answeringRef = useRef(false)   // 連打による二重回答・二重登録防止
+  const savedRef = useRef(false)       // 完了処理の成否（失敗時はgoToMainでリトライ）
 
   useEffect(() => {
     showQuestion(0)
@@ -109,6 +110,9 @@ export default function OnboardingChat() {
   }
 
   async function handleAnswer(option) {
+    if (answeringRef.current || isTyping) return
+    answeringRef.current = true
+
     const q = QUESTIONS[step]
     const newAnswers = { ...answers, [q.key]: option.value }
     setAnswers(newAnswers)
@@ -122,11 +126,13 @@ export default function OnboardingChat() {
 
     if (nextStep < QUESTIONS.length) {
       setStep(nextStep)
-      setTimeout(() => showQuestion(nextStep), 600)
+      setTimeout(() => {
+        answeringRef.current = false
+        showQuestion(nextStep)
+      }, 600)
     } else {
       // 完了処理
       const trainer = TRAINER_ASSIGN[newAnswers.style] || 'RYOTA'
-      setAssignedTrainer(trainer)
 
       setIsTyping(true)
       setTimeout(() => {
@@ -152,43 +158,74 @@ export default function OnboardingChat() {
         advanced: 'advanced',
       }
 
-      await supabase.from('profiles').update({
-        training_purpose: purposeMap[newAnswers.goal] || newAnswers.goal,
-        user_level: levelMap[newAnswers.level] || 'beginner',
-        trainer_character: trainer,
-        onboarding_done: true,
-        updated_at: new Date().toISOString(),
-      }).eq('id', user.id)
+      try {
+        // 先にデフォルト種目を登録し、成功してからonboarding_doneを立てる
+        // （逆順だと種目登録失敗時に空の状態でオンボーディングが完了してしまう）
+        const { count } = await supabase
+          .from('user_exercises')
+          .select('id', { count: 'exact', head: true })
+          .eq('user_id', user.id)
 
-      await supabase.from('user_exercises').insert(
-        DEFAULT_EXERCISES.map((ex, i) => ({
-          user_id: user.id,
-          name: ex.name,
-          weight_min: ex.weight_min,
-          reps_step: ex.reps_step,
-          reps_max: ex.reps_max,
-          order: i,
-        }))
-      )
+        if (!count) {
+          const { error: exErr } = await supabase.from('user_exercises').insert(
+            DEFAULT_EXERCISES.map((ex, i) => ({
+              user_id: user.id,
+              name: ex.name,
+              weight_min: ex.weight_min,
+              reps_step: ex.reps_step,
+              reps_max: ex.reps_max,
+              order: i,
+            }))
+          )
+          if (exErr) throw exErr
+        }
 
-      await refreshProfile()
+        const { error: profErr } = await supabase.from('profiles').update({
+          training_purpose: purposeMap[newAnswers.goal] || newAnswers.goal,
+          user_level: levelMap[newAnswers.level] || 'beginner',
+          trainer_character: trainer,
+          onboarding_done: true,
+          updated_at: new Date().toISOString(),
+        }).eq('id', user.id)
+        if (profErr) throw profErr
+
+        savedRef.current = true
+      } catch {
+        // goToMainで再試行する
+      }
     }
   }
 
   async function goToMain() {
+    if (!savedRef.current) {
+      // 完了処理が失敗していた場合はここでリトライ
+      const trainer = TRAINER_ASSIGN[answers.style] || 'RYOTA'
+      const { error } = await supabase.from('profiles').update({
+        trainer_character: trainer,
+        onboarding_done: true,
+        updated_at: new Date().toISOString(),
+      }).eq('id', user.id)
+      if (error) {
+        window.alert('通信エラーが発生しました。もう一度お試しください。')
+        return
+      }
+      savedRef.current = true
+    }
+    // 共有AuthContextのprofileを更新してからルートへ（AuthGuardの判定に反映させる）
+    await refreshProfile()
     navigate('/')
   }
 
   const currentOptions = step < QUESTIONS.length ? QUESTIONS[step].options : []
 
   return (
-    <div className="flex flex-col min-h-dvh" style={{ background: '#0f0f0f' }}>
+    <div className="flex flex-col min-h-dvh" style={{ background: '#0B0D10' }}>
       {/* ヘッダー */}
-      <div className="px-4 pt-6 pb-3 flex items-center gap-3" style={{ borderBottom: '1px solid #2a2a2a' }}>
-        <img src={RYOTA_IMG} alt="RYOTA" className="w-10 h-10 object-contain rounded-full" style={{ background: '#1a1a1a' }} />
+      <div className="px-4 pt-6 pb-3 flex items-center gap-3" style={{ borderBottom: '1px solid #1F242E' }}>
+        <img src={RYOTA_IMG} alt="RYOTA" className="w-10 h-10 object-contain" style={{ background: '#13171F' }} />
         <div>
-          <p className="font-bebas text-lg" style={{ color: '#f97316' }}>RYOTA</p>
-          <p className="text-xs" style={{ color: '#888' }}>カウンセリング中</p>
+          <p className="font-bebas text-lg" style={{ color: '#FF6A1A' }}>RYOTA</p>
+          <p className="text-xs" style={{ color: '#8693AA' }}>カウンセリング中</p>
         </div>
       </div>
 
@@ -197,15 +234,14 @@ export default function OnboardingChat() {
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'} items-end gap-2`}>
             {msg.type === 'trainer' && (
-              <img src={RYOTA_IMG} alt="trainer" className="w-8 h-8 object-contain rounded-full flex-shrink-0" style={{ background: '#1a1a1a' }} />
+              <img src={RYOTA_IMG} alt="trainer" className="w-8 h-8 object-contain flex-shrink-0" style={{ background: '#13171F' }} />
             )}
             <div
-              className="max-w-[75%] px-4 py-3 rounded-2xl text-sm whitespace-pre-line leading-relaxed"
+              className="max-w-[75%] px-4 py-3 text-sm whitespace-pre-line leading-relaxed"
               style={{
-                background: msg.type === 'user' ? '#f97316' : '#1a1a1a',
-                color: '#f5f5f5',
-                borderRadius: msg.type === 'user' ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
-              }}
+                background: msg.type === 'user' ? '#FF6A1A' : '#13171F',
+                color: '#E5E9F0',
+                              }}
             >
               {msg.text}
             </div>
@@ -214,11 +250,11 @@ export default function OnboardingChat() {
 
         {isTyping && (
           <div className="flex items-end gap-2">
-            <img src={RYOTA_IMG} alt="trainer" className="w-8 h-8 object-contain rounded-full" style={{ background: '#1a1a1a' }} />
-            <div className="px-4 py-3 rounded-2xl" style={{ background: '#1a1a1a', borderRadius: '20px 20px 20px 4px' }}>
+            <img src={RYOTA_IMG} alt="trainer" className="w-8 h-8 object-contain" style={{ background: '#13171F' }} />
+            <div className="px-4 py-3" style={{ background: '#13171F', borderRadius: 0 }}>
               <div className="flex gap-1">
                 {[0, 1, 2].map(i => (
-                  <div key={i} className="w-2 h-2 rounded-full animate-bounce" style={{ background: '#888', animationDelay: `${i * 0.2}s` }} />
+                  <div key={i} className="w-2 h-2 animate-bounce" style={{ background: '#8693AA', animationDelay: `${i * 0.2}s` }} />
                 ))}
               </div>
             </div>
@@ -229,14 +265,14 @@ export default function OnboardingChat() {
 
       {/* 選択肢 or スタートボタン */}
       {!isTyping && !finished && (
-        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] px-4 pb-6 pt-3" style={{ background: '#0f0f0f', borderTop: '1px solid #2a2a2a' }}>
+        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] px-4 pb-6 pt-3" style={{ background: '#0B0D10', borderTop: '1px solid #1F242E' }}>
           <div className="space-y-2">
             {currentOptions.map((opt, i) => (
               <button
                 key={i}
                 onClick={() => handleAnswer(opt)}
-                className="w-full py-3 px-4 rounded-xl text-sm text-left"
-                style={{ background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#f5f5f5' }}
+                className="w-full py-3 px-4 text-sm text-left"
+                style={{ background: '#13171F', border: '1px solid #1F242E', color: '#E5E9F0' }}
               >
                 {opt.label}
               </button>
@@ -246,11 +282,11 @@ export default function OnboardingChat() {
       )}
 
       {finished && !isTyping && (
-        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] px-4 pb-6 pt-3" style={{ background: '#0f0f0f', borderTop: '1px solid #2a2a2a' }}>
+        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] px-4 pb-6 pt-3" style={{ background: '#0B0D10', borderTop: '1px solid #1F242E' }}>
           <button
             onClick={goToMain}
-            className="w-full py-4 rounded-xl font-bold text-white text-sm"
-            style={{ background: '#f97316' }}
+            className="w-full py-4 font-bold text-white text-sm"
+            style={{ background: '#FF6A1A' }}
           >
             トレーニングを始める 🔥
           </button>

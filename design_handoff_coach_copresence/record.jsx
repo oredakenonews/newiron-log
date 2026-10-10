@@ -129,7 +129,7 @@ function SetRow({ set, idx, onOpenPicker, onComplete, onRemoveSet }) {
       <button
         onClick={() => onComplete(idx)}
         style={{
-          width: 36, height: 36, flexShrink: 0,
+          width: 40, height: 40, flexShrink: 0,
           background: done ? '#FF6A1A' : 'transparent',
           border: done ? '1px solid #FF6A1A' : '1px solid #2A3142',
           color: done ? '#0B0D10' : '#5A6477',
@@ -142,7 +142,7 @@ function SetRow({ set, idx, onOpenPicker, onComplete, onRemoveSet }) {
       <button
         onClick={() => onRemoveSet(idx)}
         style={{
-          width: 28, height: 28, flexShrink: 0,
+          width: 36, height: 40, flexShrink: 0,
           background: 'transparent', border: 'none',
           color: '#3A4253',
           display: 'flex', alignItems: 'center', justifyContent: 'center',

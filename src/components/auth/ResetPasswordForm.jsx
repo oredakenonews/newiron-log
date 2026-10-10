@@ -24,32 +24,32 @@ export default function ResetPasswordForm() {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col items-center justify-center px-6" style={{ background: '#0f0f0f' }}>
+    <div className="min-h-dvh flex flex-col items-center justify-center px-6" style={{ background: '#0B0D10' }}>
       <div className="w-full max-w-sm">
-        <h1 className="font-bebas text-5xl text-center mb-2" style={{ color: '#f97316' }}>IRON LOG</h1>
-        <p className="text-center text-sm mb-10" style={{ color: '#888' }}>パスワードのリセット</p>
+        <h1 className="font-bebas text-5xl text-center mb-2" style={{ color: '#FF6A1A' }}>IRON LOG</h1>
+        <p className="text-center text-sm mb-10" style={{ color: '#8693AA' }}>パスワードのリセット</p>
 
         {sent ? (
           <div className="text-center">
-            <p className="text-sm mb-6" style={{ color: '#f5f5f5' }}>
+            <p className="text-sm mb-6" style={{ color: '#E5E9F0' }}>
               パスワードリセット用のメールを送信しました。<br />
               メールをご確認ください。
             </p>
-            <Link to="/login" className="text-sm" style={{ color: '#f97316' }}>
+            <Link to="/login" className="text-sm" style={{ color: '#FF6A1A' }}>
               ログインに戻る
             </Link>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-sm mb-1" style={{ color: '#888' }}>メールアドレス</label>
+              <label className="block text-sm mb-1" style={{ color: '#8693AA' }}>メールアドレス</label>
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-3 rounded-xl text-sm outline-none border"
-                style={{ background: '#1a1a1a', borderColor: '#2a2a2a', color: '#f5f5f5' }}
+                className="w-full px-4 py-3 text-sm outline-none border"
+                style={{ background: '#13171F', borderColor: '#1F242E', color: '#E5E9F0' }}
                 placeholder="example@mail.com"
               />
             </div>
@@ -61,14 +61,14 @@ export default function ResetPasswordForm() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl font-bold text-white text-sm disabled:opacity-50"
-              style={{ background: '#f97316' }}
+              className="w-full py-3 font-bold text-white text-sm disabled:opacity-50"
+              style={{ background: '#FF6A1A' }}
             >
               {loading ? '送信中...' : 'リセットメールを送信'}
             </button>
 
             <div className="text-center mt-4">
-              <Link to="/login" className="text-sm" style={{ color: '#888' }}>
+              <Link to="/login" className="text-sm" style={{ color: '#8693AA' }}>
                 ログインに戻る
               </Link>
             </div>

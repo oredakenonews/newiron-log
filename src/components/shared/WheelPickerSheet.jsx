@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
+import { hapticTick, hapticImpact } from '../../lib/haptics'
 
-export const ITEM_H = 36
-const VISIBLE = 3
+export const ITEM_H = 40
+const VISIBLE = 5
 
 export const WEIGHT_VALUES = (() => {
   const out = []
@@ -33,6 +34,16 @@ function Wheel({ values, value, onChange, suffix }) {
     }
   }, [])
 
+  // 外部からの値変更（±ボタン）をホイール位置に反映する
+  useEffect(() => {
+    if (value === active) return
+    const idx = values.findIndex(v => v === value)
+    if (ref.current && idx >= 0) {
+      setActive(value)
+      ref.current.scrollTo({ top: idx * ITEM_H, behavior: 'smooth' })
+    }
+  }, [value])
+
   function onScroll() {
     const el = ref.current
     if (!el) return
@@ -41,6 +52,7 @@ function Wheel({ values, value, onChange, suffix }) {
     if (v !== active) {
       setActive(v)
       onChange(v)
+      hapticTick()
     }
   }
 
@@ -53,12 +65,12 @@ function Wheel({ values, value, onChange, suffix }) {
       }} />
       <div style={{
         position: 'absolute', top: 0, left: 0, right: 0, height: padH,
-        background: 'linear-gradient(180deg, #13171F 30%, transparent)',
+        background: 'linear-gradient(180deg, #13171F 20%, transparent)',
         pointerEvents: 'none', zIndex: 3,
       }} />
       <div style={{
         position: 'absolute', bottom: 0, left: 0, right: 0, height: padH,
-        background: 'linear-gradient(0deg, #13171F 30%, transparent)',
+        background: 'linear-gradient(0deg, #13171F 20%, transparent)',
         pointerEvents: 'none', zIndex: 3,
       }} />
       <div
@@ -67,6 +79,7 @@ function Wheel({ values, value, onChange, suffix }) {
         style={{
           height: '100%', overflowY: 'scroll',
           scrollSnapType: 'y mandatory', scrollbarWidth: 'none',
+          overscrollBehavior: 'contain',
         }}
       >
         <div style={{ height: padH }} />
@@ -77,7 +90,7 @@ function Wheel({ values, value, onChange, suffix }) {
               height: ITEM_H, scrollSnapAlign: 'center',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3,
               fontFamily: 'Oswald', fontWeight: sel ? 700 : 500,
-              fontSize: sel ? 26 : 20,
+              fontSize: sel ? 27 : 20,
               color: sel ? '#fff' : '#5A6477',
               transition: 'font-size 0.15s, color 0.15s',
               letterSpacing: -0.5,
@@ -145,20 +158,20 @@ export default function WheelPickerSheet({ open, exerciseName, setIdx, initial, 
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', padding: '0 18px', background: '#13171F' }}>
-          <Wheel key={`w-${open}`} values={WEIGHT_VALUES} value={w} onChange={setW} suffix="KG" />
+          <Wheel values={WEIGHT_VALUES} value={w} onChange={setW} suffix="KG" />
           <div style={{ width: 24, textAlign: 'center', fontFamily: 'Oswald', fontWeight: 500, fontSize: 22, color: '#3A4253' }}>×</div>
-          <Wheel key={`r-${open}`} values={REP_VALUES} value={r} onChange={setR} suffix="回" />
+          <Wheel values={REP_VALUES} value={r} onChange={setR} suffix="回" />
         </div>
 
         <div style={{ display: 'flex', gap: 6, padding: '12px 18px 0' }}>
           {[-2.5, -0.5, 0.5, 2.5].map(d => (
             <button
               key={d}
-              onClick={() => setW(nearestWeight(w + d))}
+              onClick={() => { setW(nearestWeight(w + d)); hapticTick() }}
               style={{
                 flex: 1, background: '#0E1118', border: '1px solid #1F242E',
                 color: '#B5BECF', fontFamily: 'JetBrains Mono', fontSize: 12,
-                padding: '8px 0', cursor: 'pointer',
+                padding: '10px 0', cursor: 'pointer',
               }}
             >
               {d > 0 ? `+${d}` : d}<span style={{ color: '#5A6477', marginLeft: 2 }}>kg</span>
@@ -172,15 +185,15 @@ export default function WheelPickerSheet({ open, exerciseName, setIdx, initial, 
             style={{
               flex: 1, background: 'transparent', border: '1px solid #2A3142',
               color: '#8693AA', fontFamily: 'Oswald', fontWeight: 600, fontSize: 15,
-              letterSpacing: 1.5, padding: '12px 0', cursor: 'pointer',
+              letterSpacing: 1.5, padding: '14px 0', cursor: 'pointer',
             }}
           >キャンセル</button>
           <button
-            onClick={() => onConfirm({ weight: w, reps: r })}
+            onClick={() => { hapticImpact(); onConfirm({ weight: w, reps: r }) }}
             style={{
               flex: 2, background: '#FF6A1A', border: 'none', color: '#0B0D10',
               fontFamily: 'Oswald', fontWeight: 700, fontSize: 15, letterSpacing: 1.5,
-              padding: '12px 0', cursor: 'pointer',
+              padding: '14px 0', cursor: 'pointer',
             }}
           >決定</button>
         </div>
