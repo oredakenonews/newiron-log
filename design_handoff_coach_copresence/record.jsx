@@ -359,7 +359,7 @@ function AddExerciseSheet({ open, onClose, onAdd }) {
 }
 
 function RecordScreen() {
-  const { coach, mode } = useCoach();
+  const { coach, lines } = useCoach();
   const [exercises, setExercises] = useState([
     {
       id: 1, name: 'ベンチプレス', cat: 'CHEST',
@@ -398,10 +398,10 @@ function RecordScreen() {
   const allSets = exercises.reduce((s, ex) => s + ex.sets.length, 0);
   const progress = allSets ? totalSets / allSets : 0;
   const coachLine = progress === 0
-    ? COACH_LINES[mode].record_idle
+    ? lines.record_idle
     : progress >= 1
-      ? COACH_LINES[mode].record_done
-      : COACH_LINES[mode].record_active({ doneSets: totalSets, totalSets: allSets });
+      ? lines.record_done
+      : lines.record_active({ doneSets: totalSets, totalSets: allSets });
 
   const updateSet = (exId, setIdx, newSet) => {
     setExercises(exs => exs.map(ex => ex.id === exId

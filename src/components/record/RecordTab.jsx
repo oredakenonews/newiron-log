@@ -10,7 +10,7 @@ import { localDateStr } from '../../lib/dates'
 import { hapticImpact, hapticSuccess, hapticError } from '../../lib/haptics'
 import WheelPickerSheet from '../shared/WheelPickerSheet'
 import AddExerciseSheet from '../shared/AddExerciseSheet'
-import { useCoach, CoachStrip, COACH_LINES } from '../../lib/coachContext'
+import { useCoach, CoachStrip } from '../../lib/coachContext'
 
 
 function todayLabel() {
@@ -309,7 +309,7 @@ function PlanBanner({ plan, onLoad }) {
 export default function RecordTab() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const { mode } = useCoach()
+  const { lines } = useCoach()
   const [exercises, setExercises] = useState([])
   const [userExercises, setUserExercises] = useState([])
   const [plannedSession, setPlannedSession] = useState(null)
@@ -501,10 +501,10 @@ export default function RecordTab() {
   const allSets = exercises.reduce((t, ex) => t + (ex.sets || []).length, 0)
   const progress = allSets > 0 ? doneSets / allSets : 0
   const coachLine = progress === 0
-    ? COACH_LINES[mode].record_idle
+    ? lines.record_idle
     : progress >= 1
-      ? COACH_LINES[mode].record_done
-      : COACH_LINES[mode].record_active({ doneSets, totalSets: allSets })
+      ? lines.record_done
+      : lines.record_active({ doneSets, totalSets: allSets })
 
   // ピッカー初期値: 未入力セットは前回トレーニングの同種目の重量をプリセット
   const pickerEx = picker ? exercises.find(e => e.id === picker.exId) : null

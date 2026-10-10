@@ -7,7 +7,7 @@ import { localDateStr, getWeekDates } from '../../lib/dates'
 import { hapticSuccess, hapticError } from '../../lib/haptics'
 import WheelPickerSheet from '../shared/WheelPickerSheet'
 import AddExerciseSheet from '../shared/AddExerciseSheet'
-import { useCoach, CoachStrip, CoachQuote, COACH_LINES } from '../../lib/coachContext'
+import { useCoach, CoachStrip, CoachQuote } from '../../lib/coachContext'
 
 const FILTERS = ['すべて', '胸', '背中', '脚', '肩・腕']
 
@@ -393,7 +393,7 @@ function SessionDetail({ session, onClose, onSessionUpdated }) {
 export default function HistoryTab() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const { mode } = useCoach()
+  const { lines } = useCoach()
   const [sessions, setSessions] = useState([])
   const [selectedFilter, setSelectedFilter] = useState('すべて')
   const [selectedSession, setSelectedSession] = useState(null)
@@ -452,7 +452,7 @@ export default function HistoryTab() {
       {/* coach strip */}
       <div style={{ padding: '12px 14px 0' }}>
         <CoachStrip
-          message={COACH_LINES[mode].history_summary}
+          message={lines.history_summary}
           sub="WEEKLY"
           action="チャットで聞く"
           onOpenChat={() => navigate('/ai')}
@@ -485,8 +485,8 @@ export default function HistoryTab() {
           const isLeg = (session.exercises || []).some(ex => getCat(ex.name) === 'LEGS')
           const showQuote = session.date === todayStr || (idx <= 1 && isLeg)
           const quoteText = isLeg
-            ? COACH_LINES[mode].workout_legs
-            : COACH_LINES[mode].workout_normal
+            ? lines.workout_legs
+            : lines.workout_normal
           return (
             <div key={session.id}>
               <HistoryRow

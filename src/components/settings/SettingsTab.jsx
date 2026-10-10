@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { useCoach } from '../../lib/coachContext'
 import { getCategory } from '../../lib/categories'
@@ -6,7 +6,7 @@ import { hapticSuccess, hapticError } from '../../lib/haptics'
 import {
   listExercises, addExerciseDef, removeExerciseDef,
   listMemories, deleteMemory as dbDeleteMemory, deleteAllMemories as dbDeleteAllMemories,
-  exportAll,
+  exportAll, importAll,
 } from '../../lib/localdb'
 
 const PURPOSES = [
@@ -57,6 +57,8 @@ export default function SettingsTab() {
   const [activeSection, setActiveSection] = useState('profile')
   const [memories, setMemories] = useState([])
   const [deletingMemoryId, setDeletingMemoryId] = useState(null)
+  const importInputRef = useRef(null)
+  const [importing, setImporting] = useState(false)
 
   useEffect(() => {
     if (profile) {
@@ -151,6 +153,28 @@ export default function SettingsTab() {
     a.download = `ironlog-backup-${new Date().toISOString().split('T')[0]}.json`
     a.click()
     URL.revokeObjectURL(url)
+  }
+
+  // エクスポートしたJSONを取り込む（Web→iOSの移行・機種変更用）。全コレクションを置き換える
+  async function handleImportFile(e) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    if (!window.confirm('現在のデータ（記録・種目・AI記憶など）をファイルの内容で置き換えます。よろしいですか？')) return
+    setImporting(true)
+    try {
+      const data = JSON.parse(await file.text())
+      await importAll(data)
+      hapticSuccess()
+      alert('インポートが完了しました。')
+      window.location.reload()
+    } catch (err) {
+      hapticError()
+      alert(err?.message === 'unsupported export version'
+        ? 'このファイルは対応していない形式です。IRON LOGでエクスポートしたJSONを選んでください。'
+        : 'インポートに失敗しました。JSONファイルの内容を確認してください。')
+      setImporting(false)
+    }
   }
 
   const username = profile?.display_name || 'YOU'
@@ -489,6 +513,26 @@ export default function SettingsTab() {
             cursor: 'pointer',
           }}
         >データをエクスポート（JSON）</button>
+        <input
+          ref={importInputRef}
+          type="file"
+          accept="application/json,.json"
+          onChange={handleImportFile}
+          style={{ display: 'none' }}
+        />
+        <button
+          onClick={() => importInputRef.current?.click()}
+          disabled={importing}
+          style={{
+            width: '100%', padding: '14px 0', marginTop: 10,
+            background: 'transparent', border: '1px solid #1F242E',
+            color: '#5A6477', fontFamily: 'Bebas Neue', fontSize: 14, letterSpacing: 1.5,
+            cursor: 'pointer', opacity: importing ? 0.5 : 1,
+          }}
+        >{importing ? 'インポート中…' : 'データをインポート（JSON）'}</button>
+        <p style={{ marginTop: 8, fontSize: 11, color: '#5A6477', lineHeight: 1.6 }}>
+          Web版から移行する場合は、Web版の設定で「データをエクスポート」したJSONファイルをここで読み込んでください。現在のデータは置き換えられます。
+        </p>
       </div>
     </div>
   )
