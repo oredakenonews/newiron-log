@@ -12,8 +12,8 @@ const QUESTIONS = [
   '明日のメニュー考えて',
 ]
 const recentWorkouts = [
-  { date: '2026-10-10', exercises: [{ name: 'ベンチプレス', sets: [{ weight: 60, reps: 8 }, { weight: 60, reps: 8 }, { weight: 57.5, reps: 8 }] }] },
-  { date: '2026-10-08', exercises: [{ name: 'スクワット', sets: [{ weight: 80, reps: 8 }, { weight: 80, reps: 6 }] }] },
+  { date: '2026-10-10', exercises: [{ name: 'スクワット', sets: [{ weight: 80, reps: 8 }, { weight: 80, reps: 6 }] }] },
+  { date: '2026-10-08', exercises: [{ name: 'ベンチプレス', sets: [{ weight: 60, reps: 9 }, { weight: 60, reps: 9 }, { weight: 60, reps: 8 }] }] },
 ]
 
 async function ask(trainer, message) {
