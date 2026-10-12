@@ -104,13 +104,24 @@ BILLY: ラットプル4セット、ロウ3セット！背中は観客に見せ�
 // 2026-10-12にDAIKI→LEON・KENJI→JADEへ入れ替え。旧ビルドのアプリから届く旧IDは後継キャラで応答する
 const LEGACY_TRAINER_IDS = { DAIKI: 'LEON', KENJI: 'JADE' }
 
+// 相手の呼び方はAI任せにせずコードで決める（AIに敬称ルールを任せると「まさん」のように崩れた）
+const POLITE_TRAINERS = { YUKI: 'さん', LEON: 'さん', HANA: '様' }
+function addressName(name, trainerKey) {
+  const base = (name || '').trim()
+  if (!base) return null
+  if (/(さん|くん|君|ちゃん|様)$/.test(base)) return base
+  const honorific = POLITE_TRAINERS[trainerKey]
+  return honorific ? base + honorific : base
+}
+
 function buildSystemPrompt(profile, recentWorkouts, memories) {
   const rawKey = profile?.trainer_character || 'RYOTA'
   const trainerKey = LEGACY_TRAINER_IDS[rawKey] || rawKey
+  const callName = addressName(profile?.display_name, trainerKey)
   const persona = TRAINER_PERSONAS[trainerKey] || TRAINER_PERSONAS.RYOTA
 
   const profileLines = [
-    profile?.display_name && `ユーザーの名前: ${profile.display_name}`,
+    callName && `ユーザーの呼び方: 「${callName}」（この形のまま使う。表記を変えない）`,
     profile?.training_purpose && `目標: ${profile.training_purpose}`,
     profile?.user_level && `レベル: ${profile.user_level}`,
     profile?.current_weight_kg && `現在の体重: ${profile.current_weight_kg}kg`,
@@ -157,9 +168,9 @@ ${workoutLines.join('\n')}
 - ユーザー情報、長期記憶、トレーニング記録を踏まえた具体的なアドバイスをする
 - コーチへのメモや長期記憶がある場合は、それを常に考慮してアドバイスする
 - 返答は150文字程度（長くても200文字）にまとめる
-- 相手の呼び方: 敬語・丁寧語で話すキャラは「名前＋さん」（HANAは「名前＋様」）、タメ口のキャラは名前だけで呼ぶ。名前に「さん」等が含まれていれば重ねない。「お前」「君」「あなた」は使わない。名前は呼びかけに使い、三人称のように使わない
+- 相手を呼ぶときは、ユーザー情報の「ユーザーの呼び方」をそのまま使う。「お前」「君」「あなた」は使わない。名前は呼びかけに使い、三人称のように使わない
 - あなたは画面越しのトレーナーで、相手の動きは見えていない。記録・会話・長期記憶にない事実（フォームの様子、記録にない過去の数字、論文名や研究結果）を作らない。自分の経歴を根拠として持ち出さない
-- メニューやアドバイスを求められたら、情報が足りなくても直近の記録から妥当な案をまず具体的に出す。確認の質問をするなら最後に1つだけ
+- メニューを求められたら、部位や日程が指定されていなくても、直近の記録から次にやるべき部位を自分で決め、種目・セット数・回数まで具体的に出す。「何の日？」と聞き返すだけで終わらせない。確認の質問をするなら提案のあとに1つだけ
 - マークダウン記法（**太字**・#見出し・-箇条書き記号など）は使わない（アプリは記号をそのまま表示するため）。区切りたいときは改行と「・」を使う`
 }
 

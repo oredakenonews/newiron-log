@@ -22,7 +22,7 @@
   - ネイティブからは `https://newiron-log.vercel.app/api/ai-chat` を叩く（VITE_AI_ENDPOINTで上書き可）
 - **useAuth**: API互換のまま中身をローカル化（user={id:'local'}固定、saveProfile(patch)追加）
 - `supabase/functions/` はv1の遺産として残置（デプロイ済みEdge Functionの参照用）
-- テスト: `node scripts/test-localdb.mjs`（データ層27項目）/ `node scripts/test-ai-chat.mjs`（AIプロキシ30項目・外部APIはモック）/ `node scripts/test-trainer-lines.mjs`（固定セリフ網羅）
+- テスト: `node scripts/test-localdb.mjs`（データ層27項目）/ `node scripts/test-ai-chat.mjs`（AIプロキシ34項目・外部APIはモック）/ `node scripts/test-trainer-lines.mjs`（固定セリフ網羅）
 
 ## URL
 - 本番: https://newiron-log.vercel.app

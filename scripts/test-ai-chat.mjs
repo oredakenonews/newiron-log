@@ -145,6 +145,17 @@ console.log('— 通常チャット —')
   await handler(req({ body: { message: 'こんにちは', profile: { trainer_character: 'DAIKI' } } }), res)
   ok('旧ID DAIKI→LEONのペルソナ', res.statusCode === 200 && /LEON/.test(lastPayload.system) && !/RYOTA/.test(lastPayload.system))
 }
+{
+  // 呼び方はコードで決める: 敬語キャラは敬称付き、タメ口キャラは名前のみ、既に敬称があれば重ねない
+  const sys = async (trainer, name) => {
+    await handler(req({ body: { message: 'やあ', profile: { trainer_character: trainer, display_name: name } } }), mockRes())
+    return lastPayload.system
+  }
+  ok('YUKIは「まささん」', /「まささん」/.test(await sys('YUKI', 'まさ')))
+  ok('HANAは「まさ様」', /「まさ様」/.test(await sys('HANA', 'まさ')))
+  ok('RYOTAは「まさ」', /ユーザーの呼び方: 「まさ」/.test(await sys('RYOTA', 'まさ')))
+  ok('敬称付きの名前には重ねない', /「まささん」/.test(await sys('HANA', 'まささん')))
+}
 
 console.log('— structure / memory —')
 {
