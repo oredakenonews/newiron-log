@@ -26,6 +26,7 @@ const req = (over = {}) => ({
 // fetchモック: Anthropic宛はpayloadを記録して固定返答。Upstash宛はカウンタ返却
 let lastPayload = null
 let mockText = 'モック返答'
+let mockContent = null // 指定時は content 配列をそのまま返す（拒否など本文なしの再現用）
 let upstashCount = 0
 let upstashCalls = 0
 function installFetchMock() {
@@ -36,7 +37,9 @@ function installFetchMock() {
       return { ok: true, json: async () => ([{ result: upstashCount }, { result: 1 }]) }
     }
     lastPayload = JSON.parse(opts.body)
-    return { ok: true, json: async () => ({ content: [{ type: 'text', text: mockText }] }) }
+    // Haiku 5.5は思考が既定でオンなので、本文の前に thinking ブロックが来る形で返す
+    const content = mockContent ?? [{ type: 'thinking', thinking: '', signature: 'sig' }, { type: 'text', text: mockText }]
+    return { ok: true, json: async () => ({ content }) }
   }
 }
 installFetchMock()
@@ -144,6 +147,25 @@ console.log('— 通常チャット —')
   const res = mockRes()
   await handler(req({ body: { message: 'こんにちは', profile: { trainer_character: 'DAIKI' } } }), res)
   ok('旧ID DAIKI→LEONのペルソナ', res.statusCode === 200 && /LEON/.test(lastPayload.system) && !/RYOTA/.test(lastPayload.system))
+}
+{
+  // Haiku 5.5: モデル・effort・思考の分を見込んだ上限、送ると400になるサンプリング系パラメータなし
+  const res = mockRes()
+  mockText = '本文です'
+  await handler(req({ body: { message: 'やあ', profile: { trainer_character: 'NANA' } } }), res)
+  ok('モデルはclaude-haiku-5-5', lastPayload.model === 'claude-haiku-5-5')
+  ok('チャットはeffort low', lastPayload.output_config?.effort === 'low')
+  ok('max_tokensは思考込みで余裕あり', lastPayload.max_tokens >= 1000)
+  ok('temperature/top_p/top_kを送らない', !('temperature' in lastPayload) && !('top_p' in lastPayload) && !('top_k' in lastPayload))
+  ok('thinkingブロックの後の本文を返す', res.body.content === '本文です')
+}
+{
+  // 安全上の理由で断られる等で本文が無い → 空の吹き出しにせず案内文
+  const res = mockRes()
+  mockContent = [{ type: 'thinking', thinking: '', signature: 'sig' }]
+  await handler(req({ body: { message: 'やあ', profile: { trainer_character: 'NANA' } } }), res)
+  mockContent = null
+  ok('本文なしでも空にしない', res.statusCode === 200 && res.body.content.length > 0)
 }
 {
   // 呼び方はコードで決める: 敬語キャラは敬称付き、タメ口キャラは名前のみ、既に敬称があれば重ねない

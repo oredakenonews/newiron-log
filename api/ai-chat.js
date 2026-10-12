@@ -5,7 +5,9 @@
 //
 // 必要な環境変数: ANTHROPIC_API_KEY（Vercelのプロジェクト設定で登録）
 
-const MODEL = 'claude-haiku-4-5-20251001'
+// 2026-10-12 Haiku 4.5 → Haiku 5.5（入出力とも約1/10の料金・指示への従い方が向上）。
+// Haiku 5.5は思考が既定でオン: 返答の先頭に thinking ブロックが来る／思考も max_tokens に数えられる
+const MODEL = 'claude-haiku-5-5'
 
 // キャラの口調は「口癖の一覧」ではなく会話の見本で伝える（2026-10-12）。
 // 口癖を列挙するとAIが毎回それを使い、設定をそのまま言っているように聞こえるため。
@@ -174,7 +176,7 @@ ${workoutLines.join('\n')}
 - マークダウン記法（**太字**・#見出し・-箇条書き記号など）は使わない（アプリは記号をそのまま表示するため）。区切りたいときは改行と「・」を使う`
 }
 
-async function callAnthropic(apiKey, { system, messages, maxTokens }) {
+async function callAnthropic(apiKey, { system, messages, maxTokens, effort = 'low' }) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -185,6 +187,7 @@ async function callAnthropic(apiKey, { system, messages, maxTokens }) {
     body: JSON.stringify({
       model: MODEL,
       max_tokens: maxTokens,
+      output_config: { effort },
       ...(system ? { system } : {}),
       messages,
     }),
@@ -194,7 +197,8 @@ async function callAnthropic(apiKey, { system, messages, maxTokens }) {
     throw new Error(`anthropic ${res.status}: ${body.slice(0, 200)}`)
   }
   const data = await res.json()
-  return data.content?.[0]?.type === 'text' ? data.content[0].text : ''
+  // 先頭は thinking ブロックのことがあるので、位置ではなく type で本文を集める
+  return (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('').trim()
 }
 
 function stripJsonFence(raw) {
@@ -297,7 +301,8 @@ export default async function handler(req, res) {
 ${message}`
       const raw = await callAnthropic(apiKey, {
         messages: [{ role: 'user', content: structurePrompt }],
-        maxTokens: 1000,
+        maxTokens: 4000,
+        effort: 'medium',
       })
       return res.status(200).json({ content: stripJsonFence(raw) })
     }
@@ -323,7 +328,7 @@ ${existingSection}
 memory_typeの値: injury / goal / preference / habit / note`
       const raw = await callAnthropic(apiKey, {
         messages: [{ role: 'user', content: extractPrompt }],
-        maxTokens: 400,
+        maxTokens: 1500,
       })
       let updates = []
       try { updates = JSON.parse(stripJsonFence(raw)).updates || [] } catch { /* 解析失敗は空更新 */ }
@@ -337,12 +342,16 @@ memory_typeの値: injury / goal / preference / habit / note`
         .map(m => ({ role: m.role, content: m.content })),
       { role: 'user', content: message },
     ]
+    // 返答の長さは指示文（150〜200字）で抑える。max_tokens は思考の分も含めた余裕
     const content = await callAnthropic(apiKey, {
       system: buildSystemPrompt(profile, recentWorkouts, memories),
       messages: msgs,
-      maxTokens: 400,
+      maxTokens: 1500,
     })
-    return res.status(200).json({ content })
+    // 安全上の理由で断られた・上限で本文が出なかった場合も、空の吹き出しにしない
+    return res.status(200).json({
+      content: content || 'うまく返事ができませんでした。言い方を変えて、もう一度送ってみてください。',
+    })
   } catch (e) {
     return res.status(500).json({ error: String(e?.message || e).slice(0, 300) })
   }

@@ -22,7 +22,7 @@
   - ネイティブからは `https://newiron-log.vercel.app/api/ai-chat` を叩く（VITE_AI_ENDPOINTで上書き可）
 - **useAuth**: API互換のまま中身をローカル化（user={id:'local'}固定、saveProfile(patch)追加）
 - `supabase/functions/` はv1の遺産として残置（デプロイ済みEdge Functionの参照用）
-- テスト: `node scripts/test-localdb.mjs`（データ層27項目）/ `node scripts/test-ai-chat.mjs`（AIプロキシ34項目・外部APIはモック）/ `node scripts/test-trainer-lines.mjs`（固定セリフ網羅）
+- テスト: `node scripts/test-localdb.mjs`（データ層27項目）/ `node scripts/test-ai-chat.mjs`（AIプロキシ40項目・外部APIはモック）/ `node scripts/test-trainer-lines.mjs`（固定セリフ網羅）
 
 ## URL
 - 本番: https://newiron-log.vercel.app
@@ -34,7 +34,10 @@
 - Supabase（v1の遺産。v2では未使用）
 - Vercel（デプロイ + `api/ai-chat.js` Serverless Function）
 - React Router v6
-- Anthropic API（claude-haiku-4-5-20251001）→ `api/ai-chat.js` 経由
+- Anthropic API（`claude-haiku-5-5`、2026-10-12にHaiku 4.5から移行）→ `api/ai-chat.js` 経由
+  - Haiku 5.5は思考が既定でオン: 本文は `type === 'text'` のブロックから取る（先頭はthinkingのことがある）。思考も `max_tokens` に数えられるので上限は余裕を持たせる（チャット1500・記憶1500・計画4000）
+  - `output_config.effort`: チャットと記憶抽出は `low`、計画のJSON化は `medium`。`temperature`/`top_p`/`top_k` は送ると400
+  - 料金は入力$0.10・出力$0.50／100万トークン（Haiku 4.5の約1/10）。同じ文章でトークン数は約3割増える
 - Capacitor（iOSネイティブラップ。`ios/`ディレクトリ、`capacitor.config.json`）
 
 ## iOSアプリ（Capacitor）
