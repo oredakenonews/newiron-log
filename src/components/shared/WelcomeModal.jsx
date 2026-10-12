@@ -5,6 +5,7 @@ import { useCoach } from '../../lib/coachContext'
 import { localDateStr, shortDayLabel } from '../../lib/dates'
 import { listSessions, getPendingPlan, listRoutines } from '../../lib/localdb'
 import { getCategory } from '../../lib/categories'
+import { pickDaily, daysBetween } from '../../lib/trainerLines'
 
 // アプリ起動時に1回だけ表示するコーチの挨拶ウインドウ（TestFlight FB反映）。
 // キャラを大きく見せ、前回の記録を踏まえた今日の提案＋季節の一言を出す。
@@ -58,6 +59,7 @@ export default function WelcomeModal() {
   const navigate = useNavigate()
   const [note, setNote] = useState(null)
   const [routines, setRoutines] = useState([])
+  const [lineCtx, setLineCtx] = useState({ daysSince: null, lastExercise: null })
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
@@ -68,6 +70,10 @@ export default function WelcomeModal() {
       // AI計画がある日は計画を優先。今日すでに記録済みの日はルーチン選択を出さない
       const trainedToday = sessions[0]?.date === localDateStr()
       setRoutines(plan?.exercises?.length || trainedToday ? [] : list)
+      setLineCtx({
+        daysSince: sessions[0] ? daysBetween(sessions[0].date) : null,
+        lastExercise: sessions[0]?.exercises?.[0]?.name ?? null,
+      })
       setNote(buildNote(plan, sessions))
       setOpen(true)
       try { sessionStorage.setItem('iron-welcome-shown', '1') } catch { /* noop */ }
@@ -125,7 +131,7 @@ export default function WelcomeModal() {
             borderLeft: `2px solid ${coach.tone}`, paddingLeft: 10,
             fontSize: 14, lineHeight: 1.6, color: 'var(--text)', marginBottom: 12,
           }}>
-            {greetName ? `${greetName}、` : ''}{lines.record_idle}
+            {greetName ? `${greetName}、` : ''}{pickDaily(lines.welcome(lineCtx), `welcome-${trainerName}`)}
           </div>
 
           {/* データに基づく今日のメモ（UIコピー。キャラのセリフとは分離） */}

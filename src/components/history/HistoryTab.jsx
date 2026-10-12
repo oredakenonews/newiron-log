@@ -8,6 +8,7 @@ import { hapticSuccess, hapticError } from '../../lib/haptics'
 import WheelPickerSheet from '../shared/WheelPickerSheet'
 import AddExerciseSheet from '../shared/AddExerciseSheet'
 import { useCoach, CoachStrip, CoachQuote } from '../../lib/coachContext'
+import { pickDaily } from '../../lib/trainerLines'
 
 const FILTERS = ['すべて', '胸', '背中', '脚', '肩・腕']
 
@@ -393,7 +394,7 @@ function SessionDetail({ session, onClose, onSessionUpdated }) {
 export default function HistoryTab() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const { lines } = useCoach()
+  const { lines, trainerName } = useCoach()
   const [sessions, setSessions] = useState([])
   const [selectedFilter, setSelectedFilter] = useState('すべて')
   const [selectedSession, setSelectedSession] = useState(null)
@@ -452,7 +453,7 @@ export default function HistoryTab() {
       {/* coach strip */}
       <div style={{ padding: '12px 14px 0' }}>
         <CoachStrip
-          message={lines.history_summary}
+          message={pickDaily(lines.history_summary({ weekSessions: weekVolumes.filter(v => v > 0).length }), `summary-${trainerName}`)}
           sub="WEEKLY"
           action="チャットで聞く"
           onOpenChat={() => navigate('/ai')}
@@ -484,9 +485,12 @@ export default function HistoryTab() {
         {filteredSessions.map((session, idx) => {
           const isLeg = (session.exercises || []).some(ex => getCat(ex.name) === 'LEGS')
           const showQuote = session.date === todayStr || (idx <= 1 && isLeg)
-          const quoteText = isLeg
-            ? lines.workout_legs
-            : lines.workout_normal
+          // その日のメイン種目（重量×回数の合計が最大）とセット数をセリフに渡す
+          const exs = session.exercises || []
+          const volOf = ex => (ex.sets || []).reduce((t, st) => t + (parseFloat(st.weight) || 0) * (parseInt(st.reps) || 0), 0)
+          const topExercise = exs.reduce((best, ex) => (!best || volOf(ex) > volOf(best) ? ex : best), null)?.name || '今日のメニュー'
+          const sets = exs.reduce((t, ex) => t + (ex.sets || []).length, 0)
+          const quoteText = pickDaily(lines.workout({ topExercise, sets, isLeg }), `workout-${trainerName}-${session.date}`)
           return (
             <div key={session.id}>
               <HistoryRow

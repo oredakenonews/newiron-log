@@ -33,3 +33,4 @@ dist-ssr
 backups/
 .env.asc
 testflight-feedback/
+voice-review/

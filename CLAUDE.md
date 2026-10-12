@@ -22,7 +22,7 @@
   - ネイティブからは `https://newiron-log.vercel.app/api/ai-chat` を叩く（VITE_AI_ENDPOINTで上書き可）
 - **useAuth**: API互換のまま中身をローカル化（user={id:'local'}固定、saveProfile(patch)追加）
 - `supabase/functions/` はv1の遺産として残置（デプロイ済みEdge Functionの参照用）
-- テスト: `node scripts/test-localdb.mjs`（データ層27項目）/ `node scripts/test-ai-chat.mjs`（AIプロキシ30項目・外部APIはモック）
+- テスト: `node scripts/test-localdb.mjs`（データ層27項目）/ `node scripts/test-ai-chat.mjs`（AIプロキシ30項目・外部APIはモック）/ `node scripts/test-trainer-lines.mjs`（固定セリフ網羅）
 
 ## URL
 - 本番: https://newiron-log.vercel.app
@@ -166,7 +166,11 @@
 - `CoachAvatarShared`: 画像 or ハッチパターン+レター正方形アバター（pulse propでグリーンドット付加）
 - `CoachStrip`: 88pxアバター+トレーナー名+メッセージ+CTA。HistoryTabで使用（RecordTabからはv2.1で撤去）
 - `CoachQuote`: 32pxアバター+左ボーダー付き引用。HistoryTabのセッション行で使用
-- `TRAINER_LINES`: トレーナー9人それぞれの画面別セリフ（record_idle/record_active/record_done/history_summary/workout_*）。`useCoach().lines`が現在トレーナーの解決済みセットを返す
+- 固定セリフは `src/lib/trainerLines.js` の `TRAINER_LINES`（JSXなし・Nodeから直接テスト可能）。`useCoach().lines` が現在トレーナーのセットを返す
+  - 場面: `welcome(ctx)`（起動時ウインドウ）/ `chat_greeting`（AIタブ上部）/ `history_summary(ctx)`（履歴の週まとめ）/ `workout(ctx)`（履歴の各記録へのひとこと）
+  - 各場面は状況（何日ぶりか・前回の種目・今週の回数・メイン種目）に応じた候補を返し、`pickDaily()` で日替わりに1つ選ぶ
+  - **書き方の原則: キャラに自分の性格や設定を説明させない**（2026-10-12 FB「NANAが『淡々ときれいに』と設定をそのまま言う」）。その日の状況を話させ、性格は語尾・文の長さ・着眼点で出す
+  - `node scripts/test-trainer-lines.mjs` が全324本を網羅チェック（空・埋め込み漏れ・性格説明語の混入）
 
 クロスタブチャット起動: `window.dispatchEvent(new CustomEvent('iron-open-chat'))` → AITabのuseEffectが購読。ナビゲーション遷移は`navigate('/ai')`。
 
@@ -186,6 +190,9 @@
 - 2026-10-12: 見た目が被る日本人男性（DAIKI・KENJI）を外し、性格の枠（診断の配点・セリフの強さ）をLEON（理論派）・JADE（ストイック）に引き継いだ。旧IDは端末側 `getProfile()` とサーバー側 `LEGACY_TRAINER_IDS` で後継キャラへ自動移行
 - 外国出身キャラ（RACHELL・LEON・JADE・BILLY）も「片言の日本語」にはしない（ペルソナの【禁止】に明記）
 - LEON・JADEの画像は2026-10-12に本番イラストへ差し替え済み（作成プロンプトと差し替え手順は `docs/character-prompts.md`。他キャラを作り直すときも同じ手順）
+
+- AIチャットの口調は `api/ai-chat.js` の `TRAINER_PERSONAS` で、口癖の一覧ではなく**会話の見本（3往復）**で伝える。口癖を列挙するとAIが毎回それを使い「設定そのまま」に聞こえるため。返答ルールで「見本をそのまま繰り返さない」「性格を言葉で説明しない」を指示
+- 口調の確認は `node scripts/voice-review.mjs`（本番APIに9人×共通質問を投げ、`voice-review/review.md` に並べる。1回27リクエスト＝レート制限5分30回の範囲内）
 
 チャット時はトレーナー固有の口調・経歴・一人称で応答（edge functionのシステムプロンプトで規定）。コーチ共存プレゼンス（K/H）はモード表示のみ担当。
 

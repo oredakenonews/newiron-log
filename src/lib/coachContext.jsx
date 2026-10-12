@@ -1,5 +1,6 @@
 import { createContext, useContext, useMemo } from 'react'
 import { useAuth } from '../hooks/useAuth'
+import { TRAINER_LINES } from './trainerLines'
 
 // v2.1: スパルタ/やさしいのモード切替は廃止（TestFlightフィードバック: 切替で別人格になる）。
 // トレーナーキャラクター本来の性格一本で統一する。
@@ -22,91 +23,6 @@ const TRAINER_TAGS = {
 }
 
 const ACCENT = '#FF6A1A'
-
-// トレーナー別セリフ（キャラ本来の口調・強度で1セット）
-export const TRAINER_LINES = {
-  RYOTA: {
-    record_idle:     '来たな！今日も限界の一歩先まで行くぞ！',
-    record_active:   ({ doneSets, totalSets }) => `${doneSets}/${totalSets}セット！いいぞ、まだ止まるな！`,
-    record_done:     '全セット完了！よくやった！明日はもっと行けるぞ！',
-    history_summary: '今週も走り切ったな！この勢い、止めるなよ！',
-    workout_pr:      'PR更新！見たか！積み重ねは裏切らないぞ！',
-    workout_normal:  'いいボリュームだ！次はプル系ももっと攻めるぞ！',
-    workout_legs:    '脚から逃げなかったな！それでこそ俺の相棒だ！',
-  },
-  YUKI: {
-    record_idle:     'お疲れさまです。今日もわたしと一緒に、ゆっくりいきましょう。',
-    record_active:   ({ doneSets, totalSets }) => `${doneSets}/${totalSets}セット、いいペースですよ。呼吸を忘れずに。`,
-    record_done:     '今日もよく頑張りました。体をいたわってあげてくださいね。',
-    history_summary: '今週もお疲れさまでした。続けられていること、本当にすごいですよ。',
-    workout_pr:      '記録更新、おめでとうございます。体の声も聞きながらいきましょうね。',
-    workout_normal:  'バランスの良いトレーニングでした。この調子で大丈夫ですよ。',
-    workout_legs:    '脚の日、よく頑張りましたね。今夜はしっかり休んでください。',
-  },
-  LEON: {
-    record_idle:     'ようこそ。今日も記録を一つずつ積み上げましょう。データは裏切りません。',
-    record_active:   ({ doneSets, totalSets }) => `進捗${doneSets}/${totalSets}。理想的なペース配分です。`,
-    record_done:     '全セット完了。数値上、次回は負荷を上げる段階です。Gut.',
-    history_summary: '今週も良いデータが取れました。継続こそ最大の変数です。',
-    workout_pr:      'PR更新。トレーニング設計が機能している証拠です。',
-    workout_normal:  '総量は妥当です。プル系の比率を上げると均衡が取れます。',
-    workout_legs:    '脚のボリュームを確保できています。合理的な判断です。',
-  },
-  JADE: {
-    record_idle:     '来たね。始めるよ。',
-    record_active:   ({ doneSets, totalSets }) => `${doneSets}/${totalSets}。止まらない。`,
-    record_done:     '完了。よくやった。',
-    history_summary: '続けてる。それでいい。',
-    workout_pr:      'PR。次を取りに行く。',
-    workout_normal:  '量は十分。次は質。',
-    workout_legs:    '脚から逃げなかった。強くなる。',
-  },
-  NANA: {
-    record_idle:     '来たね。今日も淡々と、きれいにいこう。',
-    record_active:   ({ doneSets, totalSets }) => `${doneSets}/${totalSets}セット。いい流れ。フォームは崩さないで。`,
-    record_done:     '全部終わったね。今日の動き、悪くなかった。',
-    history_summary: '今週もちゃんと続いてる。そういうの、嫌いじゃない。',
-    workout_pr:      'PR更新。当然の結果でしょ。',
-    workout_normal:  'バランスはいい。背中をもう少し入れると締まるよ。',
-    workout_legs:    '脚の日をサボらない人は、シルエットが変わる。',
-  },
-  HANA: {
-    record_idle:     'ようこそお越しくださいました。本日もご一緒できて嬉しいです。',
-    record_active:   ({ doneSets, totalSets }) => `${doneSets}/${totalSets}セットでございます。とても良いペースですよ。`,
-    record_done:     '本日もお疲れさまでございました。ストレッチもお忘れなく。',
-    history_summary: '今週もよく続けられました。お体を大切になさってくださいね。',
-    workout_pr:      '記録更新おめでとうございます。正しい努力の成果でございます。',
-    workout_normal:  'バランスの取れた内容でございます。この調子でまいりましょう。',
-    workout_legs:    '脚の日、お疲れさまでした。今夜はゆっくりお休みください。',
-  },
-  RACHELL: {
-    record_idle:     'Hi！今日もトレーニングの時間よ。一緒にPushしていきましょ。',
-    record_active:   ({ doneSets, totalSets }) => `${doneSets}/${totalSets} sets done。Nice pace、その調子！`,
-    record_done:     'All sets cleared！Well done、Recoveryも大切にしてね。',
-    history_summary: 'Great consistency！継続できてるのがAmazingよ。',
-    workout_pr:      "New PR！That's what I'm talking about！",
-    workout_normal:  'Good volume。Pull系を足せばPerfectね。',
-    workout_legs:    'Leg dayから逃げない、それがChampion mindsetよ。',
-  },
-  TORU: {
-    record_idle:     'よく来たな。今日の一回一回が、半年後の体を作るんだ。',
-    record_active:   ({ doneSets, totalSets }) => `${doneSets}/${totalSets}セット。いいペースだ、丁寧にいこう。`,
-    record_done:     '今日も積めたな。継続できる奴が最後に勝つんだ。',
-    history_summary: '今週もコツコツやれたな。それが一番難しくて、一番偉い。',
-    workout_pr:      'PRおめでとう。体は正直だ、やった分だけ返してくる。',
-    workout_normal:  '悪くない組み方だ。背中はもう少し効かせられるな。',
-    workout_legs:    '脚をやる奴は伸びる。昔から変わらん真理だ。',
-  },
-  BILLY: {
-    record_idle:     'YO！今日も来たな！限界までBURNしようぜ、FIRE！',
-    record_active:   ({ doneSets, totalSets }) => `${doneSets}/${totalSets}セット！いいFLOWだぜ、その調子！`,
-    record_done:     'ALL CLEAR！お前のGROOVE、最高にFIREだったぜ！',
-    history_summary: '今週もフルスロットル！このBEAT、止めんじゃねーぞ！',
-    workout_pr:      'PR更新！YOU ARE ON FIRE！会場沸いてるぜ！',
-    workout_normal:  'ナイスVOLUME！背中も鳴らせばもっとアガるぜ！',
-    workout_legs:    'LEG DAYから逃げないお前、マジRESPECTだ！',
-  },
-}
 
 const CoachContext = createContext({
   coach: { name: 'RYOTA', tag: TRAINER_TAGS.RYOTA, tone: ACCENT, letter: 'R' },

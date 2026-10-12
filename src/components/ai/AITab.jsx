@@ -5,18 +5,7 @@ import { hapticImpact, hapticError } from '../../lib/haptics'
 import { listSessions, addPlan, loadChat, saveChat } from '../../lib/localdb'
 import { sendChat, structurePlan, extractAndSaveMemories } from '../../lib/aiClient'
 import { useCoach } from '../../lib/coachContext'
-
-const TRAINER_GREETINGS = {
-  RYOTA:   'お疲れ！今日もよく来たな。この調子で一緒に頑張っていこう！',
-  YUKI:    'お疲れさまでした。今日も来られただけで、本当に素晴らしいですよ。',
-  LEON:    '記録を分析しました。良い傾向が出ています。一緒に最適化していきましょう。',
-  JADE:    '言い訳はいらない。やるか、やらないか。',
-  NANA:    '来たね。焦らず、今日の一本をきれいに決めよう。',
-  HANA:    '本日もお疲れさまです。一歩一歩、着実に進んでいきましょう。',
-  RACHELL: 'よく来たね。継続こそがWorld-classの成果につながる。一緒にやろう。',
-  TORU:    '焦らんでいい。長い目で見れば、続けることが一番大切だ。',
-  BILLY:   'YO！来てくれてサンキュー！一緒に楽しくやっていこうぜ！',
-}
+import { pickDaily } from '../../lib/trainerLines'
 
 // 定型アクション（入力欄の上に常設。自由文を打たずに主要2操作が完結する）
 const QUICK_ACTIONS = [
@@ -30,7 +19,7 @@ function hasPlan(text) {
 
 export default function AITab({ keyboardOpen = false }) {
   const { user, profile } = useAuth()
-  const { coach, trainerImg } = useCoach()
+  const { coach, trainerImg, lines } = useCoach()
   const [recentWorkouts, setRecentWorkouts] = useState([])
   const [messages, setMessages] = useState([])
   const chatLoadedRef = useRef(false)
@@ -143,7 +132,7 @@ export default function AITab({ keyboardOpen = false }) {
     }
   }
 
-  const greetingText = TRAINER_GREETINGS[trainer] ?? '今日も一緒に頑張ろう。'
+  const greetingText = pickDaily(lines.chat_greeting, `chat-${trainer}`)
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg)' }}>
