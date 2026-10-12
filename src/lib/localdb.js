@@ -9,6 +9,7 @@
 //   planned_sessions … AI計画 [{ id, planned_date, exercises, status, linked_session_id, created_at }]
 //   ai_memories      … AI長期記憶 [{ id, memory_type, content, created_at, expires_at }]
 //   routines         … ルーチン [{ id, name, exercises: [{ name, sets, reps }], order, last_used_at, created_at }]
+//   ai_feedback      … AI返答の評価 [{ id(=返答のid), trainer, rating: 'up'|'down', reason, reply, prompt, created_at }]
 import { Capacitor } from '@capacitor/core'
 import { Preferences } from '@capacitor/preferences'
 
@@ -271,6 +272,43 @@ export async function deleteAllMemories() {
   await save('ai_memories', [])
 }
 
+// ---- AI返答の評価（👍/👎） ----
+// 口調改善の優先度をキャラ別の👎率で決めるための記録。端末内のみに保存（公開後の匿名分析の元データ）
+const MAX_FEEDBACK = 300
+export const FEEDBACK_REASONS = ['キャラっぽくない', '内容が違う', '長すぎる', '日本語が変', 'その他']
+
+// rating: 'up' | 'down' | null（nullで評価を取り消す）。同じ返答への再評価は上書き
+export async function setFeedback({ id, trainer, rating, reason = null, reply = '', prompt = '' }) {
+  const list = (await load('ai_feedback', [])).filter(f => f.id !== id)
+  if (rating) {
+    list.push({
+      id, trainer, rating, reason: rating === 'down' ? reason : null,
+      reply: reply.slice(0, 600), prompt: prompt.slice(0, 300),
+      created_at: new Date().toISOString(),
+    })
+  }
+  await save('ai_feedback', list.slice(-MAX_FEEDBACK))
+}
+
+export async function listFeedback() {
+  const list = await load('ai_feedback', [])
+  return [...list].sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''))
+}
+
+// キャラ別の { up, down } 集計
+export async function summarizeFeedback() {
+  const summary = {}
+  for (const f of await load('ai_feedback', [])) {
+    const s = summary[f.trainer] || (summary[f.trainer] = { up: 0, down: 0 })
+    s[f.rating === 'up' ? 'up' : 'down']++
+  }
+  return summary
+}
+
+export async function clearFeedback() {
+  await save('ai_feedback', [])
+}
+
 // ---- chat履歴 ----
 // トレーナーを刻印して保存し、トレーナー変更後は旧履歴を返さない
 // （前キャラの人格が会話履歴経由でAIの返答に混ざるのを防ぐ）。
@@ -290,14 +328,14 @@ export async function saveChat(messages, trainer) {
 
 // ---- 全データエクスポート/インポート（機種変更・バックアップ用） ----
 export async function exportAll() {
-  const [profile, exercises, sessions, plans, memories, routines] = await Promise.all([
+  const [profile, exercises, sessions, plans, memories, routines, feedback] = await Promise.all([
     getProfile(), load('user_exercises', []), load('workout_sessions', []),
-    load('planned_sessions', []), load('ai_memories', []), load('routines', []),
+    load('planned_sessions', []), load('ai_memories', []), load('routines', []), load('ai_feedback', []),
   ])
   return {
     version: 2, exported_at: new Date().toISOString(),
     profile, user_exercises: exercises, workout_sessions: sessions,
-    planned_sessions: plans, ai_memories: memories, routines,
+    planned_sessions: plans, ai_memories: memories, routines, ai_feedback: feedback,
   }
 }
 
@@ -310,4 +348,5 @@ export async function importAll(data) {
   await save('ai_memories', data.ai_memories || [])
   // ルーチン導入前のエクスポート（routinesキーなし）を読み込んでも、端末のルーチンは消さない
   if (Array.isArray(data.routines)) await save('routines', data.routines)
+  if (Array.isArray(data.ai_feedback)) await save('ai_feedback', data.ai_feedback)
 }

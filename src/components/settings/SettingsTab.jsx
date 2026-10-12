@@ -9,6 +9,7 @@ import {
   exportAll, importAll,
 } from '../../lib/localdb'
 import RoutinesSection from './RoutinesSection'
+import FeedbackSection from './FeedbackSection'
 
 const PURPOSES = [
   { value: 'muscle', label: '筋肥大' },
@@ -390,6 +391,8 @@ export default function SettingsTab() {
               </>
             )}
           </div>
+
+          <FeedbackSection />
 
           <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>トレーナー選択</div>
           <div style={{ marginBottom: 14 }}>

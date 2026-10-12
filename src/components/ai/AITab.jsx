@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../../hooks/useAuth'
 import { localDateStr } from '../../lib/dates'
 import { hapticImpact, hapticError } from '../../lib/haptics'
-import { listSessions, addPlan, loadChat, saveChat } from '../../lib/localdb'
+import { listSessions, addPlan, loadChat, saveChat, setFeedback, FEEDBACK_REASONS } from '../../lib/localdb'
 import { sendChat, structurePlan, extractAndSaveMemories } from '../../lib/aiClient'
 import { useCoach } from '../../lib/coachContext'
 import { pickDaily } from '../../lib/trainerLines'
@@ -15,6 +15,68 @@ const QUICK_ACTIONS = [
 
 function hasPlan(text) {
   return (text.match(/\d+\s*(セット|回|kg)/gi) || []).length >= 3
+}
+
+function newReplyId() {
+  return `r-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`
+}
+
+function ThumbIcon({ down, active, color }) {
+  const d = down
+    ? 'M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17'
+    : 'M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3'
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill={active ? color : 'none'} fillOpacity={active ? 0.25 : 0}
+      stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d={d} />
+    </svg>
+  )
+}
+
+// AI返答の評価。キャラ別の👎率と理由で、口調・内容のどこから直すかを決める（端末内に保存）
+function RatingBar({ msg, accent, onRate }) {
+  if (!msg.id) return null
+  const btn = kind => {
+    const active = msg.rating === kind
+    return (
+      <button
+        onClick={() => onRate(msg, kind)}
+        aria-label={kind === 'up' ? '良い返事' : '気になる返事'}
+        style={{
+          width: 32, height: 28, padding: 0, background: 'transparent', border: 'none',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer',
+        }}
+      >
+        <ThumbIcon down={kind === 'down'} active={active} color={active ? accent : 'var(--muted)'} />
+      </button>
+    )
+  }
+  return (
+    <div style={{ paddingLeft: 36, marginTop: 2 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+        {btn('up')}
+        {btn('down')}
+        {msg.rating === 'down' && msg.reason && (
+          <span style={{ fontSize: 11, color: 'var(--muted)', marginLeft: 4 }}>{msg.reason}</span>
+        )}
+      </div>
+      {msg.rating === 'down' && !msg.reason && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
+          <span style={{ width: '100%', fontSize: 11, color: 'var(--muted)' }}>どこが気になりましたか？（任意）</span>
+          {FEEDBACK_REASONS.map(r => (
+            <button
+              key={r}
+              onClick={() => onRate(msg, 'down', r)}
+              style={{
+                padding: '4px 10px', background: 'var(--card)', border: '1px solid var(--border)',
+                color: 'var(--text-2nd)', fontSize: 12, cursor: 'pointer',
+              }}
+            >{r}</button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function AITab({ keyboardOpen = false }) {
@@ -98,7 +160,7 @@ export default function AITab({ keyboardOpen = false }) {
       const content = await sendChat({
         message: msg, history: messages.slice(-10), profile, recentWorkouts,
       })
-      setMessages(prev => [...prev, { role: 'assistant', content }])
+      setMessages(prev => [...prev, { role: 'assistant', content, id: newReplyId() }])
       // 長期記憶の抽出・保存はバックグラウンド（UIを待たせない）。
       // 旧キーワードゲートは発火率が低く「記憶が機能していない」FBが出たため毎回実行する
       extractAndSaveMemories({ message: msg, assistantResponse: content })
@@ -107,6 +169,19 @@ export default function AITab({ keyboardOpen = false }) {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // 同じボタンをもう一度押すと取り消し。理由付きの👎は理由だけ更新
+  function rateMessage(target, rating, reason = null) {
+    const next = target.rating === rating && !reason ? null : rating
+    hapticImpact()
+    setMessages(prev => prev.map(m => (m.id === target.id ? { ...m, rating: next, reason: next === 'down' ? reason : null } : m)))
+    const idx = messages.findIndex(m => m.id === target.id)
+    const asked = messages.slice(0, idx).reverse().find(m => m.role === 'user')
+    setFeedback({
+      id: target.id, trainer, rating: next, reason: next === 'down' ? reason : null,
+      reply: target.content, prompt: asked ? (asked.display ?? asked.content) : '',
+    })
   }
 
   async function savePlan(content, idx) {
@@ -249,6 +324,7 @@ export default function AITab({ keyboardOpen = false }) {
                 {msg.display ?? msg.content}
               </div>
             </div>
+            {msg.role === 'assistant' && <RatingBar msg={msg} accent={accent} onRate={rateMessage} />}
             {msg.role === 'assistant' && hasPlan(msg.content) && (
               <div style={{ paddingLeft: 36, marginTop: 6 }}>
                 {savedPlanIdxes.has(i) ? (

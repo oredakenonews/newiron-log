@@ -10,7 +10,7 @@
 - **データは全て端末内**: `src/lib/localdb.js` が唯一のデータ層
   - ネイティブ: Capacitor Preferences（UserDefaults、iCloudバックアップ対象）
   - Web: localStorage
-  - コレクション: profile / user_exercises / workout_sessions / planned_sessions / ai_memories / chat / routines
+  - コレクション: profile / user_exercises / workout_sessions / planned_sessions / ai_memories / chat / routines / ai_feedback
   - workout_sessionsは同一日付upsert（旧UNIQUE(user_id,date)相当）
   - ai_memoriesのtype別置き換え統合・TTLはlocaldb内で実装（旧v11と同仕様）
   - エクスポート/インポート: `exportAll()` / `importAll()`（設定タブにJSONエクスポートあり）
@@ -22,7 +22,7 @@
   - ネイティブからは `https://newiron-log.vercel.app/api/ai-chat` を叩く（VITE_AI_ENDPOINTで上書き可）
 - **useAuth**: API互換のまま中身をローカル化（user={id:'local'}固定、saveProfile(patch)追加）
 - `supabase/functions/` はv1の遺産として残置（デプロイ済みEdge Functionの参照用）
-- テスト: `node scripts/test-localdb.mjs`（データ層27項目）/ `node scripts/test-ai-chat.mjs`（AIプロキシ40項目・外部APIはモック）/ `node scripts/test-trainer-lines.mjs`（固定セリフ網羅）
+- テスト: `node scripts/test-localdb.mjs`（データ層32項目）/ `node scripts/test-ai-chat.mjs`（AIプロキシ40項目・外部APIはモック）/ `node scripts/test-trainer-lines.mjs`（固定セリフ網羅）
 
 ## URL
 - 本番: https://newiron-log.vercel.app
@@ -153,6 +153,8 @@
   - チャット: トレーナー画像アバター＋名前＋オンライン表示
   - プラン検出（3回以上のセット/回/kg表記）→「この計画を保存する」ボタン→planned_sessionsに保存
   - チャット履歴はトレーナー刻印付きで保存。トレーナー変更後は旧履歴を引き継がない（人格ブリード防止）。タブは常時マウントのためAITab内でtrainer変化も監視して即クリア
+  - AIの返事ごとに👍/👎（2026-10-12）。👎には任意で理由（キャラっぽくない／内容が違う／長すぎる／日本語が変／その他）。`ai_feedback` に返答本文・質問・理由と一緒に端末内保存（最大300件）。設定→AIコーチの「返答の評価」でキャラ別の👎率と最近の👎を確認できる。口調改善の優先度決めに使い、公開後は匿名分析の元データにする（送信は未実装）
+  - 返事のメッセージには `id` が付く（評価のひも付け用）。idのない古い履歴には👍/👎を出さない
   - 入力欄の上に定型アクション2ボタン常設（結果フィードバック／メニュー提案）。吹き出しには長い指示文ではなくボタン名（message.display）を出す
   - 自分の発言の吹き出しは薄いオレンジ（rgba(255,106,26,0.12)）＋同色のぼかし（ベタ塗りオレンジはきつすぎるFB）
   - キーボード表示中（`src/lib/useKeyboardOpen.js`）はタブバーを隠し、AIタブの大型キャラ表示を1行に畳む
