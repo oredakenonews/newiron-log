@@ -71,8 +71,18 @@ const DEFAULT_PROFILE = {
   display_name: null,
 }
 
+// 2026-10-12: 見た目が被る日本人男性キャラを入れ替え（性格の枠は後継キャラが引き継ぐ）
+const LEGACY_TRAINER_IDS = { DAIKI: 'LEON', KENJI: 'JADE' }
+
 export async function getProfile() {
-  return load('profile', { ...DEFAULT_PROFILE })
+  const profile = await load('profile', { ...DEFAULT_PROFILE })
+  const successor = LEGACY_TRAINER_IDS[profile.trainer_character]
+  if (successor) {
+    const migrated = { ...profile, trainer_character: successor }
+    await save('profile', migrated)
+    return migrated
+  }
+  return profile
 }
 
 export async function updateProfile(patch) {

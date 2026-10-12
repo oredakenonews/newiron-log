@@ -33,8 +33,8 @@ const QUESTIONS = [
     options: [
       { value: 'hot', label: '熱く励ましてくれるタメ口', scores: { RYOTA: 2, BILLY: 1 } },
       { value: 'polite', label: 'きちんとした敬語', scores: { HANA: 2, YUKI: 1 } },
-      { value: 'short', label: '短く、要点だけ', scores: { KENJI: 2, NANA: 1, TORU: 1 } },
-      { value: 'logic', label: '理屈から丁寧に説明', scores: { DAIKI: 2, RACHELL: 1 } },
+      { value: 'short', label: '短く、要点だけ', scores: { JADE: 2, NANA: 1, TORU: 1 } },
+      { value: 'logic', label: '理屈から丁寧に説明', scores: { LEON: 2, RACHELL: 1 } },
       { value: 'global', label: '英語まじりのフランクな話し方', scores: { RACHELL: 2, NANA: 1 } },
     ],
   },
@@ -42,9 +42,9 @@ const QUESTIONS = [
     key: 'motivation',
     question: 'きつい場面では、どうされたいですか？',
     options: [
-      { value: 'push', label: '「もう一回！」と背中を押してほしい', scores: { RYOTA: 2, KENJI: 1 } },
+      { value: 'push', label: '「もう一回！」と背中を押してほしい', scores: { RYOTA: 2, JADE: 1 } },
       { value: 'care', label: '「無理しないで」と気遣ってほしい', scores: { YUKI: 2, HANA: 1 } },
-      { value: 'data', label: '数字で成長を示して納得させてほしい', scores: { DAIKI: 2, RACHELL: 1 } },
+      { value: 'data', label: '数字で成長を示して納得させてほしい', scores: { LEON: 2, RACHELL: 1 } },
       { value: 'fun', label: '盛り上げて笑わせてほしい', scores: { BILLY: 2, RYOTA: 1 } },
       { value: 'calm', label: '「焦るな」と落ち着かせてほしい', scores: { TORU: 2, YUKI: 1 } },
     ],
@@ -53,11 +53,11 @@ const QUESTIONS = [
     key: 'mood',
     question: 'ジムでのあなたの気分に一番近いのは？',
     options: [
-      { value: 'battle', label: '戦場。黙々とストイックに', scores: { KENJI: 2, TORU: 1 } },
+      { value: 'battle', label: '戦場。黙々とストイックに', scores: { JADE: 2, TORU: 1 } },
       { value: 'fes', label: 'フェス。音楽とノリで上げる', scores: { BILLY: 2, RYOTA: 1 } },
-      { value: 'lab', label: '最新メソッドを試す実験の場', scores: { RACHELL: 2, DAIKI: 1 } },
+      { value: 'lab', label: '最新メソッドを試す実験の場', scores: { RACHELL: 2, LEON: 1 } },
       { value: 'rehab', label: '体と相談しながら丁寧に', scores: { HANA: 2, YUKI: 1 } },
-      { value: 'focus', label: '自分の時間。静かに集中して整える', scores: { NANA: 2, KENJI: 1 } },
+      { value: 'focus', label: '自分の時間。静かに集中して整える', scores: { NANA: 2, JADE: 1 } },
     ],
   },
   {
@@ -66,7 +66,7 @@ const QUESTIONS = [
     options: [
       { value: 'veteran', label: '百戦錬磨のベテラン', scores: { TORU: 2, HANA: 1 } },
       { value: 'sns', label: 'SNSで人気の今どきトレーナー', scores: { BILLY: 2, NANA: 1 } },
-      { value: 'academic', label: '研究で裏付けのある専門家', scores: { DAIKI: 2, RACHELL: 1 } },
+      { value: 'academic', label: '研究で裏付けのある専門家', scores: { LEON: 2, RACHELL: 1 } },
       { value: 'heart', label: '経歴より人柄', scores: { YUKI: 2, TORU: 1 } },
       { value: 'stylish', label: 'スタイルも動きも洗練されている', scores: { NANA: 2, RACHELL: 1 } },
     ],
@@ -76,8 +76,8 @@ const QUESTIONS = [
     question: '最後の質問。褒められ方の好みは？',
     options: [
       { value: 'party', label: '全力で一緒に喜んでほしい', scores: { RYOTA: 2, BILLY: 1 } },
-      { value: 'curt', label: '一言「悪くない」で十分', scores: { KENJI: 2, NANA: 1, TORU: 1 } },
-      { value: 'proof', label: '成長の根拠つきで認めてほしい', scores: { DAIKI: 2, RACHELL: 1 } },
+      { value: 'curt', label: '一言「悪くない」で十分', scores: { JADE: 2, NANA: 1, TORU: 1 } },
+      { value: 'proof', label: '成長の根拠つきで認めてほしい', scores: { LEON: 2, RACHELL: 1 } },
       { value: 'warm', label: '丁寧にねぎらってほしい', scores: { HANA: 2, YUKI: 1 } },
       { value: 'worldclass', label: '「World-class！」と世界基準で認めてほしい', scores: { RACHELL: 2, BILLY: 1 } },
     ],
@@ -87,8 +87,8 @@ const QUESTIONS = [
 const TRAINER_META = {
   RYOTA:   { img: '/gazou/ryota_bu.png',   type: '熱血',     desc: '元ラグビー・陸上選手。熱く背中を押すタイプ' },
   YUKI:    { img: '/gazou/yuki_bu.png',    type: '穏やか',   desc: '元看護師。体を気遣いながら寄り添うタイプ' },
-  DAIKI:   { img: '/gazou/daiki_bu.png',   type: '理論派',   desc: 'スポーツ科学修士。データと理論で導くタイプ' },
-  KENJI:   { img: '/gazou/kenji_bu.png',   type: 'ストイック', desc: '元自衛隊。言葉少なく限界に挑ませるタイプ' },
+  LEON:    { img: '/gazou/leon_bu.png',    type: '理論派',   desc: 'スポーツ科学博士（ドイツ出身）。データと理論で導くタイプ' },
+  JADE:    { img: '/gazou/jade_bu.png',    type: 'ストイック', desc: '元ボクサー（アメリカ出身）。言葉少なく限界に挑ませるタイプ' },
   NANA:    { img: '/gazou/nana_bu.png',    type: 'クール',   desc: '元陸上選手。クールに的確、フォームの美しさにこだわるタイプ' },
   HANA:    { img: '/gazou/hana_bu.png',    type: '丁寧',     desc: '理学療法士。必ず敬語、基本を大切にするタイプ' },
   RACHELL: { img: '/gazou/rachell_bu.png', type: '国際派',   desc: 'NSCA-CSCS。世界基準のメソッドで鍛えるタイプ' },

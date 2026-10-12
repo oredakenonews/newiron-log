@@ -4,7 +4,7 @@
 // Mirrors src/lib/coachContext.jsx.
 
 const TRAINER_TAGS = {
-  RYOTA: '熱血', YUKI: '穏やか', DAIKI: '理論派', KENJI: 'ストイック',
+  RYOTA: '熱血', YUKI: '穏やか', LEON: '理論派', JADE: 'ストイック',
   NANA: 'クール', HANA: '丁寧', RACHELL: '国際派', TORU: 'ベテラン', BILLY: 'エンタメ',
 };
 
@@ -30,23 +30,23 @@ const TRAINER_LINES = {
     workout_normal:  'バランスの良いトレーニングでした。この調子で大丈夫ですよ。',
     workout_legs:    '脚の日、よく頑張りましたね。今夜はしっかり休んでください。',
   },
-  DAIKI: {
-    record_idle:     'ようこそ。今日も記録を積み上げよう。データは裏切らない。',
-    record_active:   ({ doneSets, totalSets }) => `進捗${doneSets}/${totalSets}。良いペース配分だ。`,
-    record_done:     '全セット完了。データ上、次回は負荷を上げるタイミングだ。',
-    history_summary: '今週も良いデータが取れた。継続こそ最大の変数だ。',
-    workout_pr:      'PR更新。トレーニング設計が機能している証拠だ。',
-    workout_normal:  '総量は妥当。プル系の比率を上げると均衡が取れる。',
-    workout_legs:    '脚のボリュームを確保できている。合理的な判断だ。',
+  LEON: {
+    record_idle:     'ようこそ。今日も記録を一つずつ積み上げましょう。データは裏切りません。',
+    record_active:   ({ doneSets, totalSets }) => `進捗${doneSets}/${totalSets}。理想的なペース配分です。`,
+    record_done:     '全セット完了。数値上、次回は負荷を上げる段階です。Gut.',
+    history_summary: '今週も良いデータが取れました。継続こそ最大の変数です。',
+    workout_pr:      'PR更新。トレーニング設計が機能している証拠です。',
+    workout_normal:  '総量は妥当です。プル系の比率を上げると均衡が取れます。',
+    workout_legs:    '脚のボリュームを確保できています。合理的な判断です。',
   },
-  KENJI: {
-    record_idle:     '来たか。やるぞ。',
-    record_active:   ({ doneSets, totalSets }) => `${doneSets}/${totalSets}。続けろ。`,
-    record_done:     '完了。悪くない。',
-    history_summary: '継続は認める。以上だ。',
-    workout_pr:      'PR。次だ。',
-    workout_normal:  '量は足りてる。質を上げろ。',
-    workout_legs:    '脚、逃げなかったな。良い。',
+  JADE: {
+    record_idle:     '来たね。始めるよ。',
+    record_active:   ({ doneSets, totalSets }) => `${doneSets}/${totalSets}。止まらない。`,
+    record_done:     '完了。よくやった。',
+    history_summary: '続けてる。それでいい。',
+    workout_pr:      'PR。次を取りに行く。',
+    workout_normal:  '量は十分。次は質。',
+    workout_legs:    '脚から逃げなかった。強くなる。',
   },
   NANA: {
     record_idle:     '来たね。今日も淡々と、きれいにいこう。',

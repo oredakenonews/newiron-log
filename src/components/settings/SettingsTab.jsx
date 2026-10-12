@@ -20,9 +20,9 @@ const PURPOSES = [
 
 const TRAINERS = [
   { id: 'RYOTA', name: 'RYOTA', desc: '熱血系。厳しくも愛のある指導スタイル', img: '/gazou/ryota_bu.png' },
-  { id: 'DAIKI', name: 'DAIKI', desc: '理論派。データと科学で最適解を示す', img: '/gazou/daiki_bu.png' },
+  { id: 'LEON', name: 'LEON', desc: '理論派。ドイツ出身のスポーツ科学博士。データで最適解を示す', img: '/gazou/leon_bu.png' },
   { id: 'YUKI', name: 'YUKI', desc: '穏やか系。寄り添いながら継続をサポート', img: '/gazou/yuki_bu.png' },
-  { id: 'KENJI', name: 'KENJI', desc: 'ストイック系。限界突破を共に目指す', img: '/gazou/kenji_bu.png' },
+  { id: 'JADE', name: 'JADE', desc: 'ストイック系。元ボクサー。言葉少なく限界に挑ませる', img: '/gazou/jade_bu.png' },
   { id: 'NANA', name: 'NANA', desc: 'クール系。無駄なく的確、美しいフォームにこだわる', img: '/gazou/nana_bu.png' },
   { id: 'HANA', name: 'HANA', desc: '丁寧系。基礎を大切にした指導', img: '/gazou/hana_bu.png' },
   { id: 'RACHELL', name: 'RACHELL', desc: '国際派。世界基準のトレーニング理論', img: '/gazou/rachell_bu.png' },

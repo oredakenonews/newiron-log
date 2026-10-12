@@ -139,6 +139,12 @@ console.log('— 通常チャット —')
   ok('systemに長期記憶', /\[injury\] 左肩に違和感/.test(lastPayload.system))
   ok('systemに直近記録', /ベンチプレス\(60kg×10回\)/.test(lastPayload.system))
 }
+{
+  // 旧ビルドのアプリは廃止キャラのIDを送ってくる → 後継キャラで応答し、RYOTAに落ちない
+  const res = mockRes()
+  await handler(req({ body: { message: 'こんにちは', profile: { trainer_character: 'DAIKI' } } }), res)
+  ok('旧ID DAIKI→LEONのペルソナ', res.statusCode === 200 && /LEON/.test(lastPayload.system) && !/RYOTA/.test(lastPayload.system))
+}
 
 console.log('— structure / memory —')
 {

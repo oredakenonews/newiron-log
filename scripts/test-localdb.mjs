@@ -20,8 +20,13 @@ function check(name, ok, detail = '') {
 console.log('— profile —')
 const p0 = await getProfile()
 check('初期プロフィール', p0.onboarding_done === false && p0.coach_mode === 'spartan')
-const p1 = await updateProfile({ onboarding_done: true, trainer_character: 'DAIKI' })
-check('更新がマージされる', p1.onboarding_done === true && p1.trainer_character === 'DAIKI' && p1.coach_mode === 'spartan')
+const p1 = await updateProfile({ onboarding_done: true, trainer_character: 'HANA' })
+check('更新がマージされる', p1.onboarding_done === true && p1.trainer_character === 'HANA' && p1.coach_mode === 'spartan')
+await updateProfile({ trainer_character: 'DAIKI' })
+check('廃止キャラDAIKIはLEONへ移行', (await getProfile()).trainer_character === 'LEON')
+await updateProfile({ trainer_character: 'KENJI' })
+check('廃止キャラKENJIはJADEへ移行', (await getProfile()).trainer_character === 'JADE')
+await updateProfile({ trainer_character: 'HANA' })
 
 console.log('— exercises —')
 await db.addExerciseDefs([{ name: 'ベンチプレス' }, { name: 'スクワット' }])
@@ -91,7 +96,7 @@ check('エクスポート形式', dump.version === 2 && dump.workout_sessions.le
 store.clear()
 // キャッシュを飛ばすため再import不可 → importAllで上書き検証
 await db.importAll(dump)
-check('インポート復元', (await db.listSessions()).length === 2 && (await getProfile()).trainer_character === 'DAIKI' && (await db.listRoutines()).length === 3)
+check('インポート復元', (await db.listSessions()).length === 2 && (await getProfile()).trainer_character === 'HANA' && (await db.listRoutines()).length === 3)
 const { routines: _omit, ...oldFormat } = dump
 await db.importAll(oldFormat)
 check('routinesなしの旧エクスポートでもルーチンは消えない', (await db.listRoutines()).length === 3)

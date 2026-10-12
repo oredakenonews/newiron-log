@@ -22,7 +22,7 @@
   - ネイティブからは `https://newiron-log.vercel.app/api/ai-chat` を叩く（VITE_AI_ENDPOINTで上書き可）
 - **useAuth**: API互換のまま中身をローカル化（user={id:'local'}固定、saveProfile(patch)追加）
 - `supabase/functions/` はv1の遺産として残置（デプロイ済みEdge Functionの参照用）
-- テスト: `node scripts/test-localdb.mjs`（データ層25項目）/ `node scripts/test-ai-chat.mjs`（AIプロキシ28項目・外部APIはモック）
+- テスト: `node scripts/test-localdb.mjs`（データ層27項目）/ `node scripts/test-ai-chat.mjs`（AIプロキシ30項目・外部APIはモック）
 
 ## URL
 - 本番: https://newiron-log.vercel.app
@@ -175,13 +175,17 @@
 |---|---|---|---|---|
 | RYOTA | RYOTA | 熱血系 | 俺 | 元ラグビー・陸上選手、！多用 |
 | YUKI | YUKI | 穏やか系 | わたし | 元看護師、産後リハビリ専門 |
-| DAIKI | DAIKI | 理論派 | 私 | 東大大学院スポーツ科学修士 |
-| KENJI | KENJI | ストイック系 | 俺 | 元自衛隊、極端に言葉が少ない |
+| LEON | LEON | 理論派 | 私 | ドイツ出身のスポーツ科学博士・白人男性。丁寧な日本語、納得時だけ「Gut.」 |
+| JADE | JADE | ストイック系 | 私 | アメリカ出身の元ボクサー・黒人女性。最大3文の短い言い切り |
 | NANA | NANA | クール系 | 私 | 元陸上400m選手、落ち着いたタメ口・！と絵文字なし（2026-10-12 ポジティブ系から変更） |
 | HANA | HANA | 丁寧系 | わたくし/私 | 理学療法士資格、必ず敬語 |
 | RACHELL | RACHELL | 国際派 | 私 | NSCA-CSCS、英日混在 |
 | TORU | TORU | ベテラン系 | 俺 | トレーニング歴25年超、50代現役 |
 | BILLY | BILLY | エンタメ系 | 俺 | HIPHOPダンサー、YO！FIRE！ |
+
+- 2026-10-12: 見た目が被る日本人男性（DAIKI・KENJI）を外し、性格の枠（診断の配点・セリフの強さ）をLEON（理論派）・JADE（ストイック）に引き継いだ。旧IDは端末側 `getProfile()` とサーバー側 `LEGACY_TRAINER_IDS` で後継キャラへ自動移行
+- 外国出身キャラ（RACHELL・LEON・JADE・BILLY）も「片言の日本語」にはしない（ペルソナの【禁止】に明記）
+- LEON・JADEの画像は現在シルエットの仮画像。作成手順とプロンプトは `docs/character-prompts.md`
 
 チャット時はトレーナー固有の口調・経歴・一人称で応答（edge functionのシステムプロンプトで規定）。コーチ共存プレゼンス（K/H）はモード表示のみ担当。
 
