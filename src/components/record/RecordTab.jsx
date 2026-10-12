@@ -5,9 +5,9 @@ import { getCategory } from '../../lib/categories'
 import {
   listExercises, listSessions, getSessionByDate, upsertSession,
   getPendingPlan, markPlanDone,
-  listRoutines, getNextRoutine, markRoutineUsed,
+  listRoutines, markRoutineUsed,
 } from '../../lib/localdb'
-import { localDateStr } from '../../lib/dates'
+import { localDateStr, shortDayLabel } from '../../lib/dates'
 import { hapticImpact, hapticSuccess, hapticError } from '../../lib/haptics'
 import WheelPickerSheet from '../shared/WheelPickerSheet'
 import AddExerciseSheet from '../shared/AddExerciseSheet'
@@ -306,7 +306,7 @@ function PlanBanner({ plan, onLoad }) {
   )
 }
 
-function RoutinePicker({ routines, nextId, onStart, onCreate }) {
+function RoutinePicker({ routines, onStart, onCreate }) {
   if (routines.length === 0) {
     return (
       <button
@@ -330,7 +330,7 @@ function RoutinePicker({ routines, nextId, onStart, onCreate }) {
         <button onClick={onCreate} style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: 12, cursor: 'pointer', padding: 0 }}>編集 ›</button>
       </div>
       {routines.map(r => {
-        const isNext = r.id === nextId
+        const last = shortDayLabel(r.last_used_at)
         return (
           <button
             key={r.id}
@@ -338,23 +338,20 @@ function RoutinePicker({ routines, nextId, onStart, onCreate }) {
             style={{
               width: '100%', marginBottom: 6, padding: '12px 14px',
               background: 'var(--card)',
-              border: isNext ? '1px solid #FF6A1A' : '1px solid var(--border)',
-              borderLeft: isNext ? '4px solid #FF6A1A' : '1px solid var(--border)',
+              border: '1px solid var(--border)', borderLeft: '4px solid #FF6A1A',
               display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', textAlign: 'left',
             }}
           >
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
                 <span style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-strong)' }}>{r.name}</span>
-                {isNext && (
-                  <span style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1.5, color: 'var(--on-accent)', background: '#FF6A1A', padding: '1px 6px' }}>NEXT</span>
-                )}
+                {last && <span style={{ fontSize: 11, color: 'var(--muted)' }}>前回 {last}</span>}
               </div>
               <div style={{ fontSize: 12, color: 'var(--text-2nd)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {r.exercises.length}種目 · {r.exercises.map(ex => ex.name).join('、')}
               </div>
             </div>
-            <span style={{ color: isNext ? '#FF6A1A' : 'var(--muted)', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>始める ›</span>
+            <span style={{ color: '#FF6A1A', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>始める ›</span>
           </button>
         )
       })}
@@ -381,7 +378,6 @@ export default function RecordTab() {
   const navigate = useNavigate()
   const [exercises, setExercises] = useState([])
   const [routines, setRoutines] = useState([])
-  const [nextRoutineId, setNextRoutineId] = useState(null)
   const [activeRoutine, setActiveRoutine] = useState(null) // { id, name }
   const pendingRoutineRef = useRef(null)
   const [userExercises, setUserExercises] = useState([])
@@ -447,9 +443,7 @@ export default function RecordTab() {
   }, [exercises, activeRoutine, user])
 
   async function loadRoutines() {
-    const [list, next] = await Promise.all([listRoutines(), getNextRoutine()])
-    setRoutines(list)
-    setNextRoutineId(next?.id ?? null)
+    setRoutines(await listRoutines())
   }
 
   async function startRoutine(routine) {
@@ -600,7 +594,7 @@ export default function RecordTab() {
         setPlannedSession(null)
       }
 
-      // ルーチンの順番を進める（次回のNEXTが次のルーチンになる）
+      // ルーチンの前回実施日を更新（一覧の「前回◯/◯」表示用）
       if (activeRoutine?.id) {
         await markRoutineUsed(activeRoutine.id)
         loadRoutines()
@@ -669,7 +663,6 @@ export default function RecordTab() {
         {exercises.length === 0 && (
           <RoutinePicker
             routines={routines}
-            nextId={nextRoutineId}
             onStart={startRoutine}
             onCreate={() => {
               navigate('/settings')

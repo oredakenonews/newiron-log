@@ -31,10 +31,11 @@ const QUESTIONS = [
     key: 'tone',
     question: 'ここからはコーチとの相性チェックです。\n\nコーチの話し方、どれが心地いいですか？',
     options: [
-      { value: 'hot', label: '熱く励ましてくれるタメ口', scores: { RYOTA: 2, BILLY: 1, NANA: 1 } },
+      { value: 'hot', label: '熱く励ましてくれるタメ口', scores: { RYOTA: 2, BILLY: 1 } },
       { value: 'polite', label: 'きちんとした敬語', scores: { HANA: 2, YUKI: 1 } },
-      { value: 'short', label: '短く、要点だけ', scores: { KENJI: 2, TORU: 1 } },
+      { value: 'short', label: '短く、要点だけ', scores: { KENJI: 2, NANA: 1, TORU: 1 } },
       { value: 'logic', label: '理屈から丁寧に説明', scores: { DAIKI: 2, RACHELL: 1 } },
+      { value: 'global', label: '英語まじりのフランクな話し方', scores: { RACHELL: 2, NANA: 1 } },
     ],
   },
   {
@@ -44,7 +45,8 @@ const QUESTIONS = [
       { value: 'push', label: '「もう一回！」と背中を押してほしい', scores: { RYOTA: 2, KENJI: 1 } },
       { value: 'care', label: '「無理しないで」と気遣ってほしい', scores: { YUKI: 2, HANA: 1 } },
       { value: 'data', label: '数字で成長を示して納得させてほしい', scores: { DAIKI: 2, RACHELL: 1 } },
-      { value: 'fun', label: '盛り上げて笑わせてほしい', scores: { BILLY: 2, NANA: 1 } },
+      { value: 'fun', label: '盛り上げて笑わせてほしい', scores: { BILLY: 2, RYOTA: 1 } },
+      { value: 'calm', label: '「焦るな」と落ち着かせてほしい', scores: { TORU: 2, YUKI: 1 } },
     ],
   },
   {
@@ -52,9 +54,10 @@ const QUESTIONS = [
     question: 'ジムでのあなたの気分に一番近いのは？',
     options: [
       { value: 'battle', label: '戦場。黙々とストイックに', scores: { KENJI: 2, TORU: 1 } },
-      { value: 'fes', label: 'フェス。音楽とノリで上げる', scores: { BILLY: 2, NANA: 1 } },
-      { value: 'lab', label: '研究室。フォームと数値を検証', scores: { DAIKI: 2, RACHELL: 1 } },
-      { value: 'rehab', label: 'リハビリ室。体と相談しながら', scores: { YUKI: 2, HANA: 1 } },
+      { value: 'fes', label: 'フェス。音楽とノリで上げる', scores: { BILLY: 2, RYOTA: 1 } },
+      { value: 'lab', label: '最新メソッドを試す実験の場', scores: { RACHELL: 2, DAIKI: 1 } },
+      { value: 'rehab', label: '体と相談しながら丁寧に', scores: { HANA: 2, YUKI: 1 } },
+      { value: 'focus', label: '自分の時間。静かに集中して整える', scores: { NANA: 2, KENJI: 1 } },
     ],
   },
   {
@@ -62,19 +65,21 @@ const QUESTIONS = [
     question: 'コーチの経歴、どれに惹かれますか？',
     options: [
       { value: 'veteran', label: '百戦錬磨のベテラン', scores: { TORU: 2, HANA: 1 } },
-      { value: 'peer', label: '同世代の勢いとノリ', scores: { NANA: 2, RYOTA: 1, BILLY: 1 } },
-      { value: 'global', label: '世界基準の資格と知識', scores: { RACHELL: 2, DAIKI: 1 } },
+      { value: 'sns', label: 'SNSで人気の今どきトレーナー', scores: { BILLY: 2, NANA: 1 } },
+      { value: 'academic', label: '研究で裏付けのある専門家', scores: { DAIKI: 2, RACHELL: 1 } },
       { value: 'heart', label: '経歴より人柄', scores: { YUKI: 2, TORU: 1 } },
+      { value: 'stylish', label: 'スタイルも動きも洗練されている', scores: { NANA: 2, RACHELL: 1 } },
     ],
   },
   {
     key: 'praise',
     question: '最後の質問。褒められ方の好みは？',
     options: [
-      { value: 'party', label: '全力で一緒に喜んでほしい', scores: { NANA: 2, BILLY: 1 } },
-      { value: 'curt', label: '一言「悪くない」で十分', scores: { KENJI: 2, TORU: 1 } },
+      { value: 'party', label: '全力で一緒に喜んでほしい', scores: { RYOTA: 2, BILLY: 1 } },
+      { value: 'curt', label: '一言「悪くない」で十分', scores: { KENJI: 2, NANA: 1, TORU: 1 } },
       { value: 'proof', label: '成長の根拠つきで認めてほしい', scores: { DAIKI: 2, RACHELL: 1 } },
-      { value: 'warm', label: '温かくねぎらってほしい', scores: { YUKI: 2, HANA: 1 } },
+      { value: 'warm', label: '丁寧にねぎらってほしい', scores: { HANA: 2, YUKI: 1 } },
+      { value: 'worldclass', label: '「World-class！」と世界基準で認めてほしい', scores: { RACHELL: 2, BILLY: 1 } },
     ],
   },
 ]
@@ -84,20 +89,20 @@ const TRAINER_META = {
   YUKI:    { img: '/gazou/yuki_bu.png',    type: '穏やか',   desc: '元看護師。体を気遣いながら寄り添うタイプ' },
   DAIKI:   { img: '/gazou/daiki_bu.png',   type: '理論派',   desc: 'スポーツ科学修士。データと理論で導くタイプ' },
   KENJI:   { img: '/gazou/kenji_bu.png',   type: 'ストイック', desc: '元自衛隊。言葉少なく限界に挑ませるタイプ' },
-  NANA:    { img: '/gazou/nana_bu.png',    type: 'ポジティブ', desc: 'フィットネスYouTuber。明るく全力で褒めるタイプ' },
+  NANA:    { img: '/gazou/nana_bu.png',    type: 'クール',   desc: '元陸上選手。クールに的確、フォームの美しさにこだわるタイプ' },
   HANA:    { img: '/gazou/hana_bu.png',    type: '丁寧',     desc: '理学療法士。必ず敬語、基本を大切にするタイプ' },
   RACHELL: { img: '/gazou/rachell_bu.png', type: '国際派',   desc: 'NSCA-CSCS。世界基準のメソッドで鍛えるタイプ' },
   TORU:    { img: '/gazou/toru_bu.png',    type: 'ベテラン', desc: 'トレーニング歴25年超。長い目で導くタイプ' },
   BILLY:   { img: '/gazou/billybu.png',    type: 'エンタメ', desc: 'HIPHOPダンサー。ノリと勢いで楽しませるタイプ' },
 }
 
-// スコア合算→最高点のトレーナーを推薦（同点は質問設計上の優先順で安定）
-function recommendTrainer(totals) {
+// スコア合算→最高点のトレーナーを推薦。同点なら「1位候補として選ばれた回数（2点の数）」が多い方
+function recommendTrainer(totals, primaries) {
   let best = 'RYOTA'
-  let bestScore = -1
+  let bestKey = [-1, -1]
   for (const id of Object.keys(TRAINER_META)) {
-    const s = totals[id] || 0
-    if (s > bestScore) { best = id; bestScore = s }
+    const key = [totals[id] || 0, primaries[id] || 0]
+    if (key[0] > bestKey[0] || (key[0] === bestKey[0] && key[1] > bestKey[1])) { best = id; bestKey = key }
   }
   return best
 }
@@ -182,13 +187,15 @@ export default function OnboardingChat() {
     } else {
       // 完了処理: スコアを合算して相性の良いトレーナーを推薦
       const totals = {}
+      const primaries = {}
       for (const question of QUESTIONS) {
         const picked = question.options.find(o => o.value === newAnswers[question.key])
         for (const [id, pt] of Object.entries(picked?.scores || {})) {
           totals[id] = (totals[id] || 0) + pt
+          if (pt >= 2) primaries[id] = (primaries[id] || 0) + 1
         }
       }
-      const trainer = recommendTrainer(totals)
+      const trainer = recommendTrainer(totals, primaries)
       setRecommended(trainer)
 
       setIsTyping(true)

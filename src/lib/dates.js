@@ -9,6 +9,19 @@ export function localDateStr(d = new Date()) {
   return `${y}-${m}-${day}`
 }
 
+// ISO日時 → 「今日」「昨日」「10/12」（ルーチンの前回実施日表示用。ローカル日付で判定）
+export function shortDayLabel(iso) {
+  if (!iso) return null
+  const d = new Date(iso)
+  const today = localDateStr()
+  const y = new Date()
+  y.setDate(y.getDate() - 1)
+  const ds = localDateStr(d)
+  if (ds === today) return '今日'
+  if (ds === localDateStr(y)) return '昨日'
+  return `${d.getMonth() + 1}/${d.getDate()}`
+}
+
 // 月曜始まりの今週7日分のローカル日付
 export function getWeekDates() {
   const now = new Date()

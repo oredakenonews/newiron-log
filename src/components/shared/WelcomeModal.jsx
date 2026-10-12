@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { useCoach } from '../../lib/coachContext'
-import { localDateStr } from '../../lib/dates'
-import { listSessions, getPendingPlan, getNextRoutine } from '../../lib/localdb'
+import { localDateStr, shortDayLabel } from '../../lib/dates'
+import { listSessions, getPendingPlan, listRoutines } from '../../lib/localdb'
 import { getCategory } from '../../lib/categories'
 
 // アプリ起動時に1回だけ表示するコーチの挨拶ウインドウ（TestFlight FB反映）。
@@ -27,13 +27,10 @@ const SEASONAL_LINES = [
 
 const CAT_LABELS = { CHEST: '胸', BACK: '背中', LEGS: '脚', SHOULDERS: '肩・腕', ARMS: '肩・腕' }
 
-function buildNote(plan, sessions, routine) {
+function buildNote(plan, sessions) {
   const seasonal = SEASONAL_LINES[new Date().getMonth()]
   if (plan?.exercises?.length) {
     return `${seasonal}\n今日はAIコーチの計画（${plan.exercises.length}種目）が入っています。記録タブから始められます。`
-  }
-  if (routine) {
-    return `${seasonal}\n今日は「${routine.name}」の番です（${routine.exercises.length}種目）。`
   }
   if (sessions.length === 0) {
     return `${seasonal}\n今日が最初の記録です。まずは1種目からで十分。`
@@ -60,19 +57,18 @@ export default function WelcomeModal() {
   const { coach, trainerImg, trainerName, lines } = useCoach()
   const navigate = useNavigate()
   const [note, setNote] = useState(null)
-  const [routine, setRoutine] = useState(null)
+  const [routines, setRoutines] = useState([])
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
     try {
       if (sessionStorage.getItem('iron-welcome-shown')) return
     } catch { /* sessionStorage不可なら毎回表示を避けるため出さない */ return }
-    Promise.all([getPendingPlan(localDateStr()), listSessions(10), getNextRoutine()]).then(([plan, sessions, next]) => {
-      // AI計画がある日は計画を優先。今日すでに記録済みなら次のルーチンは明日以降の話なので出さない
+    Promise.all([getPendingPlan(localDateStr()), listSessions(10), listRoutines()]).then(([plan, sessions, list]) => {
+      // AI計画がある日は計画を優先。今日すでに記録済みの日はルーチン選択を出さない
       const trainedToday = sessions[0]?.date === localDateStr()
-      const r = plan?.exercises?.length || trainedToday ? null : next
-      setRoutine(r)
-      setNote(buildNote(plan, sessions, r))
+      setRoutines(plan?.exercises?.length || trainedToday ? [] : list)
+      setNote(buildNote(plan, sessions))
       setOpen(true)
       try { sessionStorage.setItem('iron-welcome-shown', '1') } catch { /* noop */ }
     })
@@ -80,9 +76,9 @@ export default function WelcomeModal() {
 
   if (!open || !note) return null
 
-  function startRoutine() {
+  function startRoutine(r) {
     navigate('/')
-    window.dispatchEvent(new CustomEvent('iron-start-routine', { detail: { id: routine.id } }))
+    window.dispatchEvent(new CustomEvent('iron-start-routine', { detail: { id: r.id } }))
     setOpen(false)
   }
 
@@ -104,7 +100,7 @@ export default function WelcomeModal() {
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          width: '100%', maxWidth: 360,
+          width: '100%', maxWidth: 360, maxHeight: '90dvh', overflowY: 'auto',
           background: 'var(--card)', border: '1px solid var(--border)',
           borderTop: `3px solid ${coach.tone}`,
           overflow: 'hidden',
@@ -115,7 +111,7 @@ export default function WelcomeModal() {
           background: 'var(--bg-deep)', borderBottom: '1px solid var(--border2)',
           display: 'flex', justifyContent: 'center', paddingTop: 10,
         }}>
-          <img src={trainerImg} alt={trainerName} style={{ height: 210, objectFit: 'contain', display: 'block' }} />
+          <img src={trainerImg} alt={trainerName} style={{ height: routines.length > 0 ? 170 : 210, objectFit: 'contain', display: 'block' }} />
         </div>
 
         <div style={{ padding: '14px 16px 16px' }}>
@@ -141,25 +137,48 @@ export default function WelcomeModal() {
             <div style={{ fontSize: 14, lineHeight: 1.7, color: 'var(--text-sub)', whiteSpace: 'pre-line' }}>{note}</div>
           </div>
 
-          <button
-            onClick={routine ? startRoutine : () => setOpen(false)}
-            style={{
-              width: '100%', padding: '13px 0',
-              background: '#FF6A1A', border: 'none', color: 'var(--on-accent)',
-              fontFamily: 'Oswald', fontWeight: 700, fontSize: 15, letterSpacing: 1.5,
-              cursor: 'pointer',
-              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-            }}
-          >{routine ? `「${routine.name}」で始める` : '今日を始める'}</button>
-          {routine && (
+          {routines.length > 0 ? (
+            <>
+              <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>今日のメニューを選ぶ</div>
+              {routines.map(r => {
+                const last = shortDayLabel(r.last_used_at)
+                return (
+                  <button
+                    key={r.id}
+                    onClick={() => startRoutine(r)}
+                    style={{
+                      width: '100%', marginBottom: 6, padding: '11px 14px',
+                      background: 'var(--card)', border: '1px solid #FF6A1A',
+                      display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', textAlign: 'left',
+                    }}
+                  >
+                    <span style={{ flex: 1, minWidth: 0, fontWeight: 700, fontSize: 15, color: 'var(--text-strong)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</span>
+                    <span style={{ fontSize: 11, color: 'var(--muted)', flexShrink: 0 }}>
+                      {r.exercises.length}種目{last ? ` · 前回 ${last}` : ''}
+                    </span>
+                    <span style={{ color: '#FF6A1A', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>›</span>
+                  </button>
+                )
+              })}
+              <button
+                onClick={() => setOpen(false)}
+                style={{
+                  width: '100%', marginTop: 4, padding: '10px 0',
+                  background: 'transparent', border: 'none',
+                  color: 'var(--text-2nd)', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                }}
+              >ルーチンを使わずに始める</button>
+            </>
+          ) : (
             <button
               onClick={() => setOpen(false)}
               style={{
-                width: '100%', marginTop: 8, padding: '10px 0',
-                background: 'transparent', border: 'none',
-                color: 'var(--text-2nd)', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                width: '100%', padding: '13px 0',
+                background: '#FF6A1A', border: 'none', color: 'var(--on-accent)',
+                fontFamily: 'Oswald', fontWeight: 700, fontSize: 15, letterSpacing: 1.5,
+                cursor: 'pointer',
               }}
-            >別のメニューにする</button>
+            >今日を始める</button>
           )}
         </div>
       </div>

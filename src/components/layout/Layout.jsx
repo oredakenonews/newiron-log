@@ -7,6 +7,7 @@ import HistoryTab from '../history/HistoryTab'
 import AITab from '../ai/AITab'
 import SettingsTab from '../settings/SettingsTab'
 import WelcomeModal from '../shared/WelcomeModal'
+import { useKeyboardOpen } from '../../lib/useKeyboardOpen'
 
 const TAB_STYLE = {
   position: 'absolute', inset: 0,
@@ -24,18 +25,22 @@ const AI_TAB_STYLE = {
 
 export default function Layout() {
   const { pathname } = useLocation()
+  // 入力中はタブバーを隠し、その分を本文に回す（キーボードでの圧迫を緩和）
+  const keyboardOpen = useKeyboardOpen()
+  const tabStyle = keyboardOpen ? { ...TAB_STYLE, paddingBottom: 12 } : TAB_STYLE
+  const aiTabStyle = keyboardOpen ? { ...AI_TAB_STYLE, bottom: 0 } : AI_TAB_STYLE
 
   return (
     <CoachProvider>
       <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--bg)' }}>
         <TopBar />
         <main style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
-          <div style={{ ...TAB_STYLE, display: pathname === '/'         ? 'block' : 'none' }}><RecordTab /></div>
-          <div style={{ ...TAB_STYLE, display: pathname === '/history'  ? 'block' : 'none' }}><HistoryTab /></div>
-          <div style={{ ...AI_TAB_STYLE, display: pathname === '/ai'    ? 'flex'  : 'none' }}><AITab /></div>
-          <div style={{ ...TAB_STYLE, display: pathname === '/settings' ? 'block' : 'none' }}><SettingsTab /></div>
+          <div style={{ ...tabStyle, display: pathname === '/'         ? 'block' : 'none' }}><RecordTab /></div>
+          <div style={{ ...tabStyle, display: pathname === '/history'  ? 'block' : 'none' }}><HistoryTab /></div>
+          <div style={{ ...aiTabStyle, display: pathname === '/ai'     ? 'flex'  : 'none' }}><AITab keyboardOpen={keyboardOpen} /></div>
+          <div style={{ ...tabStyle, display: pathname === '/settings' ? 'block' : 'none' }}><SettingsTab /></div>
         </main>
-        <BottomNav />
+        {!keyboardOpen && <BottomNav />}
         <WelcomeModal />
       </div>
     </CoachProvider>

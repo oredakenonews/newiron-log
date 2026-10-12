@@ -5,7 +5,7 @@
 
 const TRAINER_TAGS = {
   RYOTA: '熱血', YUKI: '穏やか', DAIKI: '理論派', KENJI: 'ストイック',
-  NANA: 'ポジティブ', HANA: '丁寧', RACHELL: '国際派', TORU: 'ベテラン', BILLY: 'エンタメ',
+  NANA: 'クール', HANA: '丁寧', RACHELL: '国際派', TORU: 'ベテラン', BILLY: 'エンタメ',
 };
 
 const COACH_ACCENT = '#FF6A1A';
@@ -49,13 +49,13 @@ const TRAINER_LINES = {
     workout_legs:    '脚、逃げなかったな。良い。',
   },
   NANA: {
-    record_idle:     '今日も来てくれて嬉しい！全力でいこー！',
-    record_active:   ({ doneSets, totalSets }) => `${doneSets}/${totalSets}セット！そのペース、すっごくいいよ！`,
-    record_done:     '全クリア！最高！自分にごほうびあげてね！',
-    history_summary: '今週も続けられたね！それが一番すごいこと！',
-    workout_pr:      'PR更新きたー！努力はちゃんと数字に出るんだよ！',
-    workout_normal:  'いい感じ！背中ももっと攻めると最強になれるよ！',
-    workout_legs:    '脚の日ちゃんとやってえらい！それ、一番強いやつ！',
+    record_idle:     '来たね。今日も淡々と、きれいにいこう。',
+    record_active:   ({ doneSets, totalSets }) => `${doneSets}/${totalSets}セット。いい流れ。フォームは崩さないで。`,
+    record_done:     '全部終わったね。今日の動き、悪くなかった。',
+    history_summary: '今週もちゃんと続いてる。そういうの、嫌いじゃない。',
+    workout_pr:      'PR更新。当然の結果でしょ。',
+    workout_normal:  'バランスはいい。背中をもう少し入れると締まるよ。',
+    workout_legs:    '脚の日をサボらない人は、シルエットが変わる。',
   },
   HANA: {
     record_idle:     'ようこそお越しくださいました。本日もご一緒できて嬉しいです。',

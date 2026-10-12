@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { getCategory } from '../../lib/categories'
 import { hapticSuccess, hapticError } from '../../lib/haptics'
 import { listRoutines, saveRoutine, deleteRoutine, listExercises, MAX_ROUTINES } from '../../lib/localdb'
-import { ROUTINE_TEMPLATES } from '../../lib/routineTemplates'
 import AddExerciseSheet from '../shared/AddExerciseSheet'
 
 function notifyChanged() {
@@ -63,7 +62,7 @@ function RoutineEditor({ initial, userExercises, onSave, onCancel, onDelete }) {
         type="text"
         value={name}
         onChange={e => { setName(e.target.value); setError('') }}
-        placeholder="例: 上半身"
+        placeholder="例: 上半身、下半身、全身"
         maxLength={20}
         style={{
           width: '100%', padding: '10px 14px', marginBottom: 16,
@@ -182,19 +181,12 @@ export default function RoutinesSection() {
     notifyChanged()
   }
 
-  async function createFromTemplates() {
-    for (const t of ROUTINE_TEMPLATES) await saveRoutine(t)
-    hapticSuccess()
-    await reload()
-    notifyChanged()
-  }
-
   const canAdd = routines.length < MAX_ROUTINES
 
   return (
     <div style={{ padding: 14 }}>
       <p style={{ fontSize: 12, color: 'var(--text-2nd)', lineHeight: 1.7, margin: '0 0 14px' }}>
-        よくやるメニューを登録しておくと、記録タブから1タップで読み込めます。登録した順に「次はこのルーチン」と順番に提案します（最大{MAX_ROUTINES}つ）。
+        よくやるメニューを登録しておくと、記録タブやアプリ起動時に選んで1タップで読み込めます（最大{MAX_ROUTINES}つ）。<br />例: 上半身、下半身、全身
       </p>
 
       {editing && !editing.id && (
@@ -238,17 +230,6 @@ export default function RoutinesSection() {
           </div>
         )
       ))}
-
-      {routines.length === 0 && !editing && (
-        <button
-          onClick={createFromTemplates}
-          style={{
-            width: '100%', padding: '14px 0', marginBottom: 8,
-            background: '#FF6A1A', border: 'none', color: 'var(--on-accent)',
-            fontSize: 14, fontWeight: 700, cursor: 'pointer',
-          }}
-        >テンプレートで3つ作成（上半身・下半身・全身）</button>
-      )}
 
       {!editing && (
         <button

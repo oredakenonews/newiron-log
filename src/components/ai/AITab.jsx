@@ -11,7 +11,7 @@ const TRAINER_GREETINGS = {
   YUKI:    'お疲れさまでした。今日も来られただけで、本当に素晴らしいですよ。',
   DAIKI:   '記録を分析しました。数値的に良い傾向が出ています。一緒に最適化しましょう。',
   KENJI:   '言い訳は要らない。やるか、やらないかだ。',
-  NANA:    'おつかれー！今日も来てくれてありがとう！一緒に楽しもうね',
+  NANA:    '来たね。焦らず、今日の一本をきれいに決めよう。',
   HANA:    '本日もお疲れさまです。一歩一歩、着実に進んでいきましょう。',
   RACHELL: 'よく来たね。継続こそがWorld-classの成果につながる。一緒にやろう。',
   TORU:    '焦らんでいい。長い目で見れば、続けることが一番大切だ。',
@@ -28,7 +28,7 @@ function hasPlan(text) {
   return (text.match(/\d+\s*(セット|回|kg)/gi) || []).length >= 3
 }
 
-export default function AITab() {
+export default function AITab({ keyboardOpen = false }) {
   const { user, profile } = useAuth()
   const { coach, trainerImg } = useCoach()
   const [recentWorkouts, setRecentWorkouts] = useState([])
@@ -97,11 +97,12 @@ export default function AITab() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages, isLoading])
 
-  async function doSend(text) {
+  // display: 吹き出しに出す短い表記（定型ボタンは長い指示文ではなくボタン名を見せる）
+  async function doSend(text, display) {
     const msg = (text ?? input).trim()
     if (!msg || isLoading) return
     setInput('')
-    const next = [...messages, { role: 'user', content: msg }]
+    const next = [...messages, { role: 'user', content: msg, ...(display ? { display } : {}) }]
     setMessages(next)
     setIsLoading(true)
     try {
@@ -158,8 +159,20 @@ export default function AITab() {
         }}>{toast}</div>
       )}
 
+      {/* ── Header（入力中）: キーボードで画面が狭くなるため1行に畳む ── */}
+      {keyboardOpen && (
+        <div style={{
+          flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10,
+          padding: '6px 16px', borderBottom: '1px solid var(--border2)', background: 'var(--bg-deep)',
+        }}>
+          <img src={trainerImg} alt={trainer} style={{ width: 30, height: 30, objectFit: 'contain' }} />
+          <div style={{ fontFamily: 'Oswald', fontWeight: 700, fontSize: 16, color: 'var(--text-strong)', letterSpacing: 1 }}>{trainer}</div>
+          <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1.5, color: accent }}>{coach.tag}</div>
+        </div>
+      )}
+
       {/* ── Header: 大型キャラ切り抜き＋吹き出し（あすけん風） ── */}
-      <div style={{
+      {!keyboardOpen && <div style={{
         flexShrink: 0, position: 'relative', overflow: 'hidden',
         borderBottom: '1px solid var(--border2)',
         background: 'linear-gradient(180deg, var(--bg-deep) 0%, var(--bg) 100%)',
@@ -215,7 +228,7 @@ export default function AITab() {
             filter: 'drop-shadow(0 0 12px rgba(0,0,0,0.6))',
           }}
         />
-      </div>
+      </div>}
 
       {/* ── Messages ── */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px 14px 8px' }}>
@@ -236,11 +249,15 @@ export default function AITab() {
                 maxWidth: '75%', padding: '10px 14px',
                 fontSize: 15, lineHeight: 1.75,
                 ...(msg.role === 'user'
-                  ? { background: '#FF6A1A', color: 'var(--on-accent)', fontWeight: 500 }
+                  // 自分の発言は薄いオレンジ＋同色のぼかしで背景に溶かす（ベタ塗りはきつすぎるFB）
+                  ? {
+                      background: 'rgba(255,106,26,0.12)', color: 'var(--text)', fontWeight: 500,
+                      boxShadow: '0 0 14px 3px rgba(255,106,26,0.14)',
+                    }
                   : { background: 'var(--card)', border: '1px solid var(--border)', borderLeft: `2px solid ${accent}`, color: 'var(--text)' }
                 ),
               }}>
-                {msg.content}
+                {msg.display ?? msg.content}
               </div>
             </div>
             {msg.role === 'assistant' && hasPlan(msg.content) && (
@@ -309,7 +326,7 @@ export default function AITab() {
           {QUICK_ACTIONS.map((a, i) => (
             <button
               key={i}
-              onClick={() => doSend(a.prompt)}
+              onClick={() => doSend(a.prompt, a.label)}
               disabled={isLoading}
               style={{
                 flex: 1, padding: '9px 8px',

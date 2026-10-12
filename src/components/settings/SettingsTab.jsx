@@ -23,7 +23,7 @@ const TRAINERS = [
   { id: 'DAIKI', name: 'DAIKI', desc: '理論派。データと科学で最適解を示す', img: '/gazou/daiki_bu.png' },
   { id: 'YUKI', name: 'YUKI', desc: '穏やか系。寄り添いながら継続をサポート', img: '/gazou/yuki_bu.png' },
   { id: 'KENJI', name: 'KENJI', desc: 'ストイック系。限界突破を共に目指す', img: '/gazou/kenji_bu.png' },
-  { id: 'NANA', name: 'NANA', desc: 'ポジティブ系。楽しさを大切にするスタイル', img: '/gazou/nana_bu.png' },
+  { id: 'NANA', name: 'NANA', desc: 'クール系。無駄なく的確、美しいフォームにこだわる', img: '/gazou/nana_bu.png' },
   { id: 'HANA', name: 'HANA', desc: '丁寧系。基礎を大切にした指導', img: '/gazou/hana_bu.png' },
   { id: 'RACHELL', name: 'RACHELL', desc: '国際派。世界基準のトレーニング理論', img: '/gazou/rachell_bu.png' },
   { id: 'TORU', name: 'TORU', desc: 'ベテラン系。長年の経験から的確なアドバイス', img: '/gazou/toru_bu.png' },
@@ -495,6 +495,8 @@ export default function SettingsTab() {
         </div>
       )}
 
+      {/* アプリ設定（テーマ・データ）はプロフィールタブにだけ出す。全タブ共通にすると各タブの下に毎回出て邪魔（FB） */}
+      {activeSection === 'profile' && (<>
       {/* テーマ切替（端末ローカル設定） */}
       <div style={{ padding: '0 14px', marginTop: 24 }}>
         <div style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 2, color: 'var(--muted)', marginBottom: 8 }}>テーマ</div>
@@ -551,6 +553,7 @@ export default function SettingsTab() {
           Web版から移行する場合は、Web版の設定で「データをエクスポート」したJSONファイルをここで読み込んでください。現在のデータは置き換えられます。
         </p>
       </div>
+      </>)}
     </div>
   )
 }

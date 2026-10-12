@@ -211,21 +211,10 @@ export async function deleteRoutine(id) {
   await save('routines', list.filter(r => r.id !== id))
 }
 
+// 「前回◯/◯」表示用。どのルーチンをやるかは毎回ユーザーが選ぶ（30分の日/60分の日など、順番では決まらないため）
 export async function markRoutineUsed(id) {
   const list = await load('routines', [])
   await save('routines', list.map(r => (r.id === id ? { ...r, last_used_at: new Date().toISOString() } : r)))
-}
-
-// 曜日固定ではなく「最後にやったルーチンの次」を返す（1回休んでも順番が崩れない）
-export async function getNextRoutine() {
-  const list = await listRoutines()
-  if (list.length === 0) return null
-  let lastIdx = -1
-  let lastAt = ''
-  list.forEach((r, i) => {
-    if (r.last_used_at && r.last_used_at > lastAt) { lastAt = r.last_used_at; lastIdx = i }
-  })
-  return list[(lastIdx + 1) % list.length]
 }
 
 // ---- ai_memories（TTLは旧Edge Function v11と同じ） ----
