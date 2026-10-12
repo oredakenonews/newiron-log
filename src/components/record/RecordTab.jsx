@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { getCategory } from '../../lib/categories'
 import {
   listExercises, listSessions, getSessionByDate, upsertSession,
   getPendingPlan, markPlanDone,
+  listRoutines, getNextRoutine, markRoutineUsed,
 } from '../../lib/localdb'
 import { localDateStr } from '../../lib/dates'
 import { hapticImpact, hapticSuccess, hapticError } from '../../lib/haptics'
@@ -304,9 +306,84 @@ function PlanBanner({ plan, onLoad }) {
   )
 }
 
+function RoutinePicker({ routines, nextId, onStart, onCreate }) {
+  if (routines.length === 0) {
+    return (
+      <button
+        onClick={onCreate}
+        style={{
+          width: '100%', marginBottom: 12, padding: '13px 14px',
+          background: 'transparent', border: '1px dashed var(--border-dash)',
+          color: 'var(--text-2nd)', fontSize: 13, textAlign: 'left', cursor: 'pointer',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8,
+        }}
+      >
+        <span>ルーチンを作っておくと、1タップで今日のメニューを読み込めます</span>
+        <span style={{ color: '#FF6A1A', fontWeight: 700, flexShrink: 0 }}>作成 ›</span>
+      </button>
+    )
+  }
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '0 4px 8px' }}>
+        <div style={{ fontFamily: 'Bebas Neue', fontSize: 12, letterSpacing: 2, color: 'var(--muted)' }}>ルーチンから始める</div>
+        <button onClick={onCreate} style={{ background: 'none', border: 'none', color: 'var(--muted)', fontSize: 12, cursor: 'pointer', padding: 0 }}>編集 ›</button>
+      </div>
+      {routines.map(r => {
+        const isNext = r.id === nextId
+        return (
+          <button
+            key={r.id}
+            onClick={() => onStart(r)}
+            style={{
+              width: '100%', marginBottom: 6, padding: '12px 14px',
+              background: 'var(--card)',
+              border: isNext ? '1px solid #FF6A1A' : '1px solid var(--border)',
+              borderLeft: isNext ? '4px solid #FF6A1A' : '1px solid var(--border)',
+              display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', textAlign: 'left',
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-strong)' }}>{r.name}</span>
+                {isNext && (
+                  <span style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1.5, color: 'var(--on-accent)', background: '#FF6A1A', padding: '1px 6px' }}>NEXT</span>
+                )}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-2nd)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {r.exercises.length}種目 · {r.exercises.map(ex => ex.name).join('、')}
+              </div>
+            </div>
+            <span style={{ color: isNext ? '#FF6A1A' : 'var(--muted)', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>始める ›</span>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// 直近セッションから種目ごとの前回重量・回数を拾う（新規セット・ルーチン読込の初期値に使用）
+async function computeLastWeights() {
+  const sessions = (await listSessions(15)).filter(s => s.date < localDateStr())
+  const map = {}
+  for (const session of sessions) {
+    for (const ex of session.exercises || []) {
+      if (map[ex.name]) continue
+      const lastSet = (ex.sets || []).filter(s => parseFloat(s.weight) > 0).pop()
+      if (lastSet) map[ex.name] = { weight: lastSet.weight, reps: lastSet.reps }
+    }
+  }
+  return map
+}
+
 export default function RecordTab() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [exercises, setExercises] = useState([])
+  const [routines, setRoutines] = useState([])
+  const [nextRoutineId, setNextRoutineId] = useState(null)
+  const [activeRoutine, setActiveRoutine] = useState(null) // { id, name }
+  const pendingRoutineRef = useRef(null)
   const [userExercises, setUserExercises] = useState([])
   const [plannedSession, setPlannedSession] = useState(null)
   const [saving, setSaving] = useState(false)
@@ -325,6 +402,7 @@ export default function RecordTab() {
       loadUserExercises()
       loadTodayPlan()
       loadLastWeights()
+      loadRoutines()
     }
   }, [user])
 
@@ -334,6 +412,23 @@ export default function RecordTab() {
     return () => window.removeEventListener('iron-plan-saved', h)
   }, [user])
 
+  useEffect(() => {
+    const onChanged = () => loadRoutines()
+    // 起動時ウインドウの「◯◯で始める」から呼ばれる
+    const onStart = async (e) => {
+      const r = (await listRoutines()).find(x => x.id === e.detail?.id)
+      if (!r) return
+      if (!loadedRef.current) { pendingRoutineRef.current = r; return }
+      startRoutine(r)
+    }
+    window.addEventListener('iron-routines-changed', onChanged)
+    window.addEventListener('iron-start-routine', onStart)
+    return () => {
+      window.removeEventListener('iron-routines-changed', onChanged)
+      window.removeEventListener('iron-start-routine', onStart)
+    }
+  })
+
   // 入力内容を常に下書きとしてlocalStorageへ退避する。
   // iOSはバックグラウンドのアプリを頻繁にkillするため、手動SAVE頼みだと記録が消える。
   useEffect(() => {
@@ -342,14 +437,40 @@ export default function RecordTab() {
     draftTimerRef.current = setTimeout(() => {
       try {
         if (exercises.length > 0) {
-          localStorage.setItem(draftKey(user.id), JSON.stringify({ exercises, ts: Date.now() }))
+          localStorage.setItem(draftKey(user.id), JSON.stringify({ exercises, routine: activeRoutine, ts: Date.now() }))
         } else {
           localStorage.removeItem(draftKey(user.id))
         }
       } catch { /* ストレージ不可でも入力は継続できる */ }
     }, 400)
     return () => clearTimeout(draftTimerRef.current)
-  }, [exercises, user])
+  }, [exercises, activeRoutine, user])
+
+  async function loadRoutines() {
+    const [list, next] = await Promise.all([listRoutines(), getNextRoutine()])
+    setRoutines(list)
+    setNextRoutineId(next?.id ?? null)
+  }
+
+  async function startRoutine(routine) {
+    const hasInput = exercises.some(ex => ex.sets.some(s => s.done || (s.weight !== '' && s.weight !== undefined)))
+    if (hasInput && !window.confirm(`今日の入力を「${routine.name}」の内容で置き換えますか？`)) return
+    // 重量は前回の同種目から、回数はルーチンの目標回数で埋める
+    const weights = await computeLastWeights()
+    const loaded = routine.exercises.map(ex => ({
+      id: genId(),
+      name: ex.name,
+      sets: Array.from({ length: ex.sets }, () => ({
+        weight: weights[ex.name]?.weight ?? '',
+        reps: String(ex.reps),
+        done: false,
+      })),
+    }))
+    hapticImpact()
+    setExercises(loaded)
+    setActiveRoutine({ id: routine.id, name: routine.name })
+    if (loaded.length > 0) setExpandedId(loaded[0].id)
+  }
 
   async function loadUserExercises() {
     setUserExercises(await listExercises())
@@ -360,18 +481,8 @@ export default function RecordTab() {
     if (plan) setPlannedSession(plan)
   }
 
-  // 直近セッションから種目ごとの前回重量・回数を拾う（新規セットの初期値に使用）
   async function loadLastWeights() {
-    const sessions = (await listSessions(15)).filter(s => s.date < localDateStr())
-    const map = {}
-    for (const session of sessions) {
-      for (const ex of session.exercises || []) {
-        if (map[ex.name]) continue
-        const lastSet = (ex.sets || []).filter(s => parseFloat(s.weight) > 0).pop()
-        if (lastSet) map[ex.name] = { weight: lastSet.weight, reps: lastSet.reps }
-      }
-    }
-    setLastWeights(map)
+    setLastWeights(await computeLastWeights())
   }
 
   async function loadTodaySession() {
@@ -389,6 +500,7 @@ export default function RecordTab() {
       nextId = maxId + 1
       setExercises(draft.exercises)
       setExpandedId(draft.exercises[0].id)
+      if (draft.routine?.id) setActiveRoutine(draft.routine)
     } else if (data) {
       const loaded = (data.exercises || []).map((ex, i) => ({
         ...ex,
@@ -400,6 +512,11 @@ export default function RecordTab() {
       if (loaded.length > 0) setExpandedId(loaded[0].id)
     }
     loadedRef.current = true
+    if (pendingRoutineRef.current) {
+      const r = pendingRoutineRef.current
+      pendingRoutineRef.current = null
+      startRoutine(r)
+    }
   }
 
   function addExercise(name) {
@@ -458,8 +575,14 @@ export default function RecordTab() {
       sets: (ex.sets || []).map(s => ({ ...s, done: false })),
     }))
     setExercises(loaded)
+    setActiveRoutine(null)
     if (loaded.length > 0) setExpandedId(loaded[0].id)
   }
+
+  // 全種目を消したらルーチン紐付けも外す（空のまま保存して順番が進むのを防ぐ）
+  useEffect(() => {
+    if (exercises.length === 0 && activeRoutine) setActiveRoutine(null)
+  }, [exercises, activeRoutine])
 
   async function saveSession() {
     if (saving) return
@@ -475,6 +598,12 @@ export default function RecordTab() {
       if (plannedSession && session?.id) {
         await markPlanDone(plannedSession.id, session.id)
         setPlannedSession(null)
+      }
+
+      // ルーチンの順番を進める（次回のNEXTが次のルーチンになる）
+      if (activeRoutine?.id) {
+        await markRoutineUsed(activeRoutine.id)
+        loadRoutines()
       }
 
       // 保存成功 → 下書きを破棄し、履歴タブへ更新を通知
@@ -522,13 +651,32 @@ export default function RecordTab() {
           display: 'flex', alignItems: 'baseline', justifyContent: 'space-between',
           padding: '0 4px 10px',
         }}>
-          <div style={{ fontFamily: 'Bebas Neue', fontSize: 14, letterSpacing: 2, color: 'var(--text-2nd)' }}>
-            TODAY'S WORKOUT
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, minWidth: 0 }}>
+            <div style={{ fontFamily: 'Bebas Neue', fontSize: 14, letterSpacing: 2, color: 'var(--text-2nd)', flexShrink: 0 }}>
+              TODAY'S WORKOUT
+            </div>
+            {activeRoutine && (
+              <div style={{ fontSize: 12, fontWeight: 700, color: '#FF6A1A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {activeRoutine.name}
+              </div>
+            )}
           </div>
-          <div style={{ fontFamily: 'JetBrains Mono', fontSize: 10, color: 'var(--muted)' }}>
+          <div style={{ fontFamily: 'JetBrains Mono', fontSize: 10, color: 'var(--muted)', flexShrink: 0 }}>
             {exercises.length} exercises
           </div>
         </div>
+
+        {exercises.length === 0 && (
+          <RoutinePicker
+            routines={routines}
+            nextId={nextRoutineId}
+            onStart={startRoutine}
+            onCreate={() => {
+              navigate('/settings')
+              window.dispatchEvent(new CustomEvent('iron-open-routines'))
+            }}
+          />
+        )}
 
         {exercises.map(ex => (
           <ExerciseCard

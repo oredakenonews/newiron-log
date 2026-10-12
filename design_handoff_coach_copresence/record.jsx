@@ -453,6 +453,33 @@ function RecordScreen() {
             fontFamily: 'JetBrains Mono', fontSize: 10, color: '#7A8496',
           }}>{exercises.length} exercises</div>
         </div>
+        {/* ルーチン選択（今日の記録が空のときだけ表示。NEXT＝登録順で次の番。本番はsrc/components/record/RecordTab.jsxのRoutinePicker） */}
+        {exercises.length === 0 && (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontFamily: 'Bebas Neue', fontSize: 12, letterSpacing: 2, color: '#7A8496', padding: '0 4px 8px' }}>ルーチンから始める</div>
+            {[
+              { name: '上半身', n: 6, list: 'ベンチプレス、ラットプルダウン…', next: true },
+              { name: '下半身', n: 4, list: 'スクワット、デッドリフト…' },
+              { name: '全身', n: 4, list: 'スクワット、ベンチプレス…' },
+            ].map(r => (
+              <div key={r.name} style={{
+                marginBottom: 6, padding: '12px 14px', background: '#13171F',
+                border: r.next ? '1px solid #FF6A1A' : '1px solid #1F242E',
+                borderLeft: r.next ? '4px solid #FF6A1A' : '1px solid #1F242E',
+                display: 'flex', alignItems: 'center', gap: 10,
+              }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontWeight: 700, fontSize: 16, color: '#fff' }}>{r.name}</span>
+                    {r.next && <span style={{ fontFamily: 'Bebas Neue', fontSize: 11, letterSpacing: 1.5, color: '#0B0D10', background: '#FF6A1A', padding: '1px 6px' }}>NEXT</span>}
+                  </div>
+                  <div style={{ fontSize: 12, color: '#9AA5BA', marginTop: 2 }}>{r.n}種目 · {r.list}</div>
+                </div>
+                <span style={{ color: r.next ? '#FF6A1A' : '#7A8496', fontWeight: 700, fontSize: 13 }}>始める ›</span>
+              </div>
+            ))}
+          </div>
+        )}
         {exercises.map(ex => (
           <ExerciseCard
             key={ex.id}

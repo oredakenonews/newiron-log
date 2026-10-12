@@ -10,7 +10,7 @@
 - **データは全て端末内**: `src/lib/localdb.js` が唯一のデータ層
   - ネイティブ: Capacitor Preferences（UserDefaults、iCloudバックアップ対象）
   - Web: localStorage
-  - コレクション: profile / user_exercises / workout_sessions / planned_sessions / ai_memories / chat
+  - コレクション: profile / user_exercises / workout_sessions / planned_sessions / ai_memories / chat / routines
   - workout_sessionsは同一日付upsert（旧UNIQUE(user_id,date)相当）
   - ai_memoriesのtype別置き換え統合・TTLはlocaldb内で実装（旧v11と同仕様）
   - エクスポート/インポート: `exportAll()` / `importAll()`（設定タブにJSONエクスポートあり）
@@ -22,7 +22,7 @@
   - ネイティブからは `https://newiron-log.vercel.app/api/ai-chat` を叩く（VITE_AI_ENDPOINTで上書き可）
 - **useAuth**: API互換のまま中身をローカル化（user={id:'local'}固定、saveProfile(patch)追加）
 - `supabase/functions/` はv1の遺産として残置（デプロイ済みEdge Functionの参照用）
-- テスト: `node scripts/test-localdb.mjs`（データ層15項目）/ `node scripts/test-ai-chat.mjs`（AIプロキシ28項目・外部APIはモック）
+- テスト: `node scripts/test-localdb.mjs`（データ層26項目）/ `node scripts/test-ai-chat.mjs`（AIプロキシ28項目・外部APIはモック）
 
 ## URL
 - 本番: https://newiron-log.vercel.app
@@ -67,6 +67,9 @@
 - `iron-plan-saved`: AIタブで計画保存 → RecordTabが計画バナーを再読込
 - `iron-session-saved`: RecordTabで保存成功 → HistoryTabがセッション一覧を再読込
 - `iron-open-chat`: チャットシートを開く（AITabが購読）
+- `iron-routines-changed`: 設定でルーチン作成・編集・削除 → RecordTabがルーチン一覧とNEXTを再読込
+- `iron-start-routine`（detail.id）: 起動時ウインドウの「◯◯で始める」→ RecordTabがそのルーチンを読み込む
+- `iron-open-routines`: 記録タブの「作成/編集」→ SettingsTabがルーチンタブを開く
 
 ## データ保護（記録タブ）
 - 入力内容は400msデバウンスで `localStorage`（`iron-draft-{userId}-{date}`）に下書き保存
@@ -133,6 +136,12 @@
 - オンボーディング完了時にデフォルト種目21件をuser_exercisesに自動登録
 - 起動時WelcomeModal（Layout配下・セッション毎1回）: 大型キャラ＋キャラのセリフ＋TODAY'S NOTE（今日の計画 or 前回記録から部位提案＋季節の一言。ローカル生成でAPI不使用）
 - 記録タブ: ホイールピッカーでセット入力、AIが生成した今日の計画バナー表示（常時CoachStripはv2.1で廃止→WelcomeModalに集約）
+- ルーチン（2026-10-12）: 名前自由入力・最大5件（`MAX_ROUTINES`）。設定→ルーチンタブで作成・編集（未作成時は「上半身/下半身/全身」テンプレートで3つ一括作成可。`src/lib/routineTemplates.js`）
+  - 保存するのは種目・セット数・目標回数だけ。**重量は持たない**（読み込み時に前回の同種目の重量を補完）
+  - 曜日固定ではなく登録順のローテーション: `getNextRoutine()` が「最後に使ったルーチンの次」を返す。記録をSAVEした時点で `markRoutineUsed()`（読み込んだだけでは進まない）
+  - 記録タブは今日の記録が空のときだけルーチン一覧（NEXT付き）を表示。WelcomeModalも次のルーチンを「◯◯で始める」で提案（AI計画がある日は計画優先）
+  - 読み込んだルーチンは下書き（`iron-draft-*`の`routine`）にも保持し、アプリがkillされても順番更新が漏れない
+  - 旧形式エクスポート（routinesキーなし）をインポートしても端末のルーチンは消さない
 - 履歴タブ: 今週サマリー（MiniBar）＋CoachStrip＋フィルター＋セッション詳細（編集モードあり）
   - セッション行に今日・脚の日はCoachQuoteを表示
   - 編集モード: セット重量/回数タップ→ホイールピッカー、セット追加/削除、種目追加/削除、DB保存
@@ -142,7 +151,7 @@
   - プラン検出（3回以上のセット/回/kg表記）→「この計画を保存する」ボタン→planned_sessionsに保存
   - チャット履歴はトレーナー刻印付きで保存。トレーナー変更後は旧履歴を引き継がない（人格ブリード防止）。タブは常時マウントのためAITab内でtrainer変化も監視して即クリア
   - 入力欄の上に定型アクション2ボタン常設（結果フィードバック／メニュー提案）
-- 設定タブ: プロフィール（表示名含む）・AIコーチ（トレーナー選択・コーチへのメモ・AI記憶）・種目管理・テーマ切替・エクスポート/インポート
+- 設定タブ: プロフィール（表示名含む）・AIコーチ（トレーナー選択・コーチへのメモ・AI記憶）・ルーチン・種目管理・テーマ切替・エクスポート/インポート
 - オンボーディング: 質問役はアプリ（IL）。目標・歴＋パーソナリティ5問をスコアリングして相性の良いトレーナーを推薦（設定で変更可）
 
 ## コーチ共存プレゼンス（src/lib/coachContext.jsx）

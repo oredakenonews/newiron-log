@@ -61,13 +61,42 @@ check('TTL付与', mems.every(m => m.expires_at > new Date().toISOString()))
 await db.deleteAllMemories()
 check('全削除', (await db.listMemories()).length === 0)
 
+console.log('— routines —')
+check('未作成ならNEXTなし', (await db.getNextRoutine()) === null)
+const rUpper = await db.saveRoutine({ name: '  上半身  ', exercises: [{ name: 'ベンチプレス', sets: 3, reps: 10 }] })
+const rLower = await db.saveRoutine({ name: '下半身', exercises: [{ name: 'スクワット', sets: 99, reps: 0 }] })
+const rFull = await db.saveRoutine({ name: '全身', exercises: [{ name: 'デッドリフト', sets: 3, reps: 5 }] })
+check('名前トリム・登録順', rUpper.name === '上半身' && (await db.listRoutines()).map(r => r.name).join() === '上半身,下半身,全身')
+check('セット・回数の範囲補正', rLower.exercises[0].sets === 10 && rLower.exercises[0].reps === 10)
+let threw = false
+try { await db.saveRoutine({ name: '   ', exercises: [] }) } catch { threw = true }
+check('空の名前は拒否', threw)
+check('未使用なら先頭がNEXT', (await db.getNextRoutine()).id === rUpper.id)
+await db.markRoutineUsed(rUpper.id)
+check('使ったら次へ進む', (await db.getNextRoutine()).id === rLower.id)
+await new Promise(r => setTimeout(r, 5))
+await db.markRoutineUsed(rFull.id)
+check('最後の次は先頭に戻る', (await db.getNextRoutine()).id === rUpper.id)
+const renamed = await db.saveRoutine({ id: rLower.id, name: '脚の日', exercises: rLower.exercises })
+check('名前の変更', renamed.name === '脚の日' && (await db.listRoutines()).length === 3)
+await db.saveRoutine({ name: '4', exercises: [] })
+await db.saveRoutine({ name: '5', exercises: [] })
+threw = false
+try { await db.saveRoutine({ name: '6', exercises: [] }) } catch { threw = true }
+check(`上限${db.MAX_ROUTINES}件`, threw && (await db.listRoutines()).length === db.MAX_ROUTINES)
+for (const r of (await db.listRoutines()).filter(r => r.name === '4' || r.name === '5')) await db.deleteRoutine(r.id)
+check('削除', (await db.listRoutines()).length === 3)
+
 console.log('— export/import —')
 const dump = await db.exportAll()
-check('エクスポート形式', dump.version === 2 && dump.workout_sessions.length === 2)
+check('エクスポート形式', dump.version === 2 && dump.workout_sessions.length === 2 && dump.routines.length === 3)
 store.clear()
 // キャッシュを飛ばすため再import不可 → importAllで上書き検証
 await db.importAll(dump)
-check('インポート復元', (await db.listSessions()).length === 2 && (await getProfile()).trainer_character === 'DAIKI')
+check('インポート復元', (await db.listSessions()).length === 2 && (await getProfile()).trainer_character === 'DAIKI' && (await db.listRoutines()).length === 3)
+const { routines: _omit, ...oldFormat } = dump
+await db.importAll(oldFormat)
+check('routinesなしの旧エクスポートでもルーチンは消えない', (await db.listRoutines()).length === 3)
 
 console.log(`\n結果: ${pass} passed, ${fail} failed`)
 process.exit(fail > 0 ? 1 : 0)

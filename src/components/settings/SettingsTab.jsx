@@ -8,6 +8,7 @@ import {
   listMemories, deleteMemory as dbDeleteMemory, deleteAllMemories as dbDeleteAllMemories,
   exportAll, importAll,
 } from '../../lib/localdb'
+import RoutinesSection from './RoutinesSection'
 
 const PURPOSES = [
   { value: 'muscle', label: '筋肥大' },
@@ -52,6 +53,13 @@ export default function SettingsTab() {
   const [saved, setSaved] = useState(false)
   const [newExName, setNewExName] = useState('')
   const [activeSection, setActiveSection] = useState('profile')
+
+  // 記録タブの「ルーチンを作成」から直接ルーチン設定を開く
+  useEffect(() => {
+    const h = () => setActiveSection('routines')
+    window.addEventListener('iron-open-routines', h)
+    return () => window.removeEventListener('iron-open-routines', h)
+  }, [])
   const [memories, setMemories] = useState([])
   const [deletingMemoryId, setDeletingMemoryId] = useState(null)
   const importInputRef = useRef(null)
@@ -216,6 +224,7 @@ export default function SettingsTab() {
         {[
           { id: 'profile', label: 'プロフィール' },
           { id: 'trainer', label: 'AIコーチ' },
+          { id: 'routines', label: 'ルーチン' },
           { id: 'exercises', label: '種目' },
         ].map(s => (
           <button
@@ -232,6 +241,8 @@ export default function SettingsTab() {
           >{s.label}</button>
         ))}
       </div>
+
+      {activeSection === 'routines' && <RoutinesSection />}
 
       {/* profile section */}
       {activeSection === 'profile' && (

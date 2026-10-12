@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import { useCoach } from '../../lib/coachContext'
 import { localDateStr } from '../../lib/dates'
-import { listSessions, getPendingPlan } from '../../lib/localdb'
+import { listSessions, getPendingPlan, getNextRoutine } from '../../lib/localdb'
 import { getCategory } from '../../lib/categories'
 
 // アプリ起動時に1回だけ表示するコーチの挨拶ウインドウ（TestFlight FB反映）。
@@ -26,10 +27,13 @@ const SEASONAL_LINES = [
 
 const CAT_LABELS = { CHEST: '胸', BACK: '背中', LEGS: '脚', SHOULDERS: '肩・腕', ARMS: '肩・腕' }
 
-function buildNote(plan, sessions) {
+function buildNote(plan, sessions, routine) {
   const seasonal = SEASONAL_LINES[new Date().getMonth()]
   if (plan?.exercises?.length) {
     return `${seasonal}\n今日はAIコーチの計画（${plan.exercises.length}種目）が入っています。記録タブから始められます。`
+  }
+  if (routine) {
+    return `${seasonal}\n今日は「${routine.name}」の番です（${routine.exercises.length}種目）。`
   }
   if (sessions.length === 0) {
     return `${seasonal}\n今日が最初の記録です。まずは1種目からで十分。`
@@ -54,15 +58,21 @@ function buildNote(plan, sessions) {
 export default function WelcomeModal() {
   const { profile } = useAuth()
   const { coach, trainerImg, trainerName, lines } = useCoach()
+  const navigate = useNavigate()
   const [note, setNote] = useState(null)
+  const [routine, setRoutine] = useState(null)
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
     try {
       if (sessionStorage.getItem('iron-welcome-shown')) return
     } catch { /* sessionStorage不可なら毎回表示を避けるため出さない */ return }
-    Promise.all([getPendingPlan(localDateStr()), listSessions(10)]).then(([plan, sessions]) => {
-      setNote(buildNote(plan, sessions))
+    Promise.all([getPendingPlan(localDateStr()), listSessions(10), getNextRoutine()]).then(([plan, sessions, next]) => {
+      // AI計画がある日は計画を優先。今日すでに記録済みなら次のルーチンは明日以降の話なので出さない
+      const trainedToday = sessions[0]?.date === localDateStr()
+      const r = plan?.exercises?.length || trainedToday ? null : next
+      setRoutine(r)
+      setNote(buildNote(plan, sessions, r))
       setOpen(true)
       try { sessionStorage.setItem('iron-welcome-shown', '1') } catch { /* noop */ }
     })
@@ -70,7 +80,16 @@ export default function WelcomeModal() {
 
   if (!open || !note) return null
 
-  const greetName = profile?.display_name ? `${profile.display_name}さん` : null
+  function startRoutine() {
+    navigate('/')
+    window.dispatchEvent(new CustomEvent('iron-start-routine', { detail: { id: routine.id } }))
+    setOpen(false)
+  }
+
+  const rawName = profile?.display_name?.trim()
+  const greetName = rawName
+    ? (/(さん|くん|君|ちゃん|様)$/.test(rawName) ? rawName : `${rawName}さん`)
+    : null
 
   return (
     <div
@@ -123,14 +142,25 @@ export default function WelcomeModal() {
           </div>
 
           <button
-            onClick={() => setOpen(false)}
+            onClick={routine ? startRoutine : () => setOpen(false)}
             style={{
               width: '100%', padding: '13px 0',
               background: '#FF6A1A', border: 'none', color: 'var(--on-accent)',
               fontFamily: 'Oswald', fontWeight: 700, fontSize: 15, letterSpacing: 1.5,
               cursor: 'pointer',
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             }}
-          >今日を始める</button>
+          >{routine ? `「${routine.name}」で始める` : '今日を始める'}</button>
+          {routine && (
+            <button
+              onClick={() => setOpen(false)}
+              style={{
+                width: '100%', marginTop: 8, padding: '10px 0',
+                background: 'transparent', border: 'none',
+                color: 'var(--text-2nd)', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+              }}
+            >別のメニューにする</button>
+          )}
         </div>
       </div>
     </div>

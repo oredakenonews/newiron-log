@@ -8,6 +8,7 @@
 //   workout_sessions … 記録 [{ id, date, exercises, cardio, memo }]（date降順で保持）
 //   planned_sessions … AI計画 [{ id, planned_date, exercises, status, linked_session_id, created_at }]
 //   ai_memories      … AI長期記憶 [{ id, memory_type, content, created_at, expires_at }]
+//   routines         … ルーチン [{ id, name, exercises: [{ name, sets, reps }], order, last_used_at, created_at }]
 import { Capacitor } from '@capacitor/core'
 import { Preferences } from '@capacitor/preferences'
 
@@ -165,6 +166,68 @@ export async function markPlanDone(planId, sessionId) {
   ))
 }
 
+// ---- routines（定型メニュー） ----
+// 重量は持たない（毎回書き換えが要って放置されるため）。重量は記録タブで前回の同種目から補完する。
+export const MAX_ROUTINES = 5
+
+export async function listRoutines() {
+  const list = await load('routines', [])
+  return [...list].sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+}
+
+function normalizeRoutineExercises(exercises) {
+  return (exercises || [])
+    .filter(ex => ex?.name)
+    .map(ex => ({
+      name: ex.name,
+      sets: Math.min(10, Math.max(1, parseInt(ex.sets) || 3)),
+      reps: Math.min(50, Math.max(1, parseInt(ex.reps) || 10)),
+    }))
+}
+
+// idありは更新、なしは新規（上限MAX_ROUTINES）
+export async function saveRoutine({ id, name, exercises }) {
+  const trimmed = (name || '').trim()
+  if (!trimmed) throw new Error('routine name required')
+  const list = await load('routines', [])
+  const normalized = normalizeRoutineExercises(exercises)
+  if (id) {
+    const next = list.map(r => (r.id === id ? { ...r, name: trimmed, exercises: normalized, updated_at: new Date().toISOString() } : r))
+    await save('routines', next)
+    return next.find(r => r.id === id) ?? null
+  }
+  if (list.length >= MAX_ROUTINES) throw new Error('routine limit')
+  const routine = {
+    id: genId(), name: trimmed, exercises: normalized,
+    order: list.reduce((m, r) => Math.max(m, r.order ?? 0), -1) + 1,
+    last_used_at: null, created_at: new Date().toISOString(),
+  }
+  await save('routines', [...list, routine])
+  return routine
+}
+
+export async function deleteRoutine(id) {
+  const list = await load('routines', [])
+  await save('routines', list.filter(r => r.id !== id))
+}
+
+export async function markRoutineUsed(id) {
+  const list = await load('routines', [])
+  await save('routines', list.map(r => (r.id === id ? { ...r, last_used_at: new Date().toISOString() } : r)))
+}
+
+// 曜日固定ではなく「最後にやったルーチンの次」を返す（1回休んでも順番が崩れない）
+export async function getNextRoutine() {
+  const list = await listRoutines()
+  if (list.length === 0) return null
+  let lastIdx = -1
+  let lastAt = ''
+  list.forEach((r, i) => {
+    if (r.last_used_at && r.last_used_at > lastAt) { lastAt = r.last_used_at; lastIdx = i }
+  })
+  return list[(lastIdx + 1) % list.length]
+}
+
 // ---- ai_memories（TTLは旧Edge Function v11と同じ） ----
 const MEMORY_TTL_DAYS = { injury: 60, goal: 90, preference: 180, habit: 180, note: 30 }
 
@@ -228,14 +291,14 @@ export async function saveChat(messages, trainer) {
 
 // ---- 全データエクスポート/インポート（機種変更・バックアップ用） ----
 export async function exportAll() {
-  const [profile, exercises, sessions, plans, memories] = await Promise.all([
+  const [profile, exercises, sessions, plans, memories, routines] = await Promise.all([
     getProfile(), load('user_exercises', []), load('workout_sessions', []),
-    load('planned_sessions', []), load('ai_memories', []),
+    load('planned_sessions', []), load('ai_memories', []), load('routines', []),
   ])
   return {
     version: 2, exported_at: new Date().toISOString(),
     profile, user_exercises: exercises, workout_sessions: sessions,
-    planned_sessions: plans, ai_memories: memories,
+    planned_sessions: plans, ai_memories: memories, routines,
   }
 }
 
@@ -246,4 +309,6 @@ export async function importAll(data) {
   await save('workout_sessions', data.workout_sessions || [])
   await save('planned_sessions', data.planned_sessions || [])
   await save('ai_memories', data.ai_memories || [])
+  // ルーチン導入前のエクスポート（routinesキーなし）を読み込んでも、端末のルーチンは消さない
+  if (Array.isArray(data.routines)) await save('routines', data.routines)
 }
